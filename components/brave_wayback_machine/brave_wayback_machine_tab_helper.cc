@@ -56,10 +56,37 @@ BraveWaybackMachineTabHelper::BraveWaybackMachineTabHelper(
 
 BraveWaybackMachineTabHelper::~BraveWaybackMachineTabHelper() = default;
 
-void BraveWaybackMachineTabHelper::FetchWaybackURL() {
+void BraveWaybackMachineTabHelper::SetWaybackStateForTesting(
+    WaybackState state) {
+  CHECK_NE(state, WaybackState::kFound);
+  if (state != WaybackState::kLoaded) {
+    snapshot_info_.reset();
+  }
+  SetWaybackState(state);
+}
+
+void BraveWaybackMachineTabHelper::SetFoundForTesting(
+    WaybackSnapshotInfo snapshot) {
+  snapshot_info_ = std::move(snapshot);
+  SetWaybackState(WaybackState::kFound);
+}
+
+void BraveWaybackMachineTabHelper::FetchSnapshotInfo() {
   CHECK(wayback_enabled_.GetValue());
+  snapshot_info_.reset();
   SetWaybackState(WaybackState::kFetching);
   wayback_machine_url_fetcher_.Fetch(web_contents()->GetVisibleURL());
+}
+
+void BraveWaybackMachineTabHelper::NavigateToSnapshot() {
+  CHECK_EQ(wayback_state_, WaybackState::kFound);
+  const GURL url = snapshot_info_->url;
+  SetWaybackState(WaybackState::kLoaded);
+
+  if (auto navigation_handle = web_contents()->GetController().LoadURL(
+          url, content::Referrer(), ui::PAGE_TRANSITION_LINK, std::string())) {
+    wayback_url_navigation_id_ = navigation_handle->GetNavigationId();
+  }
 }
 
 base::CallbackListSubscription
@@ -112,26 +139,19 @@ void BraveWaybackMachineTabHelper::DidFinishNavigation(
 }
 
 void BraveWaybackMachineTabHelper::OnWaybackURLFetched(
-    const GURL& latest_wayback_url,
-    base::Time snapshot_time) {
+    std::optional<WaybackSnapshotInfo> snapshot) {
   // Ignore the result if disabled.
   if (!wayback_enabled_.GetValue()) {
     return;
   }
 
-  // wayback url is not available.
-  if (latest_wayback_url.is_empty()) {
+  if (!snapshot) {
     SetWaybackState(WaybackState::kNotAvailable);
     return;
   }
 
-  SetWaybackState(WaybackState::kLoaded);
-
-  if (auto navigation_handle = web_contents()->GetController().LoadURL(
-          latest_wayback_url, content::Referrer(), ui::PAGE_TRANSITION_LINK,
-          std::string())) {
-    wayback_url_navigation_id_ = navigation_handle->GetNavigationId();
-  }
+  snapshot_info_ = std::move(snapshot);
+  SetWaybackState(WaybackState::kFound);
 }
 
 void BraveWaybackMachineTabHelper::SetWaybackState(WaybackState state) {
@@ -154,6 +174,7 @@ void BraveWaybackMachineTabHelper::OnWaybackEnabledChanged(
 void BraveWaybackMachineTabHelper::ResetState() {
   wayback_machine_url_fetcher_.Cancel();
   wayback_url_navigation_id_ = std::nullopt;
+  snapshot_info_.reset();
   SetWaybackState(WaybackState::kInitial);
 }
 

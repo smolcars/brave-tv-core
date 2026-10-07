@@ -13,6 +13,7 @@
 #include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
 #include "brave/components/brave_wayback_machine/wayback_machine_url_fetcher.h"
+#include "brave/components/brave_wayback_machine/wayback_snapshot_info.h"
 #include "brave/components/brave_wayback_machine/wayback_state.h"
 #include "components/prefs/pref_member.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -46,12 +47,29 @@ class BraveWaybackMachineTabHelper
   // Returns the current WaybackState.
   WaybackState wayback_state() const { return wayback_state_; }
 
-  // Sets the wayback state directly and notifies registered callbacks,
-  // bypassing navigation and the real wayback-machine lookup.
-  void SetWaybackStateForTesting(WaybackState state) { SetWaybackState(state); }
+  // Returns the snapshot info found by the last lookup. Set only in the kFound
+  // and kLoaded states.
+  const std::optional<WaybackSnapshotInfo>& snapshot_info() const {
+    return snapshot_info_;
+  }
 
-  // Initiates fetching the latest snapshot URL for the current page.
-  void FetchWaybackURL();
+  // Sets the wayback state directly and notifies registered callbacks,
+  // bypassing navigation and the real wayback-machine lookup. Use
+  // SetFoundForTesting() for the kFound state.
+  void SetWaybackStateForTesting(WaybackState state);
+
+  // Enters the kFound state with |snapshot|, bypassing the real
+  // wayback-machine lookup.
+  void SetFoundForTesting(WaybackSnapshotInfo snapshot);
+
+  // Looks up the latest snapshot of the current page. The state moves to
+  // kFound if one is found, and to kNotAvailable otherwise. The snapshot is
+  // not loaded.
+  void FetchSnapshotInfo();
+
+  // Navigates to the snapshot found by FetchSnapshotInfo(). Must only be called
+  // in the kFound state.
+  void NavigateToSnapshot();
 
  private:
   explicit BraveWaybackMachineTabHelper(content::WebContents* contents);
@@ -61,8 +79,8 @@ class BraveWaybackMachineTabHelper
       content::NavigationHandle* navigation_handle) override;
 
   // WaybackMachineURLFetcher::Client overrides:
-  void OnWaybackURLFetched(const GURL& latest_wayback_url,
-                           base::Time snapshot_time) override;
+  void OnWaybackURLFetched(
+      std::optional<WaybackSnapshotInfo> snapshot) override;
 
   void SetWaybackState(WaybackState state);
   void OnWaybackEnabledChanged(const std::string& pref_name);
@@ -74,6 +92,7 @@ class BraveWaybackMachineTabHelper
   // we should not touch wayback state.
   std::optional<int64_t> wayback_url_navigation_id_;
 
+  std::optional<WaybackSnapshotInfo> snapshot_info_;
   WaybackState wayback_state_ = WaybackState::kInitial;
   WaybackStateChangedCallbackList wayback_state_changed_callbacks_;
   raw_ref<PrefService> pref_service_;

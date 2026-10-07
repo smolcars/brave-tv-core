@@ -10,6 +10,8 @@
 
 #include "base/feature_list.h"
 #include "base/functional/bind.h"
+#include "base/location.h"
+#include "base/task/sequenced_task_runner.h"
 #include "brave/browser/ui/color/brave_color_id.h"
 #include "brave/browser/ui/views/page_action/wayback_machine_bubble_view.h"
 #include "brave/components/brave_wayback_machine/brave_wayback_machine_tab_helper.h"
@@ -143,6 +145,22 @@ void WaybackMachinePageActionController::OnWaybackStateChanged(
   UpdatePageAction(tab_->GetContents());
   if (state == WaybackState::kNeedToCheck) {
     MaybeAutoShowBubble();
+  } else if (state == WaybackState::kFound) {
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(&WaybackMachinePageActionController::NavigateToSnapshot,
+                       weak_ptr_factory_.GetWeakPtr()));
+  }
+}
+
+void WaybackMachinePageActionController::NavigateToSnapshot() {
+  content::WebContents* contents = tab_->GetContents();
+  if (!contents) {
+    return;
+  }
+  auto* tab_helper = BraveWaybackMachineTabHelper::FromWebContents(contents);
+  if (tab_helper && tab_helper->wayback_state() == WaybackState::kFound) {
+    tab_helper->NavigateToSnapshot();
   }
 }
 
