@@ -5,6 +5,7 @@
 
 #include "base/test/run_until.h"
 #include "base/test/scoped_feature_list.h"
+#include "brave/browser/ui/brave_browser_window.h"
 #include "brave/browser/ui/browser_commands.h"
 #include "brave/components/constants/pref_names.h"
 #include "chrome/browser/devtools/devtools_window_testing.h"
@@ -49,6 +50,10 @@ BrowserWindowInterface* OpenNewBrowser(Profile* profile) {
 }
 
 }  // namespace
+
+IN_PROC_BROWSER_TEST_F(BraveBrowserBrowserTest, BraveBrowserWindowFromBrowser) {
+  EXPECT_TRUE(BraveBrowserWindow::FromBrowser(browser()));
+}
 
 IN_PROC_BROWSER_TEST_F(BraveBrowserBrowserTest, NTPFaviconTest) {
   ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), GURL("brave://newtab/")));

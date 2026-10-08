@@ -1635,6 +1635,7 @@ source_set("unit_tests") {
   if (!is_android) {
     testonly = true
     sources = [
+      "brave_browser_window_unittest.cc",
       "brave_file_select_utils_unittest.cc",
       "brave_layout_constants_unittest.cc",
       "brave_scheme_utils_unittest.cc",
@@ -1649,6 +1650,7 @@ source_set("unit_tests") {
       "//brave/components/l10n/common:test_support",
       "//chrome/browser/ui",
       "//chrome/browser/ui/tabs:features",
+      "//chrome/test:test_support",
       "//components/javascript_dialogs",
       "//components/prefs:test_support",
       "//testing/gmock",
