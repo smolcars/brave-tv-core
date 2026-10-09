@@ -558,6 +558,11 @@ public class BraveToolbarManager extends ToolbarManager
             @Nullable ContextMenuPopulatorFactory contextMenuPopulatorFactory,
             @Nullable SelectionDropdownMenuDelegate selectionDropdownMenuDelegate) {
 
+        if ((mActivity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                        == Configuration.UI_MODE_TYPE_TELEVISION
+                && mActivity instanceof BraveActivity activity) {
+            openGridTabSwitcherHandler = activity::showTvTabs;
+        }
         super.initializeWithNative(
                 layoutManager,
                 stripLayoutHelperManager,

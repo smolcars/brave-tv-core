@@ -320,6 +320,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         showControls();
     }
 
+    public void showTabs() {
+        if (!isAlive()) return;
+        mLastAction = R.string.brave_tv_tabs;
+        Tab tab = mActivity.getActivityTab();
+        showTabs(tab != null && tab.isIncognito(), 0);
+    }
+
     private void showTabs(boolean incognito, int start) {
         if (!isAlive() || !mActivity.areTabModelsInitialized()) return;
         dismissDialog();
@@ -375,7 +382,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         dismissDialog();
                         mActivity.getTabModelSelector().selectModel(incognito);
                         TabModelUtils.setIndex(currentModel, index);
-                        showControls();
+                        if (!UrlUtilities.isNtpUrl(tab.getUrl())) showControls();
                     });
         }
         panel.addAction(
