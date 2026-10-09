@@ -51,7 +51,9 @@
 #endif  // BUILDFLAG(IS_MAC)
 
 // Perform finalization checks once a day.
+#if !BUILDFLAG(IS_ANDROID)
 constexpr int kFinalizationChecksFrequency = 60 * 60 * 24;
+#endif
 
 // Lower bound for the randomized finalization checks interval.
 // `brave_base::random::Geometric()` is supported on nonnegative integers, so it
