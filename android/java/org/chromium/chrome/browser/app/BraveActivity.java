@@ -2687,7 +2687,6 @@ public abstract class BraveActivity extends ChromeActivity
 
     @NativeMethods
     interface Natives {
-        void restartStatsUpdater();
         String getSafeBrowsingApiKey();
     }
 
