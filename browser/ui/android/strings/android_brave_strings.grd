@@ -4029,6 +4029,13 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_SHIELDS_DOWN" desc="TV button showing site Shields disabled; activation enables them.">Shields down · Put Shields up for this site</message>
     <message name="IDS_BRAVE_TV_STANDARD" desc="TV button selecting standard ad and tracker blocking for the current site.">Standard blocking</message>
     <message name="IDS_BRAVE_TV_AGGRESSIVE" desc="TV button selecting aggressive ad and tracker blocking for the current site.">Aggressive blocking</message>
+    <message name="IDS_BRAVE_TV_HOME" desc="Title of the minimal TV new-tab page.">Home</message>
+    <message name="IDS_BRAVE_TV_HOME_TAGLINE" desc="Heading on the independent browser TV home page.">Simple, private, and ad-blocking.</message>
+    <message name="IDS_BRAVE_TV_PRIVATE_HOME" desc="Heading of the private TV new-tab page.">Private browsing</message>
+    <message name="IDS_BRAVE_TV_PRIVATE_HOME_DESCRIPTION" desc="Explains the local-data limit of a private browsing session.">Pages in this session are not saved to browsing history. Websites and your network provider can still see your activity.</message>
+    <message name="IDS_BRAVE_TV_ATTRIBUTION" desc="Upstream credit on the independent TV browser home page.">An independent, open-source fork of Brave, built on Chromium. Thanks to Brave, Chromium, and their open-source contributors.</message>
+    <message name="IDS_BRAVE_TV_SOURCE" desc="TV home button opening the public project and source repository.">Project and source on GitHub</message>
+    <message name="IDS_BRAVE_TV_LICENSES" desc="TV home button opening third-party licenses and credits.">Open-source licenses</message>
     <message name="IDS_BRAVE_TV_LAUNCHER" desc="Name of the development TV launcher entry.">TV Browser (prototype)</message>
     <message name="IDS_BRAVE_TV_ADDRESS" desc="TV control to edit the address bar.">Address or search</message>
     <message name="IDS_BRAVE_TV_POINTER" desc="TV control to move a pointer on the page.">Page cursor</message>

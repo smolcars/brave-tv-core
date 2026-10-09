@@ -275,6 +275,10 @@ public class BytecodeTest {
     @Test
     @SmallTest
     public void testClassesExist() throws Exception {
+        Assert.assertTrue(classExists("org/chromium/chrome/browser/tv/TvHomePage"));
+        Assert.assertTrue(
+                classExists(
+                        "org/chromium/chrome/browser/native_page/NativePageFactory$NativePageBuilder"));
         Assert.assertTrue(classExists("org/chromium/chrome/browser/ChromeApplicationImpl"));
         Assert.assertTrue(classExists("com/google/android/material/color/DynamicColors"));
         Assert.assertTrue(classExists("org/chromium/chrome/browser/theme/BraveDynamicColors"));
@@ -499,6 +503,22 @@ public class BytecodeTest {
     @Test
     @SmallTest
     public void testMethodsExist() throws Exception {
+        Assert.assertTrue(
+                methodExists(
+                        "org/chromium/chrome/browser/tv/TvHomePage",
+                        "createIfTelevision",
+                        MethodModifier.STATIC,
+                        org.chromium.chrome.browser.ui.native_page.NativePage.class,
+                        NativePageHost.class,
+                        org.chromium.chrome.browser.tab.Tab.class));
+        Assert.assertTrue(
+                methodExists(
+                        "org/chromium/chrome/browser/native_page/NativePageFactory$NativePageBuilder",
+                        "buildNewTabPage",
+                        MethodModifier.REGULAR,
+                        org.chromium.chrome.browser.ui.native_page.NativePage.class,
+                        org.chromium.chrome.browser.tab.Tab.class,
+                        String.class));
         Assert.assertTrue(
                 methodExists(
                         "com/google/android/material/color/DynamicColors",

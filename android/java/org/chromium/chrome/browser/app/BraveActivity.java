@@ -209,6 +209,7 @@ import org.chromium.chrome.browser.toolbar.BraveToolbarManager;
 import org.chromium.chrome.browser.toolbar.bottom.BottomToolbarConfiguration;
 import org.chromium.chrome.browser.toolbar.top.BraveToolbarLayoutImpl;
 import org.chromium.chrome.browser.tv.TvBrowserControls;
+import org.chromium.chrome.browser.tv.TvHomePage;
 import org.chromium.chrome.browser.ui.RootUiCoordinator;
 import org.chromium.chrome.browser.ui.appmenu.AppMenuPropertiesDelegate;
 import org.chromium.chrome.browser.ui.messages.snackbar.Snackbar;
@@ -383,6 +384,10 @@ public abstract class BraveActivity extends ChromeActivity
         return super.dispatchKeyEvent(event);
     }
 
+    public void showTvBrowserControls() {
+        if (mTvBrowserControls != null) mTvBrowserControls.showControls();
+    }
+
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -418,7 +423,10 @@ public abstract class BraveActivity extends ChromeActivity
                                             && (mIncognitoReauthController == null
                                                     || mIncognitoReauthController
                                                             .isIncognitoReauthPending()));
-            mTvBrowserControls.showControls();
+            Tab tab = getActivityTab();
+            if (tab != null && !(tab.getNativePage() instanceof TvHomePage)) {
+                mTvBrowserControls.showControls();
+            }
         }
 
         BraveActivityJni.get().restartStatsUpdater();

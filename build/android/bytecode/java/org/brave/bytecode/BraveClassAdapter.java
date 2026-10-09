@@ -11,6 +11,7 @@ import org.objectweb.asm.ClassVisitor;
 public class BraveClassAdapter {
     public static ClassVisitor createAdapter(ClassVisitor chain) {
         chain = new BraveActivityClassAdapter(chain);
+        chain = new TvNativePageClassAdapter(chain);
         chain = new BraveAdaptiveToolbarPrefsClassAdapter(chain);
         chain = new BraveAdaptiveToolbarStatePredictorClassAdapter(chain);
         chain = new BraveAdaptiveToolbarUiCoordinatorClassAdapter(chain);

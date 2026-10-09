@@ -97,16 +97,25 @@ final class TvBrowserPanel {
     }
 
     private MaterialButton makeButton(String label, int key, boolean enabled, Runnable action) {
-        MaterialButton button = new MaterialButton(mActivity);
+        MaterialButton button = createButton(mActivity, label, enabled, action);
+        if (enabled && mFirstAction == null) mFirstAction = button;
+        if (enabled && key == mPreferredAction) mPreferredView = button;
+        return button;
+    }
+
+    static MaterialButton createButton(
+            Activity activity, String label, boolean enabled, Runnable action) {
+        MaterialButton button = new MaterialButton(activity);
         button.setId(View.generateViewId());
         button.setText(label);
         button.setAllCaps(false);
         button.setTextSize(18);
-        button.setMinHeight(dp(56));
+        button.setMinHeight(Math.round(56 * activity.getResources().getDisplayMetrics().density));
         button.setMaxLines(2);
         button.setEllipsize(TextUtils.TruncateAt.END);
-        button.setCornerRadius(dp(12));
-        button.setStrokeWidth(dp(3));
+        button.setCornerRadius(
+                Math.round(12 * activity.getResources().getDisplayMetrics().density));
+        button.setStrokeWidth(Math.round(3 * activity.getResources().getDisplayMetrics().density));
         int primary = MaterialColors.getColor(button, R.attr.colorPrimary);
         int surface = MaterialColors.getColor(button, R.attr.colorSurface);
         int onPrimary = MaterialColors.getColor(button, R.attr.colorOnPrimary);
@@ -119,8 +128,6 @@ final class TvBrowserPanel {
         button.setFocusableInTouchMode(enabled);
         button.setAlpha(enabled ? 1f : 0.4f);
         button.setOnClickListener(view -> action.run());
-        if (enabled && mFirstAction == null) mFirstAction = button;
-        if (enabled && key == mPreferredAction) mPreferredView = button;
         return button;
     }
 
