@@ -5,14 +5,19 @@
 
 package org.chromium.chrome.browser.tv;
 
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.MaterialColors;
@@ -50,21 +55,75 @@ public final class TvHomePage extends BasicNativePage {
         mTab = tab;
         mContent = new LinearLayout(activity);
         mContent.setOrientation(LinearLayout.VERTICAL);
-        mContent.setGravity(Gravity.CENTER_VERTICAL);
-        mContent.setPadding(dp(48), dp(24), dp(48), dp(24));
-        mContent.setBackgroundColor(MaterialColors.getColor(mContent, R.attr.colorSurface));
+        mContent.setPadding(dp(52), dp(36), dp(52), dp(24));
+        int surface = MaterialColors.getColor(mContent, R.attr.colorSurface);
+        int primary = MaterialColors.getColor(mContent, R.attr.colorPrimary);
+        mContent.setBackground(
+                new GradientDrawable(
+                        GradientDrawable.Orientation.TR_BL,
+                        new int[] {ColorUtils.blendARGB(surface, primary, 0.16f), surface}));
+        TextView heading =
+                addText(
+                        tab.isIncognito()
+                                ? R.string.brave_tv_private_home
+                                : R.string.brave_tv_home_heading,
+                        36,
+                        false);
+        heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        heading.setLetterSpacing(-0.02f);
         addText(
-                tab.isIncognito() ? R.string.brave_tv_private_home : R.string.brave_tv_home_tagline,
-                28);
-        if (tab.isIncognito()) addText(R.string.brave_tv_private_home_description, 16);
+                tab.isIncognito()
+                        ? R.string.brave_tv_private_home_description
+                        : R.string.brave_tv_home_tagline,
+                18,
+                true);
+
+        LinearLayout actions = new LinearLayout(activity);
+        actions.setPadding(0, dp(24), 0, dp(8));
+        mContent.addView(actions);
         MaterialButton address =
                 addButton(
+                        actions,
                         R.string.brave_tv_address,
+                        R.drawable.ic_search,
+                        false,
+                        2,
                         () -> activity.onMenuOrKeyboardAction(R.id.focus_url_bar, false));
-        addButton(R.string.brave_tv_controls, activity::showTvBrowserControls);
-        addText(R.string.brave_tv_attribution, 16);
-        addButton(R.string.brave_tv_source, () -> open("https://github.com/smolcars/brave-tv"));
-        addButton(R.string.brave_tv_licenses, () -> open("chrome://credits"));
+        MaterialButton controls =
+                addButton(
+                        actions,
+                        R.string.brave_tv_controls,
+                        R.drawable.ic_tune,
+                        false,
+                        1,
+                        activity::showTvBrowserControls);
+        View space = new View(activity);
+        space.setMinimumHeight(dp(24));
+        mContent.addView(space, new LinearLayout.LayoutParams(1, 0, 1));
+        addText(R.string.brave_tv_attribution, 14, true);
+        LinearLayout links = new LinearLayout(activity);
+        links.setPadding(0, dp(8), 0, 0);
+        mContent.addView(links);
+        MaterialButton source =
+                addButton(
+                        links,
+                        R.string.brave_tv_source,
+                        R.drawable.ic_code,
+                        true,
+                        1,
+                        () -> open("https://github.com/smolcars/brave-tv"));
+        MaterialButton licenses =
+                addButton(
+                        links,
+                        R.string.brave_tv_licenses,
+                        R.drawable.ic_info_outline,
+                        true,
+                        1,
+                        () -> open("chrome://credits"));
+        address.setNextFocusDownId(source.getId());
+        controls.setNextFocusDownId(licenses.getId());
+        source.setNextFocusUpId(address.getId());
+        licenses.setNextFocusUpId(controls.getId());
         ScrollView scroll = new ScrollView(activity);
         scroll.setFillViewport(true);
         scroll.addView(mContent);
@@ -91,16 +150,21 @@ public final class TvHomePage extends BasicNativePage {
         return Math.round(value * mActivity.getResources().getDisplayMetrics().density);
     }
 
-    private void addText(int text, int size) {
+    private TextView addText(int text, int size, boolean secondary) {
         TextView view = new TextView(mActivity);
         view.setText(text);
         view.setTextSize(size);
-        view.setTextColor(MaterialColors.getColor(mContent, R.attr.colorOnSurface));
-        view.setPadding(dp(8), dp(12), dp(8), dp(12));
+        int foreground = MaterialColors.getColor(mContent, R.attr.colorOnSurface);
+        int surface = MaterialColors.getColor(mContent, R.attr.colorSurface);
+        view.setTextColor(
+                secondary ? ColorUtils.blendARGB(surface, foreground, 0.75f) : foreground);
+        view.setPadding(dp(4), 0, dp(4), dp(10));
         mContent.addView(view);
+        return view;
     }
 
-    private MaterialButton addButton(int label, Runnable action) {
+    private MaterialButton addButton(
+            LinearLayout row, int label, int icon, boolean compact, float weight, Runnable action) {
         MaterialButton button =
                 TvBrowserPanel.createButton(
                         mActivity,
@@ -115,11 +179,33 @@ public final class TvHomePage extends BasicNativePage {
                                 action.run();
                             }
                         });
+        int primary = MaterialColors.getColor(button, R.attr.colorPrimary);
+        int surface = MaterialColors.getColor(button, R.attr.colorSurface);
+        int onPrimary = MaterialColors.getColor(button, R.attr.colorOnPrimary);
+        int onSurface = MaterialColors.getColor(button, R.attr.colorOnSurface);
+        int[][] states = {{android.R.attr.state_focused}, {}};
+        button.setBackgroundTintList(
+                new ColorStateList(
+                        states,
+                        new int[] {primary, ColorUtils.blendARGB(surface, primary, 0.07f)}));
+        button.setStrokeColor(
+                new ColorStateList(
+                        states,
+                        new int[] {onPrimary, ColorUtils.blendARGB(surface, primary, 0.12f)}));
+        button.setIconTint(new ColorStateList(states, new int[] {onPrimary, onSurface}));
+        button.setIconResource(icon);
+        button.setIconSize(dp(compact ? 20 : 28));
+        button.setIconPadding(dp(12));
+        button.setIconGravity(MaterialButton.ICON_GRAVITY_TEXT_START);
+        button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        button.setTextSize(compact ? 15 : 20);
+        button.setMinHeight(dp(compact ? 52 : 88));
+        button.setCornerRadius(dp(compact ? 12 : 18));
+        button.setPaddingRelative(dp(compact ? 16 : 22), dp(8), dp(16), dp(8));
         LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
         params.setMargins(dp(4), dp(4), dp(4), dp(4));
-        mContent.addView(button, params);
+        row.addView(button, params);
         return button;
     }
 
