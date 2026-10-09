@@ -93,7 +93,12 @@ final class TvBrowserPanel {
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         params.setMargins(dp(4), dp(4), dp(4), dp(4));
         mContent.addView(button, params);
-        if (mFirstAction == button) mPrimaryAction = button;
+        if (mFirstAction == button) {
+            mPrimaryAction = button;
+        } else {
+            // A list uses native vertical focus; only a single primary item leads into a grid.
+            mPrimaryAction = null;
+        }
     }
 
     private MaterialButton makeButton(String label, int key, boolean enabled, Runnable action) {
