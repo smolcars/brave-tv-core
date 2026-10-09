@@ -6,7 +6,9 @@
 package org.chromium.chrome.browser.toolbar.menu_button;
 
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
+import android.view.KeyEvent;
 import android.view.View;
 
 import androidx.annotation.IdRes;
@@ -26,6 +28,7 @@ import org.chromium.chrome.browser.ui.appmenu.AppMenuCoordinator;
 import org.chromium.ui.base.WindowAndroid;
 import org.chromium.ui.modelutil.PropertyModel;
 import org.chromium.ui.modelutil.PropertyModelChangeProcessor;
+import org.chromium.ui.util.KeyboardNavigationListener;
 
 import java.util.function.Supplier;
 
@@ -66,6 +69,36 @@ public class BraveMenuButtonCoordinator extends MenuButtonCoordinator {
                 isWebApp);
 
         mActivity = windowAndroid.getActivity().get();
+        if ((activity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION) {
+            MenuButton button = activity.findViewById(menuButtonId);
+            if (button != null) {
+                button.setOnKeyListener(
+                        new KeyboardNavigationListener() {
+                            @Override
+                            public boolean onKey(View view, int keyCode, KeyEvent event) {
+                                // The upstream menu has a touch handler, but no D-pad click
+                                // handler.
+                                if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER
+                                        && event.hasNoModifiers()) {
+                                    if (event.getAction() == KeyEvent.ACTION_UP
+                                            && !event.isCanceled()
+                                            && !activity.isFinishing()
+                                            && !activity.isDestroyed()) {
+                                        onEnterKeyPress();
+                                    }
+                                    return true;
+                                }
+                                return super.onKey(view, keyCode, event);
+                            }
+
+                            @Override
+                            protected boolean handleEnterKeyPress() {
+                                return onEnterKeyPress();
+                            }
+                        });
+            }
+        }
     }
 
     @Override
