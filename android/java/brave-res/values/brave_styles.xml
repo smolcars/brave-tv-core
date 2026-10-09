@@ -512,13 +512,6 @@
         <item name="fontStyle">normal</item>
     </style>
 
-    <style name="HeadingH2">
-        <item name="android:textSize">@dimen/heading_h2</item>
-        <item name="android:textStyle">bold</item>
-        <item name="lineHeight">30sp</item>
-        <item name="fontStyle">normal</item>
-    </style>
-
     <style name="HeadingH3">
         <item name="android:textSize">@dimen/heading_h3</item>
         <item name="android:textStyle">bold</item>
@@ -725,17 +718,6 @@
     <style name="LargeFilledButton" parent="LargeButtonBase">
         <item name="android:textColor">@color/schemes_on_primary</item>
         <item name="android:background">@drawable/button_full</item>
-    </style>
-
-    <style name="LargeOutlineButton" parent="LargeButtonBase">
-        <item name="android:textColor">@color/text_interactive</item>
-        <item name="android:background">@drawable/button_outline</item>
-    </style>
-
-    <style name="BraveCheckBox" parent="Widget.MaterialComponents.CompoundButton.CheckBox">
-        <item name="buttonTint">@color/brave_checkbox_background_color_selector</item>
-        <item name="buttonIconTint">@color/brave_checkbox_color_selector</item>
-        <item name="android:textSize">@dimen/default_regular</item>
     </style>
 
     <style name="PreferenceCategory.NoTitle" parent="Preference.Category">
