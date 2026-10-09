@@ -33,6 +33,7 @@ import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelUtils;
 import org.chromium.components.browser_ui.widget.gesture.BackPressHandler;
+import org.chromium.components.embedder_support.util.UrlUtilities;
 import org.chromium.components.embedder_support.view.ContentView;
 
 import java.util.function.BooleanSupplier;
@@ -83,7 +84,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     @Override
                     public void handleOnBackPressed() {
                         if (!isAlive()) return;
-                        if (!keyboardVisible() && !nativeUiOwnsInput()) {
+                        if (!keyboardVisible() && !nativeUiOwnsInput(true)) {
                             if (!mInput.back()) showControls();
                             return;
                         }
@@ -113,11 +114,19 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
     }
 
-    private boolean nativeUiOwnsInput() {
+    private boolean nativeUiOwnsInput(boolean backToControls) {
         ContentView page = currentPage();
-        if (page == null || mScrimVisible.get()) return true;
+        Tab tab = mActivity.getActivityTab();
+        boolean idleNewTabPage =
+                backToControls
+                        && tab != null
+                        && tab.isNativePage()
+                        && UrlUtilities.isNtpUrl(tab.getUrl());
+        if ((page == null && !idleNewTabPage) || mScrimVisible.get()) return true;
+        if (mActivity.getModalDialogManager() != null
+                && mActivity.getModalDialogManager().isShowing()) return true;
         View focus = mActivity.getCurrentFocus();
-        if (focus != null && !page.hasFocus()) return true;
+        if (focus != null && page != null && !page.hasFocus()) return true;
         // CloseWatcher can outrank Find; inspect the native UI independently.
         View findToolbar = mActivity.findViewById(R.id.find_toolbar);
         if (findToolbar != null && findToolbar.isShown()) return true;
@@ -148,7 +157,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 || (device != null
                         && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC)
                 || keyboardVisible()
-                || nativeUiOwnsInput()) {
+                || nativeUiOwnsInput(false)) {
             mInput.cancelPress();
             return false;
         }
