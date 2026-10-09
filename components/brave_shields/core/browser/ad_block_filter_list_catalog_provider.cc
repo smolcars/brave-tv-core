@@ -76,21 +76,12 @@ void AdBlockFilterListCatalogProvider::LoadFilterListCatalog(
   if (component_path_.empty()) {
     if (HasBundledAdBlockData()) {
       base::ThreadPool::PostTaskAndReplyWithResult(
-          FROM_HERE, {base::MayBlock()},
+          FROM_HERE,
+          {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+           base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
           base::BindOnce(&LoadBundledAdBlockCatalog),
           base::BindOnce(
-              [](base::WeakPtr<AdBlockFilterListCatalogProvider> provider,
-                 base::OnceCallback<void(const std::string&)> callback,
-                 const std::string& catalog) {
-                if (!provider) {
-                  return;
-                }
-                if (!provider->component_path_.empty()) {
-                  provider->LoadFilterListCatalog(std::move(callback));
-                  return;
-                }
-                std::move(callback).Run(catalog);
-              },
+              &AdBlockFilterListCatalogProvider::OnBundledCatalogLoaded,
               weak_factory_.GetWeakPtr(), std::move(cb)));
       return;
     }
@@ -104,6 +95,20 @@ void AdBlockFilterListCatalogProvider::LoadFilterListCatalog(
       base::BindOnce(&brave_component_updater::GetDATFileAsString,
                      component_path_.AppendASCII(kListCatalogFile)),
       std::move(cb));
+}
+
+void AdBlockFilterListCatalogProvider::OnBundledCatalogLoaded(
+    base::OnceCallback<void(const std::string&)> callback,
+    const std::string& catalog) {
+  if (!component_path_.empty()) {
+    LoadFilterListCatalog(std::move(callback));
+    return;
+  }
+  std::move(callback).Run(catalog);
+}
+
+bool AdBlockFilterListCatalogProvider::IsUsingBundledCatalog() const {
+  return component_path_.empty() && HasBundledAdBlockData();
 }
 
 }  // namespace brave_shields

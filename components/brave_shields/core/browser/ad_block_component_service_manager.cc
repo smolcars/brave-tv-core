@@ -26,6 +26,7 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "brave/components/brave_component_updater/browser/brave_on_demand_updater.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider_manager.h"
@@ -214,6 +215,10 @@ void AdBlockComponentServiceManager::ResetProviders() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   component_filters_providers_.clear();
   LoadComponentFiltersProviders();
+  if (HasBundledAdBlockData()) {
+    filters_provider_manager_->OnChanged(true);
+    filters_provider_manager_->OnChanged(false);
+  }
 }
 
 void AdBlockComponentServiceManager::StartRegionalServices() {
@@ -248,7 +253,8 @@ void AdBlockComponentServiceManager::StartRegionalServices() {
   bool checked_all_default_regions =
       local_state_->GetBoolean(prefs::kAdBlockCheckedAllDefaultRegions);
 
-  if (!checked_all_default_regions) {
+  if (!checked_all_default_regions &&
+      !catalog_provider_->IsUsingBundledCatalog()) {
     bool checked_default_region =
         local_state_->GetBoolean(prefs::kAdBlockCheckedDefaultRegion);
     auto locale_lists = brave_shields::FindAdBlockFilterListsByLocale(
@@ -433,6 +439,10 @@ void AdBlockComponentServiceManager::EnableFilterList(const std::string& uuid,
   // Update preferences to reflect enabled/disabled state of specified
   // filter list
   UpdateFilterListPrefs(uuid, enabled);
+  if (enabled && HasBundledAdBlockFilters(catalog_entry->component_id)) {
+    filters_provider_manager_->OnChanged(
+        catalog_entry->first_party_protections);
+  }
 }
 
 void AdBlockComponentServiceManager::UpdateFilterLists(

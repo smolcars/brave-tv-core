@@ -41,6 +41,9 @@ class AdBlockDefaultResourceProvider : public AdBlockResourceProvider {
   friend class ::AdBlockServiceTest;
 
   void OnComponentReady(const base::FilePath&);
+  void OnBundledResourcesLoaded(
+      base::OnceCallback<void(AdblockResourceStorageBox)> callback,
+      AdblockResourceStorageBox storage);
 
   base::FilePath component_path_;
 

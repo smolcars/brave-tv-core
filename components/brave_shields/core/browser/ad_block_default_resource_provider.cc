@@ -79,22 +79,14 @@ void AdBlockDefaultResourceProvider::LoadResources(
   if (resources_path.empty()) {
     if (HasBundledAdBlockData()) {
       base::ThreadPool::PostTaskAndReplyWithResult(
-          FROM_HERE, {base::MayBlock()}, base::BindOnce([] {
+          FROM_HERE,
+          {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+           base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
+          base::BindOnce([] {
             return adblock::new_resource_storage(LoadBundledAdBlockResources());
           }),
           base::BindOnce(
-              [](base::WeakPtr<AdBlockDefaultResourceProvider> provider,
-                 base::OnceCallback<void(AdblockResourceStorageBox)> callback,
-                 AdblockResourceStorageBox storage) {
-                if (!provider) {
-                  return;
-                }
-                if (!provider->component_path_.empty()) {
-                  provider->LoadResources(std::move(callback));
-                  return;
-                }
-                std::move(callback).Run(std::move(storage));
-              },
+              &AdBlockDefaultResourceProvider::OnBundledResourcesLoaded,
               weak_factory_.GetWeakPtr(), std::move(cb)));
       return;
     }
@@ -116,6 +108,16 @@ void AdBlockDefaultResourceProvider::LoadResources(
             std::move(cb).Run(std::move(storage));
           },
           std::move(cb)));
+}
+
+void AdBlockDefaultResourceProvider::OnBundledResourcesLoaded(
+    base::OnceCallback<void(AdblockResourceStorageBox)> callback,
+    AdblockResourceStorageBox storage) {
+  if (!component_path_.empty()) {
+    LoadResources(std::move(callback));
+    return;
+  }
+  std::move(callback).Run(std::move(storage));
 }
 
 }  // namespace brave_shields

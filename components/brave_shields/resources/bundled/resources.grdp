@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grit-part>
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_CATALOG" file="catalog.json" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_RESOURCES" file="resources.json" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_DEFAULT" file="iodkpdagapdfkphljnddpjlldadblomo.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_PRIVACY" file="kihnoaefogbkmblfimmibknnmkllbhlf.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_FIRST_PARTY" file="adcocjohghhfpidemphmcmlmhnfgikei.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_COOKIES" file="cdbbhgbmjhfnhnmgeddbliobbofkgdhe.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_MOBILE" file="bfpgedeaaibpoidldhjcknekahbikncb.txt" type="BINDATA" compress="gzip" />
+</grit-part>

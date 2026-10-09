@@ -79,6 +79,10 @@ class AdBlockComponentFiltersProvider : public AdBlockFiltersProvider {
   friend class ::DebounceBrowserTest;
 
   void OnComponentReady(const base::FilePath&);
+  void OnBundledFiltersLoaded(
+      base::OnceCallback<void(
+          base::OnceCallback<void(rust::Box<adblock::FilterSet>*)>)> callback,
+      DATFileDataBuffer data);
 
   base::FilePath component_path_;
   std::string component_id_;

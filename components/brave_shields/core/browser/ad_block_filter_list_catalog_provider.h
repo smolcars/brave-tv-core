@@ -40,6 +40,7 @@ class AdBlockFilterListCatalogProvider {
 
   void LoadFilterListCatalog(
       base::OnceCallback<void(const std::string& catalog_json)>);
+  bool IsUsingBundledCatalog() const;
 
   void AddObserver(Observer* observer);
   void RemoveObserver(Observer* observer);
@@ -47,6 +48,9 @@ class AdBlockFilterListCatalogProvider {
  private:
   void OnFilterListCatalogLoaded(const std::string& catalog_json);
   void OnComponentReady(const base::FilePath&);
+  void OnBundledCatalogLoaded(
+      base::OnceCallback<void(const std::string&)> callback,
+      const std::string& catalog);
 
   base::FilePath component_path_;
 

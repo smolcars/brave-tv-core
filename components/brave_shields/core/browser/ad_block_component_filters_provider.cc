@@ -146,7 +146,9 @@ void AdBlockComponentFiltersProvider::LoadFilterSet(
   if (list_file_path.empty()) {
     if (HasBundledAdBlockFilters(component_id_)) {
       base::ThreadPool::PostTaskAndReplyWithResult(
-          FROM_HERE, {base::MayBlock()},
+          FROM_HERE,
+          {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+           base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
           base::BindOnce(
               [](const std::string& component_id) {
                 const auto data = LoadBundledAdBlockFilters(component_id);
@@ -154,21 +156,8 @@ void AdBlockComponentFiltersProvider::LoadFilterSet(
               },
               component_id_),
           base::BindOnce(
-              [](base::WeakPtr<AdBlockComponentFiltersProvider> provider,
-                 decltype(cb) callback, const perfetto::Flow& flow,
-                 DATFileDataBuffer data) {
-                if (!provider) {
-                  return;
-                }
-                if (!provider->component_path_.empty()) {
-                  provider->LoadFilterSet(std::move(callback));
-                  return;
-                }
-                OnReadDATFileData(std::move(callback),
-                                  provider->permission_mask_, flow,
-                                  std::move(data));
-              },
-              weak_factory_.GetWeakPtr(), std::move(cb), flow));
+              &AdBlockComponentFiltersProvider::OnBundledFiltersLoaded,
+              weak_factory_.GetWeakPtr(), std::move(cb)));
       return;
     }
     // If the path is not ready yet, provide a no-op callback immediately. An
@@ -182,6 +171,19 @@ void AdBlockComponentFiltersProvider::LoadFilterSet(
       base::BindOnce(&brave_component_updater::ReadDATFileData, list_file_path),
       base::BindOnce(&OnReadDATFileData, std::move(cb), permission_mask_,
                      flow));
+}
+
+void AdBlockComponentFiltersProvider::OnBundledFiltersLoaded(
+    base::OnceCallback<void(
+        base::OnceCallback<void(rust::Box<adblock::FilterSet>*)>)> callback,
+    DATFileDataBuffer data) {
+  if (!component_path_.empty()) {
+    LoadFilterSet(std::move(callback));
+    return;
+  }
+  OnReadDATFileData(std::move(callback), permission_mask_,
+                    perfetto::Flow::ProcessScoped(base::RandUint64()),
+                    std::move(data));
 }
 
 }  // namespace brave_shields
