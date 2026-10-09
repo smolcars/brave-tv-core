@@ -4012,6 +4012,16 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_PREVIOUS" desc="TV button for the previous page of browser tabs.">Previous tabs</message>
     <message name="IDS_BRAVE_TV_NEXT" desc="TV button for the next page of browser tabs.">More tabs</message>
     <message name="IDS_BRAVE_TV_BOOKMARKS" desc="TV button to open saved browser bookmarks.">Bookmarks</message>
+    <message name="IDS_BRAVE_TV_LOADING_BOOKMARKS" desc="Status text while the TV bookmark panel waits for saved bookmarks.">Loading bookmarks…</message>
+    <message name="IDS_BRAVE_TV_EMPTY_BOOKMARKS" desc="Description of an empty folder in the TV bookmark panel.">No bookmarks in this folder</message>
+    <message name="IDS_BRAVE_TV_SAVE_BOOKMARK" desc="TV button to save the current webpage as a bookmark.">Bookmark this page</message>
+    <message name="IDS_BRAVE_TV_PARENT_FOLDER" desc="TV button to move up one bookmark folder.">Parent folder</message>
+    <message name="IDS_BRAVE_TV_BOOKMARK_FOLDER" desc="TV bookmark list label distinguishing a folder from a webpage.">Folder: <ph name="TITLE">%s<ex>Mobile bookmarks</ex></ph></message>
+    <message name="IDS_BRAVE_TV_PREVIOUS_BOOKMARKS" desc="TV button for the previous page of saved bookmarks.">Previous bookmarks</message>
+    <message name="IDS_BRAVE_TV_MORE_BOOKMARKS" desc="TV button for the next page of saved bookmarks.">More bookmarks</message>
+    <message name="IDS_BRAVE_TV_OPEN_BOOKMARK" desc="TV button to open the selected saved webpage in the current tab.">Open bookmark</message>
+    <message name="IDS_BRAVE_TV_REMOVE_BOOKMARK" desc="TV button to remove the selected saved webpage from bookmarks.">Remove bookmark</message>
+    <message name="IDS_BRAVE_TV_REMOVE_BOOKMARK_QUESTION" desc="Title of the TV confirmation panel for deleting one bookmark.">Remove this bookmark?</message>
     <message name="IDS_BRAVE_TV_HISTORY" desc="TV button to open normal browsing history.">History</message>
     <message name="IDS_BRAVE_TV_SETTINGS" desc="TV button to open browser settings.">Settings</message>
     <message name="IDS_BRAVE_TV_SHIELDS" desc="TV button and panel title for current-site protection settings.">Shields</message>
