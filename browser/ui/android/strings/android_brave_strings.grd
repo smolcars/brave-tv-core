@@ -3966,6 +3966,17 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_REMOVE_HISTORY_QUESTION" desc="TV confirmation for removing a selected URL's grouped visits from history.">Remove these visits from history?</message>
     <message name="IDS_BRAVE_TV_REMOVING_HISTORY" desc="TV history removal in progress.">Removing visits…</message>
     <message name="IDS_BRAVE_TV_HISTORY_REMOVE_FAILED" desc="TV history removal failed and may be retried.">Could not remove these visits. Try again.</message>
+    <message name="IDS_BRAVE_TV_CLEAR_DATA" desc="TV settings entry for privacy clearing.">Clear browsing data</message>
+    <message name="IDS_BRAVE_TV_CLEAR_DATA_SCOPE" desc="Scope of TV privacy operations.">All time. Choose one type of data to clear.</message>
+    <message name="IDS_BRAVE_TV_CLEARING_DATA" desc="Progress shown while native clearing is pending.">Clearing data…</message>
+    <message name="IDS_BRAVE_TV_CLEARED_DATA" desc="Native clear operation completion.">Finished clearing the selected data.</message>
+    <message name="IDS_BRAVE_TV_CLEAR_HISTORY" desc="TV action to remove browsing history.">Browsing history</message>
+    <message name="IDS_BRAVE_TV_CLEAR_COOKIES" desc="TV action to remove cookies and other site storage.">Cookies and site data</message>
+    <message name="IDS_BRAVE_TV_CLEAR_CACHE" desc="TV action to remove cached files.">Cached files</message>
+    <message name="IDS_BRAVE_TV_CLEAR_HISTORY_SCOPE" desc="Confirmation scope for deleting normal browsing history.">Delete browsing history for all time. Bookmarks and passwords stay saved.</message>
+    <message name="IDS_BRAVE_TV_CLEAR_COOKIES_SCOPE" desc="Confirmation scope and sign-out warning for deleting site storage.">Delete cookies and site data for all time. This signs you out of most sites.</message>
+    <message name="IDS_BRAVE_TV_CLEAR_CACHE_SCOPE" desc="Confirmation scope for deleting cached resources.">Delete cached files for all time. Sites may load more slowly next time.</message>
+    <message name="IDS_BRAVE_TV_CLEAR_CONFIRM" desc="Explicit destructive confirmation for the selected data type.">Clear now</message>
     <message name="IDS_BRAVE_TV_SETTINGS" desc="TV button to open browser settings.">Settings</message>
     <message name="IDS_BRAVE_TV_SHIELDS" desc="TV button and panel title for current-site protection settings.">Site protection</message>
     <message name="IDS_BRAVE_TV_SHIELDS_UP" desc="TV button showing site protection enabled; activation disables it.">Protection on · Turn off for this site</message>

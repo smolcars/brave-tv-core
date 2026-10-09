@@ -31,7 +31,11 @@ import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.back_press.BackPressManager;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
+import org.chromium.chrome.browser.browsing_data.BrowsingDataBridge;
+import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
+import org.chromium.chrome.browser.browsing_data.TimePeriod;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
+import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
 import org.chromium.chrome.browser.search_engines.settings.BraveSearchEngineAdapter;
@@ -45,6 +49,7 @@ import org.chromium.components.embedder_support.util.UrlUtilities;
 import org.chromium.components.embedder_support.view.ContentView;
 import org.chromium.components.search_engines.TemplateUrl;
 import org.chromium.components.search_engines.TemplateUrlService;
+import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.ui.base.PageTransition;
 
@@ -66,6 +71,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
+    private @Nullable CallbackController mClearDataCallbacks;
+    private boolean mClearingData;
     private int mLastAction = R.string.brave_tv_address;
     private String mPressedUrl = "";
     private boolean mDestroyed;
@@ -284,6 +291,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void dismissDialog() {
+        if (mClearDataCallbacks != null) {
+            mClearDataCallbacks.destroy();
+            mClearDataCallbacks = null;
+        }
         if (mHistoryPanel != null) {
             mHistoryPanel.destroy();
             mHistoryPanel = null;
@@ -676,6 +687,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 mActivity.getString(R.string.brave_tv_search_engine),
                 R.string.brave_tv_search_engine,
                 () -> showSearchEngines(tab, url));
+        if (!tab.isIncognito()) {
+            panel.addItem(
+                    mActivity.getString(R.string.brave_tv_clear_data),
+                    R.string.brave_tv_clear_data,
+                    () -> showClearData(tab, url, false));
+        }
         panel.addItem(
                 mActivity.getString(R.string.brave_tv_licenses),
                 R.string.brave_tv_licenses,
@@ -686,6 +703,95 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 });
         panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
         mDialog = panel.show(this::returnToControls);
+    }
+
+    private boolean canClearData(Tab tab, String url, int type) {
+        return tabContextValid(tab, url)
+                && !tab.isIncognito()
+                && !mClearingData
+                && (type != BrowsingDataType.HISTORY
+                        || UserPrefs.get(tab.getProfile())
+                                .getBoolean(Pref.ALLOW_DELETING_BROWSER_HISTORY));
+    }
+
+    private void showClearData(Tab tab, String url, boolean completed) {
+        if (!tabContextValid(tab, url) || tab.isIncognito()) return;
+        dismissDialog();
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_clear_data),
+                        mActivity.getString(
+                                mClearingData
+                                        ? R.string.brave_tv_clearing_data
+                                        : completed
+                                                ? R.string.brave_tv_cleared_data
+                                                : R.string.brave_tv_clear_data_scope),
+                        R.string.brave_tv_settings);
+        panel.addAction(
+                R.string.brave_tv_clear_history,
+                canClearData(tab, url, BrowsingDataType.HISTORY),
+                () ->
+                        confirmClearData(
+                                tab,
+                                url,
+                                BrowsingDataType.HISTORY,
+                                R.string.brave_tv_clear_history,
+                                R.string.brave_tv_clear_history_scope));
+        panel.addAction(
+                R.string.brave_tv_clear_cookies,
+                canClearData(tab, url, BrowsingDataType.SITE_DATA),
+                () ->
+                        confirmClearData(
+                                tab,
+                                url,
+                                BrowsingDataType.SITE_DATA,
+                                R.string.brave_tv_clear_cookies,
+                                R.string.brave_tv_clear_cookies_scope));
+        panel.addAction(
+                R.string.brave_tv_clear_cache,
+                canClearData(tab, url, BrowsingDataType.CACHE),
+                () ->
+                        confirmClearData(
+                                tab,
+                                url,
+                                BrowsingDataType.CACHE,
+                                R.string.brave_tv_clear_cache,
+                                R.string.brave_tv_clear_cache_scope));
+        panel.addAction(R.string.brave_tv_settings, true, this::showSettings);
+        mDialog = panel.show(this::showSettings);
+    }
+
+    private void confirmClearData(Tab tab, String url, int type, int title, int scope) {
+        if (!canClearData(tab, url, type)) return;
+        dismissDialog();
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(title),
+                        mActivity.getString(scope),
+                        R.string.cancel);
+        panel.addAction(R.string.cancel, true, () -> showClearData(tab, url, false));
+        panel.addAction(
+                R.string.brave_tv_clear_confirm,
+                true,
+                () -> {
+                    if (!canClearData(tab, url, type)) return;
+                    mClearingData = true;
+                    showClearData(tab, url, false);
+                    mClearDataCallbacks = new CallbackController();
+                    Runnable onComplete =
+                            mClearDataCallbacks.makeCancelable(() -> showClearData(tab, url, true));
+                    BrowsingDataBridge.getForProfile(tab.getProfile())
+                            .clearBrowsingData(
+                                    () -> {
+                                        mClearingData = false;
+                                        onComplete.run();
+                                    },
+                                    new int[] {type},
+                                    TimePeriod.ALL_TIME);
+                });
+        mDialog = panel.show(() -> showClearData(tab, url, false));
     }
 
     private void showSearchEngines(Tab tab, String url) {
