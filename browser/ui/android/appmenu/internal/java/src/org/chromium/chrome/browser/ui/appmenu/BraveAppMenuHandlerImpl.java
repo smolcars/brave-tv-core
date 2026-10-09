@@ -6,6 +6,7 @@
 package org.chromium.chrome.browser.ui.appmenu;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Rect;
 import android.view.View;
 
@@ -23,6 +24,9 @@ import java.util.function.Supplier;
  */
 @NullMarked
 class BraveAppMenuHandlerImpl extends AppMenuHandlerImpl {
+    private final Context mTvContext;
+    private final AppMenuDelegate mTvDelegate;
+
     /** Will be deleted in bytecode, value from the parent class will be used instead. */
     private @Nullable AppMenu mAppMenu;
 
@@ -51,10 +55,18 @@ class BraveAppMenuHandlerImpl extends AppMenuHandlerImpl {
                 windowAndroid,
                 browserControlsStateProvider,
                 submenuHeaderMenuId);
+        mTvContext = context;
+        mTvDelegate = appMenuDelegate;
     }
 
     @Override
     public boolean showAppMenu(@Nullable View anchorView, boolean startDragging) {
+        if ((mTvContext.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                        == Configuration.UI_MODE_TYPE_TELEVISION
+                && mTvDelegate instanceof TvMenuDelegate delegate) {
+            delegate.showTvBrowserControls();
+            return true;
+        }
         final boolean show = super.showAppMenu(anchorView, startDragging);
         if (show) {
             assert mAppMenuDragHelper != null;

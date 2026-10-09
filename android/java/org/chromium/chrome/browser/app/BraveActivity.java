@@ -172,7 +172,6 @@ import org.chromium.chrome.browser.preferences.BravePref;
 import org.chromium.chrome.browser.preferences.BravePrefServiceBridge;
 import org.chromium.chrome.browser.preferences.ChromePreferenceKeys;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
-import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.preferences.PrefServiceUtil;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.prefetch.settings.PreloadPagesSettingsBridge;
@@ -212,6 +211,7 @@ import org.chromium.chrome.browser.tv.TvBrowserControls;
 import org.chromium.chrome.browser.tv.TvHomePage;
 import org.chromium.chrome.browser.ui.RootUiCoordinator;
 import org.chromium.chrome.browser.ui.appmenu.AppMenuPropertiesDelegate;
+import org.chromium.chrome.browser.ui.appmenu.TvMenuDelegate;
 import org.chromium.chrome.browser.ui.messages.snackbar.Snackbar;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager.SnackbarController;
@@ -273,7 +273,8 @@ public abstract class BraveActivity extends ChromeActivity
                 QuickSearchEnginesCallback,
                 KeyboardVisibilityHelper.KeyboardVisibilityListener,
                 OnSharedPreferenceChangeListener,
-                FirstPartyStorageCleanerInterface {
+                FirstPartyStorageCleanerInterface,
+                TvMenuDelegate {
     public static final String BRAVE_WALLET_HOST = "wallet";
     public static final String BRAVE_WALLET_ORIGIN = "brave://wallet/";
     public static final String BRAVE_WALLET_URL = "brave://wallet/crypto/portfolio/assets";
@@ -384,6 +385,7 @@ public abstract class BraveActivity extends ChromeActivity
                 == Configuration.UI_MODE_TYPE_TELEVISION;
     }
 
+    @Override
     public void showTvBrowserControls() {
         if (mTvBrowserControls != null) mTvBrowserControls.showControls();
     }
@@ -427,6 +429,17 @@ public abstract class BraveActivity extends ChromeActivity
             }
         }
 
+        BraveSafeBrowsingApiHandler.getInstance()
+                .setDelegate(BraveActivityJni.get().getSafeBrowsingApiKey(), this);
+
+        // We can store a state of that flag as a browser has to be restarted
+        // when the flag state is changed in any case
+        mSafeBrowsingFlagEnabled =
+                ChromeFeatureList.isEnabled(BraveFeatureList.BRAVE_ANDROID_SAFE_BROWSING);
+
+        executeInitSafeBrowsing(0);
+
+        getYouTubePictureInPictureController().onResume();
         if (isTelevision()) return;
         if (BraveVpnUtils.isVpnFeatureSupported(BraveActivity.this)) {
             BraveVpnNativeWorker.getInstance().addObserver(this);
@@ -455,16 +468,6 @@ public abstract class BraveActivity extends ChromeActivity
             FullScreenCustomTabActivity.sIsFullScreenCustomTabActivityClosed = false;
         }
 
-        BraveSafeBrowsingApiHandler.getInstance()
-                .setDelegate(BraveActivityJni.get().getSafeBrowsingApiKey(), this);
-
-        // We can store a state of that flag as a browser has to be restarted
-        // when the flag state is changed in any case
-        mSafeBrowsingFlagEnabled =
-                ChromeFeatureList.isEnabled(BraveFeatureList.BRAVE_ANDROID_SAFE_BROWSING);
-
-        executeInitSafeBrowsing(0);
-
         if (mAppUpdateManager == null) {
             mAppUpdateManager = AppUpdateManagerFactory.create(BraveActivity.this);
         }
@@ -488,7 +491,6 @@ public abstract class BraveActivity extends ChromeActivity
             }
         }
 
-        getYouTubePictureInPictureController().onResume();
         Profile profile = mTabModelProfileSupplier.get();
         if (profile != null) {
             InAppPurchaseWrapper.getInstance()
@@ -1329,8 +1331,18 @@ public abstract class BraveActivity extends ChromeActivity
         boolean isFirstInstall = PackageUtils.isFirstInstall(this);
         BraveHelper.maybeMigrateSettings();
         if (isTelevision()) {
-            PreloadPagesSettingsBridge.setState(getCurrentProfile(), PreloadPagesState.NO_PRELOADING);
+            PreloadPagesSettingsBridge.setState(
+                    getCurrentProfile(), PreloadPagesState.NO_PRELOADING);
             checkFingerPrintingOnUpgrade(isFirstInstall);
+            // This legacy value also gates the one-time fingerprinting migration.
+            if (ChromeSharedPreferences.getInstance()
+                            .readInt(BravePreferenceKeys.BRAVE_APP_OPEN_COUNT)
+                    == 0) {
+                ChromeSharedPreferences.getInstance()
+                        .writeInt(BravePreferenceKeys.BRAVE_APP_OPEN_COUNT, 1);
+            }
+            ContextUtils.getAppSharedPreferences().registerOnSharedPreferenceChangeListener(this);
+            clearBrowsingDataOnColdStart();
             mNativeInitialized = true;
             return;
         }
@@ -1641,6 +1653,10 @@ public abstract class BraveActivity extends ChromeActivity
 
         ContextUtils.getAppSharedPreferences().registerOnSharedPreferenceChangeListener(this);
 
+        clearBrowsingDataOnColdStart();
+    }
+
+    private void clearBrowsingDataOnColdStart() {
         // Clear only on a real cold start; otherwise a fold/unfold recreation would re-run
         // this and wipe history/site data/cache mid-session. Use mIsColdStart (captured in
         // initializeState()) since getSavedInstanceState() is already reset to null here.
@@ -1654,15 +1670,18 @@ public abstract class BraveActivity extends ChromeActivity
             PostTask.postTask(
                     TaskTraits.UI_DEFAULT,
                     () -> {
+                        if (isActivityFinishingOrDestroyed()) return;
                         // Force-initialize ShortcutsBackend before clearing so that
                         // OnHistoryDeletions reaches an initialized backend and correctly
                         // removes omnibox shortcut suggestions.
                         BraveShortcutsUtils.initThenRun(
                                 getCurrentProfile(),
-                                () ->
-                                        BrowsingDataBridge.getForProfile(getCurrentProfile())
-                                                .clearBrowsingData(
-                                                        this, dataTypesArray, TimePeriod.ALL_TIME));
+                                () -> {
+                                    if (isActivityFinishingOrDestroyed()) return;
+                                    BrowsingDataBridge.getForProfile(getCurrentProfile())
+                                            .clearBrowsingData(
+                                                    this, dataTypesArray, TimePeriod.ALL_TIME);
+                                });
                     });
         }
     }
