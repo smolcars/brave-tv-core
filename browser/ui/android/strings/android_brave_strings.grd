@@ -4046,7 +4046,6 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_ADDRESS" desc="TV control to edit the address bar.">Address or search</message>
     <message name="IDS_BRAVE_TV_POINTER" desc="TV control to move a pointer on the page.">Page cursor</message>
     <message name="IDS_BRAVE_TV_SCROLL" desc="TV control to scroll at the pointer position.">Scroll page</message>
-    <message name="IDS_BRAVE_TV_MENU" desc="TV control to open the existing browser menu.">Browser menu</message>
     <message name="IDS_BRAVE_TV_RELOAD" desc="TV control to reload the current page.">Reload page</message>
     <message name="IDS_BRAVE_TV_POINTER_HINT" desc="Remote button hints for pointer mode.">D-pad: move · OK: click · Back: controls</message>
     <message name="IDS_BRAVE_TV_SCROLL_HINT" desc="Remote button hints for scroll mode.">D-pad: scroll · OK: cursor · Back: controls</message>

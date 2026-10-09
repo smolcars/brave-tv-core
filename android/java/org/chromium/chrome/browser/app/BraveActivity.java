@@ -241,8 +241,6 @@ import org.chromium.components.omnibox.AutocompleteRequestType;
 import org.chromium.components.prefs.PrefChangeRegistrar;
 import org.chromium.components.prefs.PrefChangeRegistrar.PrefObserver;
 import org.chromium.components.safe_browsing.BraveSafeBrowsingApiHandler;
-import org.chromium.components.search_engines.TemplateUrl;
-import org.chromium.components.search_engines.TemplateUrlService;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
@@ -308,7 +306,6 @@ public abstract class BraveActivity extends ChromeActivity
 
     public static final String GOOGLE_SEARCH_ENGINE_KEYWORD = ":g";
     public static final String YOUTUBE_SEARCH_ENGINE_KEYWORD = ":yt";
-    public static final String BRAVE_SEARCH_ENGINE_KEYWORD = ":br";
     public static final String BING_SEARCH_ENGINE_KEYWORD = ":b";
     public static final String STARTPAGE_SEARCH_ENGINE_KEYWORD = ":sp";
 
@@ -320,8 +317,6 @@ public abstract class BraveActivity extends ChromeActivity
     private SettableMonotonicObservableSupplier<BrowserControlsManager>
             mBrowserControlsManagerSupplier;
 
-    private static final List<String> sYandexRegions =
-            Arrays.asList("AM", "AZ", "BY", "KG", "KZ", "MD", "RU", "TJ", "TM", "UZ");
 
     private static final int PIP_UPDATE_DELAY_MS = 500;
     private boolean mIsVerification;
@@ -1319,8 +1314,6 @@ public abstract class BraveActivity extends ChromeActivity
 
         boolean isFirstInstall = PackageUtils.isFirstInstall(this);
 
-        String countryCode = Locale.getDefault().getCountry();
-
         BraveVpnNativeWorker.getInstance().reloadPurchasedState();
 
         BraveHelper.maybeMigrateSettings();
@@ -1372,21 +1365,6 @@ public abstract class BraveActivity extends ChromeActivity
                         .readInt(BravePreferenceKeys.BRAVE_APP_OPEN_COUNT);
         ChromeSharedPreferences.getInstance()
                 .writeInt(BravePreferenceKeys.BRAVE_APP_OPEN_COUNT, appOpenCount + 1);
-
-        if (isFirstInstall && appOpenCount == 0) {
-            checkForYandexSE();
-            enableSearchSuggestions();
-            setBraveAsDefaultPrivateMode();
-        }
-
-        if (!isFirstInstall
-                && countryCode.equals(BraveConstants.JAPAN_COUNTRY_CODE)
-                && !ChromeSharedPreferences.getInstance()
-                        .readBoolean(
-                                BravePreferenceKeys.BRAVE_DEFAULT_SEARCH_ENGINE_MIGRATED_JP,
-                                false)) {
-            applyChangesForYahooJp();
-        }
 
         BraveSetDefaultBrowserUtils.checkForBraveSetDefaultBrowser(
                 appOpenCount, BraveActivity.this);
@@ -1669,64 +1647,6 @@ public abstract class BraveActivity extends ChromeActivity
         }
     }
 
-    private void applyChangesForYahooJp() {
-        boolean isDefaultSearchEngineChanged =
-                ChromeSharedPreferences.getInstance()
-                        .readBoolean(BravePreferenceKeys.DEFAULT_SEARCH_ENGINE_CHANGED, false);
-        TemplateUrlService templateUrlService =
-                TemplateUrlServiceFactory.getForProfile(getCurrentProfile());
-        Runnable onTemplateUrlServiceReady =
-                () -> {
-                    if (ChromeSharedPreferences.getInstance()
-                            .readBoolean(BravePreferenceKeys.SEARCH_CHOICE_SCREEN_INSTALL, false)) {
-                        // If the install originated from the Search Choice Screen, keep Brave as
-                        // default
-                        return;
-                    }
-                    if (isActivityFinishingOrDestroyed()) return;
-                    TemplateUrl yahooJpTemplateUrl =
-                            BraveSearchEngineUtils.getTemplateUrlByShortName(
-                                    getCurrentProfile(), OnboardingPrefManager.YAHOO_JP);
-                    if (yahooJpTemplateUrl != null
-                            && !isDefaultSearchEngineChanged
-                            && templateUrlService.isDefaultSearchEngineGoogle()) {
-                        BraveSearchEngineUtils.setDSEPrefs(yahooJpTemplateUrl, getCurrentProfile());
-                        ChromeSharedPreferences.getInstance()
-                                .writeBoolean(
-                                        BravePreferenceKeys.BRAVE_DEFAULT_SEARCH_ENGINE_MIGRATED_JP,
-                                        true);
-                    }
-                };
-        templateUrlService.runWhenLoaded(onTemplateUrlServiceReady);
-    }
-
-    private void setBraveAsDefaultPrivateMode() {
-        Runnable onTemplateUrlServiceReady =
-                () -> {
-                    if (isActivityFinishingOrDestroyed()) return;
-                    TemplateUrl braveTemplateUrl =
-                            BraveSearchEngineUtils.getTemplateUrlByShortName(
-                                    getCurrentProfile(), OnboardingPrefManager.BRAVE);
-                    if (braveTemplateUrl != null) {
-                        BraveSearchEngineUtils.setPrivateDSEPrefs(braveTemplateUrl);
-                    }
-                };
-        TemplateUrlServiceFactory.getForProfile(getCurrentProfile())
-                .runWhenLoaded(onTemplateUrlServiceReady);
-    }
-
-    private void enableSearchSuggestions() {
-        TemplateUrl defaultSearchEngineTemplateUrl =
-                BraveSearchEngineUtils.getTemplateUrlByShortName(
-                        getCurrentProfile(),
-                        BraveSearchEngineUtils.getDSEShortName(getCurrentProfile(), false));
-        if (defaultSearchEngineTemplateUrl != null
-                && BRAVE_SEARCH_ENGINE_KEYWORD.equals(
-                        defaultSearchEngineTemplateUrl.getKeyword())) {
-            UserPrefs.get(getCurrentProfile()).setBoolean(Pref.SEARCH_SUGGEST_ENABLED, true);
-        }
-    }
-
     private void setInAppUpdateTiming() {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());
@@ -1982,24 +1902,6 @@ public abstract class BraveActivity extends ChromeActivity
 
     public MiscAndroidMetrics getMiscAndroidMetrics() {
         return mMiscAndroidMetrics;
-    }
-
-    private void checkForYandexSE() {
-        if (ChromeSharedPreferences.getInstance()
-                .readBoolean(BravePreferenceKeys.SEARCH_CHOICE_SCREEN_INSTALL, false)) {
-            // If the install originated from the Search Choice Screen, keep Brave as default
-            return;
-        }
-        String countryCode = Locale.getDefault().getCountry();
-        if (sYandexRegions.contains(countryCode)) {
-            Profile lastUsedRegularProfile = ProfileManager.getLastUsedRegularProfile();
-            TemplateUrl yandexTemplateUrl =
-                    BraveSearchEngineUtils.getTemplateUrlByShortName(
-                            lastUsedRegularProfile, OnboardingPrefManager.YANDEX);
-            if (yandexTemplateUrl != null) {
-                BraveSearchEngineUtils.setDSEPrefs(yandexTemplateUrl, lastUsedRegularProfile);
-            }
-        }
     }
 
     private void checkForNotificationData() {
