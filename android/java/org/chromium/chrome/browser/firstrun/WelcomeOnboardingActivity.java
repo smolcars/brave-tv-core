@@ -668,12 +668,14 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase
     @Override
     public void onCrashReportingPreferenceChanged(final boolean enabled) {
         mCrashReportingChecked = enabled;
+        mStepAdapter.setCrashReportingChecked(enabled);
         setMetricsReportingConsent(enabled, false);
     }
 
     @Override
     public void onP3aPreferenceChanged(final boolean enabled) {
         mP3aChecked = enabled;
+        mStepAdapter.setP3aChecked(enabled);
         setP3aConsent(enabled);
     }
 }
