@@ -35,11 +35,14 @@ import org.chromium.chrome.browser.tabmodel.TabModelUtils;
 import org.chromium.components.browser_ui.widget.gesture.BackPressHandler;
 import org.chromium.components.embedder_support.view.ContentView;
 
+import java.util.function.BooleanSupplier;
+
 /** TV-only adapter around the existing browser UI and the active Chromium content view. */
 public final class TvBrowserControls implements TvRemoteInput.Target {
     private final BraveActivity mActivity;
     private final BackPressManager mBackPressManager;
     private final NonNullObservableSupplier<Boolean> mScrimVisible;
+    private final BooleanSupplier mPrivateTabsLocked;
     private final TvRemoteInput mInput;
     private final Cursor mCursor;
     private final View mCursorView;
@@ -63,10 +66,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     public TvBrowserControls(
             BraveActivity activity,
             BackPressManager backPressManager,
-            NonNullObservableSupplier<Boolean> scrimVisible) {
+            NonNullObservableSupplier<Boolean> scrimVisible,
+            BooleanSupplier privateTabsLocked) {
         mActivity = activity;
         mBackPressManager = backPressManager;
         mScrimVisible = scrimVisible;
+        mPrivateTabsLocked = privateTabsLocked;
         float density = activity.getResources().getDisplayMetrics().density;
         mInput = new TvRemoteInput(this, Math.max(1, Math.round(16 * density)));
         mCursor = new Cursor(density);
@@ -191,12 +196,28 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (!focused) mInput.cancelPress();
     }
 
+    public void onPause() {
+        dismissDialog();
+        detachCursor();
+    }
+
+    private boolean canAccessTabs(boolean incognito) {
+        if (!incognito || !mPrivateTabsLocked.getAsBoolean()) return true;
+        dismissDialog();
+        if (mActivity.areTabModelsInitialized()) {
+            // Selecting the model invokes the existing native unlock flow.
+            mActivity.getTabModelSelector().selectModel(true);
+        }
+        return false;
+    }
+
     @Override
     public void showControls() {
         if (!isAlive()) return;
         detachCursor();
         if (mDialog != null && mDialog.isShowing()) return;
         Tab tab = mActivity.getActivityTab();
+        if (!canAccessTabs(tab != null && tab.isIncognito())) return;
         String url = currentUrl();
         TvBrowserPanel panel =
                 new TvBrowserPanel(
@@ -250,6 +271,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             showControls();
             return;
         }
+        if (!canAccessTabs(tab != null && tab.isIncognito())) return;
         performAction(action);
     }
 
@@ -269,6 +291,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private void showTabs(boolean incognito, int start) {
         if (!isAlive() || !mActivity.areTabModelsInitialized()) return;
         dismissDialog();
+        if (!canAccessTabs(incognito)) return;
         TabModel model = mActivity.getTabModelSelector().getModel(incognito);
         TvBrowserPanel panel =
                 new TvBrowserPanel(
@@ -283,7 +306,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 R.string.brave_tv_new_tab,
                 true,
                 () -> {
-                    if (!isAlive()) return;
+                    if (!isAlive() || !canAccessTabs(incognito)) return;
                     dismissDialog();
                     mActivity.onMenuOrKeyboardAction(
                             incognito ? R.id.new_incognito_tab_menu_id : R.id.new_tab_menu_id,
@@ -311,6 +334,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     tabId,
                     () -> {
                         if (!isAlive() || !mActivity.areTabModelsInitialized()) return;
+                        if (!canAccessTabs(incognito)) return;
                         TabModel currentModel = mActivity.getTabModelSelector().getModel(incognito);
                         int index = TabModelUtils.getTabIndexById(currentModel, tabId);
                         if (index == TabModel.INVALID_TAB_INDEX) {
@@ -443,7 +467,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             mActivity.onMenuOrKeyboardAction(R.id.preferences_id, false);
         } else if (action == R.string.brave_tv_close_tab) {
             mActivity.onMenuOrKeyboardAction(R.id.close_tab, false);
-            showControls();
         } else {
             Tab tab = mActivity.getActivityTab();
             if (tab == null || tab.isDestroyed()) return;

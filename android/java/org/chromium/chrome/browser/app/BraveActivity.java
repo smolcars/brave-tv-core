@@ -411,7 +411,12 @@ public abstract class BraveActivity extends ChromeActivity
                     new TvBrowserControls(
                             this,
                             mBackPressManager,
-                            mRootUiCoordinator.getScrimManager().getScrimVisibilitySupplier());
+                            mRootUiCoordinator.getScrimManager().getScrimVisibilitySupplier(),
+                            () ->
+                                    IncognitoReauthManager.isIncognitoReauthFeatureAvailable()
+                                            && (mIncognitoReauthController == null
+                                                    || mIncognitoReauthController
+                                                            .isIncognitoReauthPending()));
             mTvBrowserControls.showControls();
         }
 
@@ -486,7 +491,7 @@ public abstract class BraveActivity extends ChromeActivity
 
     @Override
     public void onPauseWithNative() {
-        if (mTvBrowserControls != null) mTvBrowserControls.onWindowFocusChanged(false);
+        if (mTvBrowserControls != null) mTvBrowserControls.onPause();
         if (mUsageMonitor != null) {
             mUsageMonitor.stop();
         }
