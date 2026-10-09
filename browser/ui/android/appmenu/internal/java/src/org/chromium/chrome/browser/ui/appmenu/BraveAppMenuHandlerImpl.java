@@ -5,6 +5,7 @@
 
 package org.chromium.chrome.browser.ui.appmenu;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Rect;
@@ -63,7 +64,9 @@ class BraveAppMenuHandlerImpl extends AppMenuHandlerImpl {
     public boolean showAppMenu(@Nullable View anchorView, boolean startDragging) {
         if ((mTvContext.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
                 == Configuration.UI_MODE_TYPE_TELEVISION) {
-            // The action belongs to the activity module, which depends on this module.
+            // The activity owns and directly references this ID, preserving it during shrinking.
+            // This lower-level module cannot import the activity's resources.
+            @SuppressLint("DiscouragedApi")
             int showMenu =
                     mTvContext
                             .getResources()
