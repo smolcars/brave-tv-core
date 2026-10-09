@@ -255,6 +255,9 @@ public class OnboardingStepAdapterTest {
         View page = adapter.onCreateViewHolder(mParent, HELP_BRAVE_SEARCH).itemView;
         Button learnMore = page.findViewById(R.id.onboarding_learn_more);
         assertEquals("Learn more", learnMore.getText().toString());
+        if (learnMore.getText() instanceof Spanned label) {
+            assertEquals(0, label.getSpans(0, label.length(), ClickableSpan.class).length);
+        }
         learnMore.performClick();
         assertEquals(1, linkClicks[0]);
         assertEquals(-1, mListener.mRequestedPage);

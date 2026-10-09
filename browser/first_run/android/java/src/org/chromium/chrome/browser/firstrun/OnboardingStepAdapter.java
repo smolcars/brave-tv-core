@@ -191,8 +191,11 @@ public class OnboardingStepAdapter
                 assert links.length == 1;
                 ClickableSpan link = links[0];
                 learnMore.setText(
-                        wdpLearnMore.subSequence(
-                                wdpLearnMore.getSpanStart(link), wdpLearnMore.getSpanEnd(link)));
+                        wdpLearnMore
+                                .subSequence(
+                                        wdpLearnMore.getSpanStart(link),
+                                        wdpLearnMore.getSpanEnd(link))
+                                .toString());
                 learnMore.setOnClickListener(link::onClick);
                 mSubtitle.setMovementMethod(null);
                 mSubtitle.setText(wdpLearnMore.toString());
