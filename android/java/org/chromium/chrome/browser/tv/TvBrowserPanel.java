@@ -116,6 +116,7 @@ final class TvBrowserPanel {
         button.setTextColor(new ColorStateList(states, new int[] {onPrimary, onSurface}));
         button.setStrokeColor(new ColorStateList(states, new int[] {onPrimary, primary}));
         button.setEnabled(enabled);
+        button.setFocusableInTouchMode(enabled);
         button.setAlpha(enabled ? 1f : 0.4f);
         button.setOnClickListener(view -> action.run());
         if (enabled && mFirstAction == null) mFirstAction = button;
@@ -126,6 +127,8 @@ final class TvBrowserPanel {
     AlertDialog show(Runnable onCancel) {
         AlertDialog dialog =
                 new MaterialAlertDialogBuilder(mActivity)
+                        .setBackgroundInsetTop(0)
+                        .setBackgroundInsetBottom(0)
                         .setView(mScroll)
                         .setOnCancelListener(ignored -> onCancel.run())
                         .create();
