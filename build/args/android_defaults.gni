@@ -19,3 +19,6 @@ disable_android_lint = false
 enable_web_discovery_native = false
 enable_web_discovery = false
 enable_brave_stats_updater = false
+
+# The home attribution link must show real notices in development builds too.
+generate_about_credits = true
