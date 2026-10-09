@@ -12,6 +12,7 @@
 #include "base/no_destructor.h"
 #include "brave/browser/serp_metrics/profile_attributes_time_period_store_factory.h"
 #include "brave/components/serp_metrics/serp_metrics_service.h"
+#include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/profiles/profile_attributes_storage.h"
@@ -50,6 +51,9 @@ bool SerpMetricsServiceFactory::ServiceIsNULLWhileTesting() const {
 std::unique_ptr<KeyedService>
 SerpMetricsServiceFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
+#if BUILDFLAG(IS_ANDROID)
+  return nullptr;
+#else
   ProfileManager* profile_manager = g_browser_process->profile_manager();
   CHECK(profile_manager);
   Profile* profile = Profile::FromBrowserContext(context);
@@ -58,6 +62,7 @@ SerpMetricsServiceFactory::BuildServiceInstanceForBrowserContext(
       CHECK_DEREF(g_browser_process->local_state()),
       ProfileAttributesTimePeriodStoreFactory(
           profile->GetPath(), profile_manager->GetProfileAttributesStorage()));
+#endif
 }
 
 }  // namespace serp_metrics

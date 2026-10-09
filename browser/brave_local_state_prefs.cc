@@ -176,7 +176,7 @@ void RegisterLocalStatePrefs(PrefRegistrySimple* registry) {
   // map, referrals service, SERP tab helper, Brave Origin service) that
   // remain compiled in even when the stats updater itself is excluded, so
   // it must always be registered.
-  registry->RegisterBooleanPref(kStatsReportingEnabled, true);
+  registry->RegisterBooleanPref(kStatsReportingEnabled, !BUILDFLAG(IS_ANDROID));
 #if BUILDFLAG(ENABLE_BRAVE_STATS_UPDATER)
   brave_stats::RegisterLocalStatePrefs(registry);
 #endif

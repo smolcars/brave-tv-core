@@ -170,7 +170,11 @@ BraveBrowserProcessImpl::BraveBrowserProcessImpl(StartupData* startup_data)
   // Create P3A Service early to catch more histograms. The full initialization
   // should be started once browser process impl is ready.
   p3a_service();
+#if BUILDFLAG(IS_ANDROID)
+  local_state()->SetBoolean(kStatsReportingEnabled, false);
+#else
   histogram_braveizer_ = p3a::HistogramsBraveizer::Create();
+#endif
 
   // early initialize misc metrics
   process_misc_metrics();
