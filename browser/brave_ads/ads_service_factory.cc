@@ -17,13 +17,13 @@
 #include "brave/browser/brave_ads/application_state/shutdown_monitor_impl.h"
 #include "brave/browser/brave_ads/device_id/device_id_impl.h"
 #include "brave/browser/brave_ads/services/bat_ads_service_factory_impl.h"
-#include "brave/browser/brave_ads/tooltips/ads_tooltips_delegate_impl.h"
 #include "brave/browser/brave_ads/virtual_pref_provider_delegate.h"
 #include "brave/browser/brave_browser_process.h"
 #include "brave/common/brave_channel_info.h"
 #include "brave/components/brave_ads/browser/ads_service_impl.h"
 #include "brave/components/brave_ads/browser/application_state/application_state_monitor.h"
 #include "brave/components/brave_ads/browser/application_state/shutdown_monitor.h"
+#include "brave/components/brave_ads/browser/tooltips/ads_tooltips_delegate.h"
 #include "brave/components/brave_ads/core/browser/service/ads_service.h"
 #include "brave/components/brave_ads/core/public/ads_util.h"
 #include "brave/components/brave_policy/policy_initialization_waiter.h"
@@ -42,6 +42,10 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/storage_partition.h"
 #include "services/network/public/cpp/network_context_getter.h"
+
+#if !BUILDFLAG(IS_ANDROID)
+#include "brave/browser/brave_ads/tooltips/ads_tooltips_delegate_impl.h"
+#endif
 
 #if BUILDFLAG(ENABLE_BRAVE_REWARDS)
 #include "brave/browser/brave_rewards/rewards_service_factory.h"
@@ -94,7 +98,7 @@ AdsServiceFactory::AdsServiceFactory()
 
 AdsServiceFactory::~AdsServiceFactory() = default;
 
-std::unique_ptr<AdsTooltipsDelegateImpl>
+std::unique_ptr<AdsTooltipsDelegate>
 AdsServiceFactory::CreateAdsTooltipsDelegate() const {
 #if BUILDFLAG(IS_ANDROID)
   return nullptr;

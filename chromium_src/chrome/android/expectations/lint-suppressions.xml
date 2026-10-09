@@ -68,6 +68,9 @@
         <ignore regexp="The resource `R.color.incognito_history_placeholder_stroke_color` appears to be unused" />
 
         <!-- These are used at brave/android/java/AndroidManifest.xml -->
+        <!-- TvLauncher references are also verified in the packaged APK manifest. -->
+        <ignore regexp="The resource `R.string.brave_tv_launcher` appears to be unused" />
+        <ignore regexp="The resource `R.drawable.brave_tv_banner` appears to be unused" />
         <ignore regexp="The resource `R.style.BottomSheetActivityTheme` appears to be unused" />
         <ignore regexp="The resource `R.style.BraveAccountTheme` appears to be unused" />
         <ignore regexp="The resource `R.style.BottomSheetAnimation` appears to be unused" />

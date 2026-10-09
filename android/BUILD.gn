@@ -177,6 +177,7 @@ android_resources("java_resources") {
     "java/brave-res/drawable-xxxhdpi/ic_ad_free_videos.png",
     "java/brave-res/drawable-xxxhdpi/share_activity_background.png",
     "java/brave-res/drawable/ad_free_card_bg.xml",
+    "java/brave-res/drawable/brave_tv_banner.xml",
     "java/brave-res/drawable/add_custom_filter_button_background_disabled.xml",
     "java/brave-res/drawable/add_custom_filter_button_background_selector.xml",
     "java/brave-res/drawable/advanced_options_bg.xml",

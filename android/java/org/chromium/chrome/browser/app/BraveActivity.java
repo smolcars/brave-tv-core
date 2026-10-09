@@ -25,6 +25,7 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -206,6 +207,7 @@ import org.chromium.chrome.browser.tabwindow.TabWindowManager;
 import org.chromium.chrome.browser.toolbar.BraveToolbarManager;
 import org.chromium.chrome.browser.toolbar.bottom.BottomToolbarConfiguration;
 import org.chromium.chrome.browser.toolbar.top.BraveToolbarLayoutImpl;
+import org.chromium.chrome.browser.tv.TvBrowserControls;
 import org.chromium.chrome.browser.ui.RootUiCoordinator;
 import org.chromium.chrome.browser.ui.appmenu.AppMenuPropertiesDelegate;
 import org.chromium.chrome.browser.ui.messages.snackbar.Snackbar;
@@ -363,6 +365,7 @@ public abstract class BraveActivity extends ChromeActivity
     private boolean mIsColdStart;
     // One-shot guard so the app-close shred notification fires at most once per cold start.
     private boolean mAppCloseShredTriggered;
+    private @Nullable TvBrowserControls mTvBrowserControls;
 
     /** Serves as a general exception for failed attempts to get BraveActivity. */
     public static class BraveActivityNotFoundException extends Exception {
@@ -372,6 +375,18 @@ public abstract class BraveActivity extends ChromeActivity
     }
 
     public BraveActivity() {}
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if (mTvBrowserControls != null && mTvBrowserControls.dispatchKeyEvent(event)) return true;
+        return super.dispatchKeyEvent(event);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (mTvBrowserControls != null) mTvBrowserControls.onWindowFocusChanged(hasFocus);
+    }
 
     @Override
     protected void onPostCreate() {
@@ -388,6 +403,17 @@ public abstract class BraveActivity extends ChromeActivity
     @Override
     public void onResumeWithNative() {
         super.onResumeWithNative();
+
+        if (mTvBrowserControls == null
+                && (getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                        == Configuration.UI_MODE_TYPE_TELEVISION) {
+            mTvBrowserControls =
+                    new TvBrowserControls(
+                            this,
+                            mBackPressManager,
+                            mRootUiCoordinator.getScrimManager().getScrimVisibilitySupplier());
+            mTvBrowserControls.showControls();
+        }
 
         BraveActivityJni.get().restartStatsUpdater();
         if (BraveVpnUtils.isVpnFeatureSupported(BraveActivity.this)) {
@@ -460,6 +486,7 @@ public abstract class BraveActivity extends ChromeActivity
 
     @Override
     public void onPauseWithNative() {
+        if (mTvBrowserControls != null) mTvBrowserControls.onWindowFocusChanged(false);
         if (mUsageMonitor != null) {
             mUsageMonitor.stop();
         }
@@ -578,6 +605,10 @@ public abstract class BraveActivity extends ChromeActivity
 
     @Override
     protected void onDestroyInternal() {
+        if (mTvBrowserControls != null) {
+            mTvBrowserControls.destroy();
+            mTvBrowserControls = null;
+        }
         // If the search widget promo panel is shown, we mark its visibility
         // before the activity is destroyed and recreated (e.g when the night mode state changes).
         // The new search widget promo panel will be recreated with the new appropriate theme and

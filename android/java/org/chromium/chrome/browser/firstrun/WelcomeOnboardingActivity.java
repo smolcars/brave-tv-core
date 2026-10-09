@@ -11,12 +11,14 @@ import static org.chromium.chrome.browser.set_default_browser.BraveSetDefaultBro
 import android.animation.Animator;
 import android.animation.AnimatorInflater;
 import android.app.Activity;
+import android.content.res.Configuration;
 import android.graphics.drawable.Animatable2;
 import android.graphics.drawable.AnimatedVectorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.SpannableString;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
@@ -266,6 +268,13 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase
 
         mSplashGuideline = findViewById(R.id.splash_anchor);
         mOnboardingPager = findViewById(R.id.onboarding_steps_pager);
+
+        if ((getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION) {
+            // ViewPager2's full-screen RecyclerView otherwise traps initial D-pad focus.
+            ((ViewGroup) mOnboardingPager.getChildAt(0))
+                    .setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+        }
 
         final ChromeClickableSpan wdpLearnMoreClickableSpan =
                 new ChromeClickableSpan(

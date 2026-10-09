@@ -1,3 +1,15 @@
+<activity-alias
+    android:name="org.chromium.chrome.browser.tv.TvLauncher"
+    android:targetActivity="org.chromium.chrome.browser.document.ChromeLauncherActivity"
+    android:exported="true"
+    android:label="@string/brave_tv_launcher"
+    android:banner="@drawable/brave_tv_banner">
+    <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+    </intent-filter>
+</activity-alias>
+
 <receiver android:name="org.chromium.chrome.browser.notifications.retention.RetentionNotificationPublisher"
     android:exported="false">
 </receiver>
