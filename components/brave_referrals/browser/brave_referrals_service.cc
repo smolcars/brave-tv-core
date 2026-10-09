@@ -190,23 +190,14 @@ BraveReferralsService::BraveReferralsService(PrefService* pref_service,
 BraveReferralsService::~BraveReferralsService() = default;
 
 void BraveReferralsService::Start() {
-#if BUILDFLAG(IS_ANDROID)
-  // The independent Android browser does not initialize referral telemetry.
-  return;
-#endif
+// The independent Android browser does not initialize referral telemetry.
+#if !BUILDFLAG(IS_ANDROID)
   if (initialized_) {
     return;
   }
 
   // Retrieve first run time.
   GetFirstRunTime();
-
-#if BUILDFLAG(IS_ANDROID)
-  // Must run before the promo code gate below: that gate is what kicks off the
-  // referrer fetch, so a gbraid visible here was necessarily stored by an
-  // earlier run.
-  MaybeReportAndroidConversion();
-#endif
 
   // Periodically perform finalization checks.
   DCHECK(!finalization_checks_timer_);
@@ -227,21 +218,17 @@ void BraveReferralsService::Start() {
       pref_service_->GetBoolean(kReferralCheckedForPromoCodeFile);
   const auto& download_id = pref_service_->GetString(kReferralDownloadID);
   if (!checked_for_promo_code_file && !has_initialized && download_id.empty()) {
-#if !BUILDFLAG(IS_ANDROID)
     task_runner_->PostTaskAndReplyWithResult(
         FROM_HERE, base::BindOnce(&ReadPromoCode, GetPromoCodeFileName()),
         base::BindOnce(&BraveReferralsService::OnReadPromoCodeComplete,
                        weak_factory_.GetWeakPtr()));
-
-#else
-    InitAndroidReferrer();
-#endif
   }
 
   initialized_ = true;
 
   DCHECK(delegate_);
   delegate_->OnInitialized();
+#endif  // !BUILDFLAG(IS_ANDROID)
 }
 
 void BraveReferralsService::Stop() {
