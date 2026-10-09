@@ -382,7 +382,6 @@ android_resources("java_resources") {
     "java/brave-res/drawable/notification_button_rounded_bg.xml",
     "java/brave-res/drawable/notification_on_button_background.xml",
     "java/brave-res/drawable/notification_rationale_dialog_background.xml",
-    "java/brave-res/drawable/onboarding_background.xml",
     "java/brave-res/drawable/onboarding_gradient_animation.xml",
     "java/brave-res/drawable/onboarding_gradient_background_center.xml",
     "java/brave-res/drawable/onboarding_gradient_background_end.xml",
