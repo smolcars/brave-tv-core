@@ -17,6 +17,7 @@
 #include "base/scoped_observation.h"
 #include "brave/components/brave_adaptive_captcha/brave_adaptive_captcha_service.h"
 #include "brave/components/brave_ads/buildflags/buildflags.h"
+#include "brave/components/web_discovery/buildflags/buildflags.h"
 #include "brave/components/brave_ads/core/browser/service/ads_service.h"
 #include "brave/components/brave_ads/core/mojom/brave_ads.mojom.h"
 #include "brave/components/brave_rewards/content/rewards_p3a.h"
@@ -627,7 +628,9 @@ void RewardsPageHandler::EnableRewards(const std::string& country_code,
 void RewardsPageHandler::SetWebDiscoveryProjectEnabled(
     bool enabled,
     SetWebDiscoveryProjectEnabledCallback callback) {
+#if BUILDFLAG(ENABLE_WEB_DISCOVERY)
   prefs_->SetBoolean(kWebDiscoveryEnabled, enabled);
+#endif
   std::move(callback).Run();
 }
 
