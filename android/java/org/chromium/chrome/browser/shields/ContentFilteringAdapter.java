@@ -198,8 +198,9 @@ public class ContentFilteringAdapter extends RecyclerView.Adapter<RecyclerView.V
 
                 filterListViewHolder.mToggleSwitch.setOnClickListener(
                         view -> {
-                            storage.get("enabled").setBoolValue(!isEnabled);
-                            mBraveContentFileringListener.onFilterToggle(uuid, !isEnabled);
+                            boolean enabled = filterListViewHolder.mToggleSwitch.isChecked();
+                            storage.get("enabled").setBoolValue(enabled);
+                            mBraveContentFileringListener.onFilterToggle(uuid, enabled);
                         });
             }
         }
