@@ -69,9 +69,18 @@ public class BraveMenuButtonCoordinator extends MenuButtonCoordinator {
                 isWebApp);
 
         mActivity = windowAndroid.getActivity().get();
-        if ((activity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+        bindTvKeys(activity.findViewById(menuButtonId));
+    }
+
+    @Override
+    public void setMenuButton(@Nullable MenuButton button) {
+        super.setMenuButton(button);
+        bindTvKeys(button);
+    }
+
+    private void bindTvKeys(@Nullable MenuButton button) {
+        if ((mActivity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
                 == Configuration.UI_MODE_TYPE_TELEVISION) {
-            MenuButton button = activity.findViewById(menuButtonId);
             if (button != null) {
                 button.setOnKeyListener(
                         new KeyboardNavigationListener() {
@@ -83,8 +92,8 @@ public class BraveMenuButtonCoordinator extends MenuButtonCoordinator {
                                         && event.hasNoModifiers()) {
                                     if (event.getAction() == KeyEvent.ACTION_UP
                                             && !event.isCanceled()
-                                            && !activity.isFinishing()
-                                            && !activity.isDestroyed()) {
+                                            && !mActivity.isFinishing()
+                                            && !mActivity.isDestroyed()) {
                                         onEnterKeyPress();
                                     }
                                     return true;
