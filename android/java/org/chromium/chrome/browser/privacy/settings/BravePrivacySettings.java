@@ -211,8 +211,6 @@ public class BravePrivacySettings extends PrivacySettings {
 
     private final SettableMonotonicObservableSupplier<String> mBravePageTitle =
             ObservableSuppliers.createMonotonic();
-    private final PrivacyPreferencesManagerImpl mPrivacyPrefManager =
-            PrivacyPreferencesManagerImpl.getInstance();
     private ChromeSwitchPreference mCanMakePayment;
     private BraveDialogPreference mAdsTrakersBlockPref;
     private BraveDialogPreference mBlockCrosssiteCookies;
