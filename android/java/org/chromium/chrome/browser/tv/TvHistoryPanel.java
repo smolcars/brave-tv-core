@@ -188,16 +188,19 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
                 && UserPrefs.get(mTab.getProfile()).getBoolean(Pref.ALLOW_DELETING_BROWSER_HISTORY);
     }
 
+    private String visitSummary(HistoryItem item) {
+        return DateFormat.getDateTimeInstance().format(new Date(item.getTimestamp()))
+                + "\n"
+                + item.getDomain();
+    }
+
     private void showItem(HistoryItem item) {
         if (!isUsable()) return;
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
                         item.getTitle(),
-                        item.getUrl().getSpec()
-                                + "\n"
-                                + DateFormat.getDateTimeInstance()
-                                        .format(new Date(item.getTimestamp())),
+                        visitSummary(item),
                         R.string.brave_tv_open_history);
         panel.addAction(
                 R.string.brave_tv_open_history,
@@ -217,8 +220,10 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
-                        mActivity.getString(R.string.brave_tv_remove_history_question),
-                        item.getTitle(),
+                        mActivity.getString(R.string.brave_tv_remove_history_question)
+                                + " "
+                                + item.getTitle(),
+                        visitSummary(item),
                         R.string.cancel);
         panel.addAction(R.string.cancel, true, () -> showItem(item));
         panel.addAction(
