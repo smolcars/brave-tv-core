@@ -68,6 +68,21 @@ public final class TvHomePage extends BasicNativePage {
         ScrollView scroll = new ScrollView(activity);
         scroll.setFillViewport(true);
         scroll.addView(mContent);
+        // Chromium focuses the root after attachment; wait for the buttons to be laid out.
+        scroll.setOnFocusChangeListener(
+                (view, focused) -> {
+                    if (!focused) return;
+                    address.post(
+                            () -> {
+                                if (!mDestroyed
+                                        && !activity.isFinishing()
+                                        && !activity.isDestroyed()
+                                        && scroll.isAttachedToWindow()
+                                        && scroll.isFocused()) {
+                                    address.requestFocus();
+                                }
+                            });
+                });
         initWithView(scroll);
         address.requestFocus();
     }
