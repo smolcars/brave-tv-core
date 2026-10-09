@@ -24,13 +24,17 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import org.chromium.base.BravePreferenceKeys;
 import org.chromium.base.CallbackController;
 import org.chromium.base.supplier.NonNullObservableSupplier;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.back_press.BackPressManager;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
+import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
+import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
+import org.chromium.chrome.browser.search_engines.settings.BraveSearchEngineAdapter;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelUtils;
@@ -39,6 +43,8 @@ import org.chromium.components.bookmarks.BookmarkItem;
 import org.chromium.components.browser_ui.widget.gesture.BackPressHandler;
 import org.chromium.components.embedder_support.util.UrlUtilities;
 import org.chromium.components.embedder_support.view.ContentView;
+import org.chromium.components.search_engines.TemplateUrl;
+import org.chromium.components.search_engines.TemplateUrlService;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.ui.base.PageTransition;
 
@@ -58,6 +64,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable ContentView mPage;
     private @Nullable AlertDialog mDialog;
     private @Nullable CallbackController mBookmarkCallbacks;
+    private @Nullable CallbackController mSearchCallbacks;
     private int mLastAction = R.string.brave_tv_address;
     private String mPressedUrl = "";
     private boolean mDestroyed;
@@ -265,7 +272,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         addControl(panel, R.string.brave_tv_settings, true, tab, url);
         addControl(panel, R.string.brave_tv_shields, isWebTab(tab), tab, url);
         addControl(panel, R.string.brave_tv_close_tab, tab != null, tab, url);
-        addControl(panel, R.string.brave_tv_menu, true, tab, url);
+        addControl(panel, R.string.brave_tv_home, tab != null, tab, url);
         mDialog = panel.show(this::dispatchNativeBack);
     }
 
@@ -275,6 +282,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void dismissDialog() {
+        if (mSearchCallbacks != null) {
+            mSearchCallbacks.destroy();
+            mSearchCallbacks = null;
+        }
         if (mBookmarkCallbacks != null) {
             mBookmarkCallbacks.destroy();
             mBookmarkCallbacks = null;
@@ -377,7 +388,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mDialog = panel.show(this::returnToControls);
     }
 
-    private boolean bookmarkContextValid(Tab tab, String url) {
+    private boolean tabContextValid(Tab tab, String url) {
         return isAlive()
                 && tab == mActivity.getActivityTab()
                 && !tab.isDestroyed()
@@ -386,7 +397,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void showBookmarks(Tab tab, String url, @Nullable BookmarkId folderId, int start) {
-        if (!bookmarkContextValid(tab, url)) return;
+        if (!tabContextValid(tab, url)) return;
         dismissDialog();
         BookmarkModel model = BookmarkModel.getForProfile(tab.getProfile().getOriginalProfile());
         if (!model.isBookmarkModelLoaded()) {
@@ -402,7 +413,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             model.finishLoadingBookmarkModel(
                     mBookmarkCallbacks.makeCancelable(
                             () -> {
-                                if (bookmarkContextValid(tab, url))
+                                if (tabContextValid(tab, url))
                                     showBookmarks(tab, url, folderId, start);
                             }));
             return;
@@ -464,8 +475,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void saveBookmark(Tab tab, String url, BookmarkModel model) {
-        if (!bookmarkContextValid(tab, url) || !isWebTab(tab) || !model.isEditBookmarksEnabled())
-            return;
+        if (!tabContextValid(tab, url) || !isWebTab(tab) || !model.isEditBookmarksEnabled()) return;
         BookmarkId folder = model.getDefaultBookmarkFolder();
         BookmarkItem parent = model.getBookmarkById(folder);
         if (folder == null || parent == null || parent.isManaged()) return;
@@ -481,7 +491,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void showBookmark(
             Tab tab, String url, BookmarkModel model, BookmarkId id, BookmarkId folder, int start) {
-        if (!bookmarkContextValid(tab, url)) return;
+        if (!tabContextValid(tab, url)) return;
         BookmarkItem item = model.getBookmarkById(id);
         if (item == null) {
             showBookmarks(tab, url, folder, start);
@@ -503,7 +513,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 R.string.brave_tv_open_bookmark,
                 true,
                 () -> {
-                    if (!bookmarkContextValid(tab, url)) return;
+                    if (!tabContextValid(tab, url)) return;
                     BookmarkItem current = model.getBookmarkById(id);
                     if (current == null || current.isFolder()) {
                         back.run();
@@ -522,7 +532,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void confirmBookmarkRemoval(
             Tab tab, String url, BookmarkModel model, BookmarkId id, BookmarkId folder, int start) {
-        if (!bookmarkContextValid(tab, url)) return;
+        if (!tabContextValid(tab, url)) return;
         BookmarkItem item = model.getBookmarkById(id);
         if (item == null
                 || item.isFolder()
@@ -542,7 +552,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 R.string.brave_tv_remove_bookmark,
                 true,
                 () -> {
-                    if (!bookmarkContextValid(tab, url)) return;
+                    if (!tabContextValid(tab, url)) return;
                     BookmarkItem current = model.getBookmarkById(id);
                     if (current != null
                             && !current.isFolder()
@@ -630,6 +640,107 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 });
     }
 
+    private void showSettings() {
+        if (!isAlive()) return;
+        dismissDialog();
+        Tab tab = mActivity.getActivityTab();
+        if (tab == null || !canAccessTabs(tab.isIncognito())) return;
+        String url = currentUrl();
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_settings),
+                        "",
+                        R.string.brave_tv_search_engine);
+        panel.addItem(
+                mActivity.getString(R.string.brave_tv_search_engine),
+                R.string.brave_tv_search_engine,
+                () -> showSearchEngines(tab, url));
+        panel.addItem(
+                mActivity.getString(R.string.brave_tv_licenses),
+                R.string.brave_tv_licenses,
+                () -> {
+                    if (!tabContextValid(tab, url)) return;
+                    dismissDialog();
+                    tab.loadUrl(new LoadUrlParams("chrome://credits"));
+                });
+        panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
+        mDialog = panel.show(this::returnToControls);
+    }
+
+    private void showSearchEngines(Tab tab, String url) {
+        if (!tabContextValid(tab, url)) return;
+        dismissDialog();
+        TemplateUrlService service = TemplateUrlServiceFactory.getForProfile(tab.getProfile());
+        if (service == null) {
+            showSettings();
+            return;
+        }
+        if (!service.isLoaded()) {
+            TvBrowserPanel loading =
+                    new TvBrowserPanel(
+                            mActivity,
+                            mActivity.getString(R.string.brave_tv_search_engine),
+                            mActivity.getString(R.string.brave_tv_loading_search),
+                            0);
+            loading.addAction(R.string.brave_tv_settings, true, this::showSettings);
+            mDialog = loading.show(this::showSettings);
+            mSearchCallbacks = new CallbackController();
+            service.runWhenLoaded(
+                    mSearchCallbacks.makeCancelable(() -> showSearchEngines(tab, url)));
+            return;
+        }
+        TemplateUrl selected = service.getDefaultSearchEngineTemplateUrl();
+        String selectedKeyword = selected == null ? "" : selected.getKeyword();
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_search_engine),
+                        mActivity.getString(
+                                tab.isIncognito()
+                                        ? R.string.brave_tv_private_search
+                                        : R.string.brave_tv_normal_search),
+                        R.string.brave_tv_selected_engine);
+        if (!service.isDefaultSearchManaged()) {
+            for (TemplateUrl engine : service.getTemplateUrls()) {
+                if (!engine.getIsPrepopulatedOrProgramProvided()
+                        && !engine.getKeyword().equals(selectedKeyword)) continue;
+                String keyword = engine.getKeyword();
+                String name = engine.getShortName();
+                String label =
+                        keyword.equals(selectedKeyword)
+                                ? mActivity.getString(R.string.brave_tv_selected_engine, name)
+                                : name;
+                panel.addItem(
+                        label,
+                        keyword.equals(selectedKeyword) ? R.string.brave_tv_selected_engine : 0,
+                        () -> {
+                            if (!tabContextValid(tab, url) || service.isDefaultSearchManaged())
+                                return;
+                            // Template pointers can change while the chooser is open.
+                            for (TemplateUrl current : service.getTemplateUrls()) {
+                                if (!keyword.equals(current.getKeyword())) continue;
+                                String currentName = current.getShortName();
+                                service.setSearchEngine(keyword);
+                                BraveSearchEngineAdapter.setDSEPrefs(currentName, tab.getProfile());
+                                ChromeSharedPreferences.getInstance()
+                                        .writeBoolean(
+                                                BravePreferenceKeys.DEFAULT_SEARCH_ENGINE_CHANGED,
+                                                true);
+                                showSearchEngines(tab, url);
+                                return;
+                            }
+                            showSearchEngines(tab, url);
+                        });
+            }
+        } else {
+            panel.addItem(
+                    mActivity.getString(R.string.brave_tv_managed_search), 0, this::showSettings);
+        }
+        panel.addAction(R.string.brave_tv_settings, true, this::showSettings);
+        mDialog = panel.show(this::showSettings);
+    }
+
     private void performAction(int action) {
         if (!isAlive()) return;
         if (action == R.string.brave_tv_pointer || action == R.string.brave_tv_scroll) {
@@ -650,8 +761,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             : TvRemoteInput.Mode.SCROLL);
         } else if (action == R.string.brave_tv_address) {
             mActivity.onMenuOrKeyboardAction(R.id.focus_url_bar, false);
-        } else if (action == R.string.brave_tv_menu) {
-            mActivity.onMenuOrKeyboardAction(R.id.show_menu, false);
+        } else if (action == R.string.brave_tv_home) {
+            Tab tab = mActivity.getActivityTab();
+            if (tab != null) tab.loadUrl(new LoadUrlParams("chrome-native://newtab/"));
         } else if (action == R.string.brave_tv_reload) {
             mActivity.onMenuOrKeyboardAction(R.id.reload_menu_id, false);
         } else if (action == R.string.brave_tv_tabs) {
@@ -665,7 +777,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         } else if (action == R.string.brave_tv_history) {
             mActivity.onMenuOrKeyboardAction(R.id.open_history_menu_id, false);
         } else if (action == R.string.brave_tv_settings) {
-            mActivity.onMenuOrKeyboardAction(R.id.preferences_id, false);
+            showSettings();
         } else if (action == R.string.brave_tv_close_tab) {
             mActivity.onMenuOrKeyboardAction(R.id.close_tab, false);
         } else {

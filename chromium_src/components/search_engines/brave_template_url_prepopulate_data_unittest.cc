@@ -17,6 +17,7 @@
 #include "base/test/task_environment.h"
 #include "base/values.h"
 #include "brave/components/search_engines/brave_prepopulated_engines.h"
+#include "build/build_config.h"
 #include "components/country_codes/country_codes.h"
 #include "components/google/core/common/google_switches.h"
 #include "components/prefs/testing_pref_service.h"
@@ -114,7 +115,12 @@ class BraveTemplateURLPrepopulateDataTest : public testing::Test {
             search_engines_test_environment_.pref_service(),
             search_engines_test_environment_.regional_capabilities_service()
                 .GetRegionalPrepopulatedEngines());
+#if BUILDFLAG(IS_ANDROID)
+    EXPECT_EQ(fallback_t_url_data->prepopulate_id,
+              PREPOPULATED_ENGINE_ID_GOOGLE);
+#else
     EXPECT_EQ(fallback_t_url_data->prepopulate_id, prepopulate_id);
+#endif
   }
 
   // Checks the engines from `kModifiedUpstreamEngines` that `country_id`'s list
@@ -397,3 +403,17 @@ TEST_F(BraveTemplateURLPrepopulateDataTest,
 TEST_F(BraveTemplateURLPrepopulateDataTest, DefaultSearchProvidersForItaly) {
   CheckForCountry('I', 'T', PREPOPULATED_ENGINE_ID_BRAVE);
 }
+
+#if BUILDFLAG(IS_ANDROID)
+TEST_F(BraveTemplateURLPrepopulateDataTest, AndroidDefaultVersionBoundary) {
+  auto& prefs = search_engines_test_environment_.pref_service();
+  prefs.SetInteger(prefs::kBraveDefaultSearchVersion, 35);
+  EXPECT_EQ(regional_capabilities::GetDefaultEngine(
+                country_codes::CountryId("US"), prefs),
+            PREPOPULATED_ENGINE_ID_BRAVE);
+  prefs.SetInteger(prefs::kBraveDefaultSearchVersion, 36);
+  EXPECT_EQ(regional_capabilities::GetDefaultEngine(
+                country_codes::CountryId("US"), prefs),
+            PREPOPULATED_ENGINE_ID_GOOGLE);
+}
+#endif

@@ -12,6 +12,7 @@
 #include "base/containers/map_util.h"
 #include "base/containers/span.h"
 #include "brave/components/search_engines/brave_prepopulated_engines.h"
+#include "build/build_config.h"
 #include "components/prefs/pref_service.h"
 #include "components/search_engines/search_engines_pref_names.h"
 
@@ -246,6 +247,11 @@ GetBravePrepopulatedEnginesForCountryID(country_codes::CountryId country_id) {
 TemplateURLPrepopulateData::BravePrepopulatedEngineID GetDefaultSearchEngine(
     country_codes::CountryId country_id,
     int version) {
+#if BUILDFLAG(IS_ANDROID)
+  if (version >= 36) {
+    return TemplateURLPrepopulateData::PREPOPULATED_ENGINE_ID_GOOGLE;
+  }
+#endif
   // LINT.IfChange
   const TemplateURLPrepopulateData::BravePrepopulatedEngineID default_v6 =
       TemplateURLPrepopulateData::PREPOPULATED_ENGINE_ID_GOOGLE;
