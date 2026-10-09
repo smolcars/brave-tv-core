@@ -565,9 +565,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mDialog = panel.show(cancel);
     }
 
-    private void showShields() {
+    public void showShields() {
         Tab tab = mActivity.getActivityTab();
         if (!isAlive() || !isWebTab(tab) || tab == null) return;
+        if (!canAccessTabs(tab.isIncognito())) return;
+        dismissDialog();
+        detachCursor();
         String url = tab.getUrl().getSpec();
         boolean enabled =
                 BraveShieldsContentSettings.getShields(

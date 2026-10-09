@@ -378,6 +378,10 @@ public abstract class BraveActivity extends ChromeActivity
         if (mTvBrowserControls != null) mTvBrowserControls.showControls();
     }
 
+    public void showTvSiteProtection() {
+        if (mTvBrowserControls != null) mTvBrowserControls.showShields();
+    }
+
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);

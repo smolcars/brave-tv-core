@@ -377,6 +377,8 @@ nala_icons = [
   "ic_set_as_default.xml",
   "ic_settings.xml",
   "ic_share.xml",
+  "ic_shield.xml",
+  "ic_shield_disable.xml",
   "ic_shield_done.xml",
   "ic_shred_data.xml",
   "ic_social_brave_carved_favicon_fullheight.xml",

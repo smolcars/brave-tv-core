@@ -278,6 +278,16 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         mDarkModeTint = ThemeUtils.getThemedToolbarIconTint(getContext(), false);
         mLightModeTint = ThemeUtils.getThemedToolbarIconTint(getContext(), true);
 
+        if (isTelevision()) {
+            for (View button :
+                    new View[] {mBraveShieldsButton, findViewById(R.id.tab_switcher_button)}) {
+                if (button != null) {
+                    button.setForeground(
+                            getContext().getDrawable(R.drawable.focusable_item_foreground));
+                }
+            }
+        }
+
         if (mHomeButton != null) {
             mHomeButton.setOnLongClickListener(this);
         }
@@ -1189,6 +1199,10 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
     }
 
     private void showShieldsMenu() {
+        if (isTelevision() && getContext() instanceof BraveActivity activity) {
+            activity.showTvSiteProtection();
+            return;
+        }
         Tab currentTab = getToolbarDataProvider().getTab();
         if (currentTab == null) {
             return;
@@ -1213,7 +1227,10 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         Resources resources = context.getResources();
 
         if (v == mBraveShieldsButton) {
-            description = resources.getString(R.string.accessibility_toolbar_btn_brave_shields);
+            description =
+                    isTelevision()
+                            ? mBraveShieldsButton.getContentDescription().toString()
+                            : resources.getString(R.string.accessibility_toolbar_btn_brave_shields);
         } else if (v == mBraveRewardsButton) {
             description = resources.getString(R.string.accessibility_toolbar_btn_brave_rewards);
         } else if (v == mHomeButton) {
@@ -1300,6 +1317,25 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
     public void updateBraveShieldsButtonState(Tab tab) {
         if (mBraveShieldsButton == null) {
             assert false;
+            return;
+        }
+
+        if (isTelevision()) {
+            boolean available = tab != null && isValidProtocolForShields(tab.getUrl().getScheme());
+            boolean enabled = available && isShieldsOnForTab(tab);
+            mBraveShieldsButton.setEnabled(available);
+            mBraveShieldsButton.setImageResource(
+                    !available
+                            ? R.drawable.ic_shield
+                            : enabled ? R.drawable.ic_shield_done : R.drawable.ic_shield_disable);
+            mBraveShieldsButton.setContentDescription(
+                    getResources()
+                            .getString(
+                                    !available
+                                            ? R.string.brave_tv_protection_unavailable
+                                            : enabled
+                                                    ? R.string.brave_tv_protection_on
+                                                    : R.string.brave_tv_protection_off));
             return;
         }
 
@@ -1461,6 +1497,11 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         return BraveReflectionUtil.equalTypes(this.getClass(), CustomTabToolbar.class);
     }
 
+    private boolean isTelevision() {
+        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION;
+    }
+
     @Override
     public void onThemeColorChanged(int color, boolean shouldAnimate) {
         // Shields and rewards are brand-colored and stay untinted.
@@ -1473,6 +1514,9 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         }
         if (mYouTubePipButton != null) {
             ImageViewCompat.setImageTintList(mYouTubePipButton, tint);
+        }
+        if (isTelevision() && mBraveShieldsButton != null) {
+            ImageViewCompat.setImageTintList(mBraveShieldsButton, tint);
         }
 
         final int textBoxColor =
