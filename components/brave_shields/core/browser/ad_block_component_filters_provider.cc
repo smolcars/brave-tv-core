@@ -14,6 +14,7 @@
 #include "base/rand_util.h"
 #include "base/task/thread_pool.h"
 #include "base/trace_event/trace_event.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_installer.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider_manager.h"
@@ -121,7 +122,7 @@ void AdBlockComponentFiltersProvider::OnComponentReady(
 }
 
 bool AdBlockComponentFiltersProvider::IsInitialized() const {
-  return !component_path_.empty();
+  return !component_path_.empty() || HasBundledAdBlockFilters(component_id_);
 }
 
 base::FilePath AdBlockComponentFiltersProvider::GetFilterSetPath() {
@@ -143,6 +144,33 @@ void AdBlockComponentFiltersProvider::LoadFilterSet(
               flow);
 
   if (list_file_path.empty()) {
+    if (HasBundledAdBlockFilters(component_id_)) {
+      base::ThreadPool::PostTaskAndReplyWithResult(
+          FROM_HERE, {base::MayBlock()},
+          base::BindOnce(
+              [](const std::string& component_id) {
+                const auto data = LoadBundledAdBlockFilters(component_id);
+                return DATFileDataBuffer(data.begin(), data.end());
+              },
+              component_id_),
+          base::BindOnce(
+              [](base::WeakPtr<AdBlockComponentFiltersProvider> provider,
+                 decltype(cb) callback, const perfetto::Flow& flow,
+                 DATFileDataBuffer data) {
+                if (!provider) {
+                  return;
+                }
+                if (!provider->component_path_.empty()) {
+                  provider->LoadFilterSet(std::move(callback));
+                  return;
+                }
+                OnReadDATFileData(std::move(callback),
+                                  provider->permission_mask_, flow,
+                                  std::move(data));
+              },
+              weak_factory_.GetWeakPtr(), std::move(cb), flow));
+      return;
+    }
     // If the path is not ready yet, provide a no-op callback immediately. An
     // update will be pushed later to notify about the newly available list.
     std::move(cb).Run(base::BindOnce(AddNothingToFilterSet));

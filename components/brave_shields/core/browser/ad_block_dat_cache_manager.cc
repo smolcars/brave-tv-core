@@ -22,6 +22,7 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/common/features.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -34,6 +35,19 @@ constexpr char kAdblockCacheDir[] = "adblock_cache";
 constexpr char kAdBlockEngine0DATCache[] = "engine0.dat";
 constexpr char kAdBlockEngine1DATCache[] = "engine1.dat";
 
+std::optional<DATFileDataBuffer> ReadCachedDATFile(const base::FilePath& path) {
+  auto data = base::ReadFileToBytes(path);
+  const auto version = brave_shields::GetBundledAdBlockVersion();
+  if (!data || version.empty()) {
+    return data;
+  }
+  if (!base::as_string_view(*data).starts_with(version)) {
+    return std::nullopt;
+  }
+  data->erase(data->begin(), data->begin() + version.size());
+  return data;
+}
+
 std::pair<std::optional<DATFileDataBuffer>, std::optional<DATFileDataBuffer>>
 ReadCachedDATFilesFromDisk(base::FilePath cache_dir) {
   base::FilePath default_engine_dat_file =
@@ -41,8 +55,8 @@ ReadCachedDATFilesFromDisk(base::FilePath cache_dir) {
   base::FilePath additional_engine_dat_file =
       cache_dir.AppendASCII(kAdBlockEngine1DATCache);
 
-  return std::make_pair(base::ReadFileToBytes(default_engine_dat_file),
-                        base::ReadFileToBytes(additional_engine_dat_file));
+  return std::make_pair(ReadCachedDATFile(default_engine_dat_file),
+                        ReadCachedDATFile(additional_engine_dat_file));
 }
 
 }  // namespace
@@ -65,6 +79,8 @@ void AdBlockDATCacheManager::WriteDATFile(bool is_default_engine,
             if (!base::CreateDirectory(cache_path.DirName())) {
               return;
             }
+            const auto version = brave_shields::GetBundledAdBlockVersion();
+            dat.insert(dat.begin(), version.begin(), version.end());
             base::ImportantFileWriter::WriteFileAtomically(
                 cache_path, base::as_string_view(dat));
           },

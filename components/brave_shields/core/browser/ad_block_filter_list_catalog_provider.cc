@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/task/thread_pool.h"
 #include "base/trace_event/trace_event.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_installer.h"
 
 constexpr char kListCatalogFile[] = "list_catalog.json";
@@ -73,6 +74,26 @@ void AdBlockFilterListCatalogProvider::OnComponentReady(
 void AdBlockFilterListCatalogProvider::LoadFilterListCatalog(
     base::OnceCallback<void(const std::string& catalog_json)> cb) {
   if (component_path_.empty()) {
+    if (HasBundledAdBlockData()) {
+      base::ThreadPool::PostTaskAndReplyWithResult(
+          FROM_HERE, {base::MayBlock()},
+          base::BindOnce(&LoadBundledAdBlockCatalog),
+          base::BindOnce(
+              [](base::WeakPtr<AdBlockFilterListCatalogProvider> provider,
+                 base::OnceCallback<void(const std::string&)> callback,
+                 const std::string& catalog) {
+                if (!provider) {
+                  return;
+                }
+                if (!provider->component_path_.empty()) {
+                  provider->LoadFilterListCatalog(std::move(callback));
+                  return;
+                }
+                std::move(callback).Run(catalog);
+              },
+              weak_factory_.GetWeakPtr(), std::move(cb)));
+      return;
+    }
     // If the path is not ready yet, don't run the callback. An update should be
     // pushed soon.
     return;

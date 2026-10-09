@@ -1,0 +1,6 @@
+{
+  "name": "brave-tv-adblock-data",
+  "private": true,
+  "type": "module",
+  "dependencies": { "adblock-rs": "0.13.2" }
+}

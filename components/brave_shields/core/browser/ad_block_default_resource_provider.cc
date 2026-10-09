@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/task/thread_pool.h"
 #include "brave/components/brave_component_updater/browser/dat_file_util.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_installer.h"
 
 namespace {
@@ -76,6 +77,27 @@ void AdBlockDefaultResourceProvider::LoadResources(
     base::OnceCallback<void(AdblockResourceStorageBox)> cb) {
   base::FilePath resources_path = GetResourcesPath();
   if (resources_path.empty()) {
+    if (HasBundledAdBlockData()) {
+      base::ThreadPool::PostTaskAndReplyWithResult(
+          FROM_HERE, {base::MayBlock()}, base::BindOnce([] {
+            return adblock::new_resource_storage(LoadBundledAdBlockResources());
+          }),
+          base::BindOnce(
+              [](base::WeakPtr<AdBlockDefaultResourceProvider> provider,
+                 base::OnceCallback<void(AdblockResourceStorageBox)> callback,
+                 AdblockResourceStorageBox storage) {
+                if (!provider) {
+                  return;
+                }
+                if (!provider->component_path_.empty()) {
+                  provider->LoadResources(std::move(callback));
+                  return;
+                }
+                std::move(callback).Run(std::move(storage));
+              },
+              weak_factory_.GetWeakPtr(), std::move(cb)));
+      return;
+    }
     // If the path is not ready yet, run the callback with empty resources to
     // avoid blocking filter data loads.
     auto empty_storage = adblock::new_empty_resource_storage();

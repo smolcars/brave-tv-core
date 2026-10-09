@@ -1,0 +1,2 @@
+# Preserve whitespace in public upstream filter/license data.
+*.txt -whitespace

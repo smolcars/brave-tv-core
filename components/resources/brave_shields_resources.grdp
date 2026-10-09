@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <grit-part>
+  <if expr="is_android">
+    <include name="IDR_BRAVE_ADBLOCK_BUNDLED_CATALOG" file="../brave_shields/resources/bundled/catalog.json" type="BINDATA" compress="gzip" />
+    <include name="IDR_BRAVE_ADBLOCK_BUNDLED_RESOURCES" file="../brave_shields/resources/bundled/resources.json" type="BINDATA" compress="gzip" />
+    <include name="IDR_BRAVE_ADBLOCK_BUNDLED_DEFAULT" file="../brave_shields/resources/bundled/iodkpdagapdfkphljnddpjlldadblomo.txt" type="BINDATA" compress="gzip" />
+    <include name="IDR_BRAVE_ADBLOCK_BUNDLED_PRIVACY" file="../brave_shields/resources/bundled/kihnoaefogbkmblfimmibknnmkllbhlf.txt" type="BINDATA" compress="gzip" />
+    <include name="IDR_BRAVE_ADBLOCK_BUNDLED_FIRST_PARTY" file="../brave_shields/resources/bundled/adcocjohghhfpidemphmcmlmhnfgikei.txt" type="BINDATA" compress="gzip" />
+    <include name="IDR_BRAVE_ADBLOCK_BUNDLED_COOKIES" file="../brave_shields/resources/bundled/cdbbhgbmjhfnhnmgeddbliobbofkgdhe.txt" type="BINDATA" compress="gzip" />
+    <include name="IDR_BRAVE_ADBLOCK_BUNDLED_MOBILE" file="../brave_shields/resources/bundled/bfpgedeaaibpoidldhjcknekahbikncb.txt" type="BINDATA" compress="gzip" />
+  </if>
   <include name="IDR_BRAVE_SHIELDS_ICON_64" file="../brave_shields/resources/icon.png" type="BINDATA" />
   <include name="IDR_BRAVE_SHIELDS_ICON_64_DISABLED" file="../brave_shields/resources/icon-off.png" type="BINDATA" />
   <include name="IDR_SHIELDS_PANEL_HTML" file="../brave_shields/resources/panel/brave_shields.html" type="BINDATA" />
