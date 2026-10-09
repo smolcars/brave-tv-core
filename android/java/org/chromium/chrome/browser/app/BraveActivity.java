@@ -211,7 +211,6 @@ import org.chromium.chrome.browser.tv.TvBrowserControls;
 import org.chromium.chrome.browser.tv.TvHomePage;
 import org.chromium.chrome.browser.ui.RootUiCoordinator;
 import org.chromium.chrome.browser.ui.appmenu.AppMenuPropertiesDelegate;
-import org.chromium.chrome.browser.ui.appmenu.TvMenuDelegate;
 import org.chromium.chrome.browser.ui.messages.snackbar.Snackbar;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager.SnackbarController;
@@ -273,8 +272,7 @@ public abstract class BraveActivity extends ChromeActivity
                 QuickSearchEnginesCallback,
                 KeyboardVisibilityHelper.KeyboardVisibilityListener,
                 OnSharedPreferenceChangeListener,
-                FirstPartyStorageCleanerInterface,
-                TvMenuDelegate {
+                FirstPartyStorageCleanerInterface {
     public static final String BRAVE_WALLET_HOST = "wallet";
     public static final String BRAVE_WALLET_ORIGIN = "brave://wallet/";
     public static final String BRAVE_WALLET_URL = "brave://wallet/crypto/portfolio/assets";
@@ -385,7 +383,6 @@ public abstract class BraveActivity extends ChromeActivity
                 == Configuration.UI_MODE_TYPE_TELEVISION;
     }
 
-    @Override
     public void showTvBrowserControls() {
         if (mTvBrowserControls != null) mTvBrowserControls.showControls();
     }

@@ -62,10 +62,14 @@ class BraveAppMenuHandlerImpl extends AppMenuHandlerImpl {
     @Override
     public boolean showAppMenu(@Nullable View anchorView, boolean startDragging) {
         if ((mTvContext.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
-                        == Configuration.UI_MODE_TYPE_TELEVISION
-                && mTvDelegate instanceof TvMenuDelegate delegate) {
-            delegate.showTvBrowserControls();
-            return true;
+                == Configuration.UI_MODE_TYPE_TELEVISION) {
+            // The action belongs to the activity module, which depends on this module.
+            int showMenu =
+                    mTvContext
+                            .getResources()
+                            .getIdentifier("show_menu", "id", mTvContext.getPackageName());
+            assert showMenu != 0;
+            return showMenu != 0 && mTvDelegate.onOptionsItemSelected(showMenu, null);
         }
         final boolean show = super.showAppMenu(anchorView, startDragging);
         if (show) {
