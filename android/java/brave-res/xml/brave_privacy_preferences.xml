@@ -180,21 +180,6 @@
             android:key="sns"
             android:title="@string/sns_title" />
         <org.chromium.components.browser_ui.settings.ChromeSwitchPreference
-            android:key="send_p3a_analytics"
-            android:title="@string/send_p3a_analytics_title"
-            android:summary="@string/send_p3a_analytics_summary"
-            android:defaultValue="false" />
-        <org.chromium.components.browser_ui.settings.ChromeSwitchPreference
-          android:key="send_crash_reports"
-          android:title="@string/send_crash_reports_title"
-          android:summary="@string/send_crash_reports_summary"
-          android:defaultValue="false" />
-        <org.chromium.components.browser_ui.settings.ChromeSwitchPreference
-            android:key="brave_stats_usage_ping"
-            android:title="@string/brave_stats_usage_ping_title"
-            android:summary="@string/brave_stats_usage_ping_summary"
-            android:defaultValue="true" />
-        <org.chromium.components.browser_ui.settings.ChromeSwitchPreference
             android:key="sponsored_ads_enabled"
             android:title="@string/sponsored_ads_enabled_title"
             android:summary="@string/sponsored_ads_enabled_summary"

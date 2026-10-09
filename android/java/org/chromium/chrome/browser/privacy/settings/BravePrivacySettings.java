@@ -35,8 +35,6 @@ import org.chromium.chrome.browser.brave_origin.BraveOriginSubscriptionPrefs;
 import org.chromium.chrome.browser.browsing_data.BraveClearBrowsingDataFragment;
 import org.chromium.chrome.browser.crypto_wallet.BraveWalletPolicy;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
-import org.chromium.chrome.browser.metrics.ChangeMetricsReportingStateCalledFrom;
-import org.chromium.chrome.browser.metrics.UmaSessionStats;
 import org.chromium.chrome.browser.preferences.BravePref;
 import org.chromium.chrome.browser.preferences.BravePrefServiceBridge;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
@@ -198,9 +196,6 @@ public class BravePrivacySettings extends PrivacySettings {
         PREF_DO_NOT_TRACK,
         PREF_PHONE_AS_A_SECURITY_KEY,
         PREF_CLOSE_TABS_ON_EXIT,
-        PREF_SEND_P3A,
-        PREF_SEND_CRASH_REPORTS,
-        PREF_BRAVE_STATS_USAGE_PING,
         PREF_SPONSORED_ADS_ENABLED,
         PREF_SPONSORED_ADS_LEARN_MORE,
         PREF_SURVEY_PANELIST,
@@ -235,9 +230,6 @@ public class BravePrivacySettings extends PrivacySettings {
     private ChromeBasePreference mAutoShredPref;
     private @Nullable ChromeSwitchPreference mAllowElementsBlockingOnPrivateTabsPref;
     private ChromeSwitchPreference mCloseTabsOnExitPref;
-    private @Nullable ChromeSwitchPreference mSendP3A;
-    private @Nullable ChromeSwitchPreference mSendCrashReports;
-    private @Nullable ChromeSwitchPreference mBraveStatsUsagePing;
     private @Nullable ChromeSwitchPreference mSponsoredAdsEnabled;
     private @Nullable BraveTextButtonPreference mSponsoredAdsLearnMore;
     private ChromeSwitchPreference mSurveyPanelist;
@@ -413,12 +405,6 @@ public class BravePrivacySettings extends PrivacySettings {
         mClearBrowsingDataOnExit = (ChromeSwitchPreference) findPreference(PREF_CLEAR_ON_EXIT);
         mClearBrowsingDataOnExit.setOnPreferenceChangeListener(this);
 
-        removePreferenceIfPresent(PREF_SEND_P3A);
-        removePreferenceIfPresent(PREF_SEND_CRASH_REPORTS);
-        removePreferenceIfPresent(PREF_BRAVE_STATS_USAGE_PING);
-        mSendP3A = null;
-        mSendCrashReports = null;
-        mBraveStatsUsagePing = null;
 
         // Hide Sponsored Ads setting if Brave Rewards is disabled by policy
         if (BraveRewardsPolicy.isDisabledByPolicy(getProfile())) {
@@ -683,14 +669,6 @@ public class BravePrivacySettings extends PrivacySettings {
         } else if (PREF_CLOSE_TABS_ON_EXIT.equals(key)) {
             preferencesManager.writeBoolean(
                     BravePreferenceKeys.BRAVE_CLOSE_TABS_ON_EXIT, (boolean) newValue);
-        } else if (PREF_SEND_P3A.equals(key)) {
-            BraveLocalState.get().setBoolean(BravePref.P3A_ENABLED, (boolean) newValue);
-            BraveLocalState.commitPendingWrite();
-        } else if (PREF_SEND_CRASH_REPORTS.equals(key)) {
-            UmaSessionStats.changeMetricsReportingState(
-                    (boolean) newValue, ChangeMetricsReportingStateCalledFrom.UI_SETTINGS);
-        } else if (PREF_BRAVE_STATS_USAGE_PING.equals(key)) {
-            BraveLocalState.get().setBoolean(BravePref.STATS_REPORTING_ENABLED, (boolean) newValue);
         } else if (PREF_SPONSORED_ADS_ENABLED.equals(key)) {
             UserPrefs.get(getProfile()).setBoolean(BravePref.SPONSORED_ENABLED, (boolean) newValue);
         } else if (PREF_SURVEY_PANELIST.equals(key)) {
@@ -884,25 +862,6 @@ public class BravePrivacySettings extends PrivacySettings {
                         .getString(R.string.settings_can_make_payment_toggle_label));
         mCanMakePayment.setSummary("");
 
-        if (mSendP3A != null) {
-            mSendP3A.setTitle(
-                    getActivity().getResources().getString(R.string.send_p3a_analytics_title));
-            mSendP3A.setSummary(
-                    getActivity().getResources().getString(R.string.send_p3a_analytics_summary));
-
-            mSendP3A.setChecked(BraveLocalState.get().getBoolean(BravePref.P3A_ENABLED));
-        }
-
-        if (mSendCrashReports != null) {
-            mSendCrashReports.setChecked(
-                    mPrivacyPrefManager.isUsageAndCrashReportingPermittedByUser());
-        }
-
-        if (mBraveStatsUsagePing != null) {
-            mBraveStatsUsagePing.setChecked(
-                    BraveLocalState.get().getBoolean(BravePref.STATS_REPORTING_ENABLED));
-        }
-
         if (mSponsoredAdsEnabled != null) {
             mSponsoredAdsEnabled.setChecked(
                     UserPrefs.get(getProfile()).getBoolean(BravePref.SPONSORED_ENABLED));
@@ -1082,17 +1041,9 @@ public class BravePrivacySettings extends PrivacySettings {
                         indexData.removeEntryForKey(frag, PREF_ENS);
                         indexData.removeEntryForKey(frag, PREF_SNS);
                     }
-                    if (BraveLocalState.get().isManagedPreference(BravePref.P3A_ENABLED)) {
-                        indexData.removeEntryForKey(frag, PREF_SEND_P3A);
-                    }
-                    if (!PrivacyPreferencesManagerImpl.getInstance()
-                            .isUsageAndCrashReportingPermittedByPolicy()) {
-                        indexData.removeEntryForKey(frag, PREF_SEND_CRASH_REPORTS);
-                    }
-                    if (BraveLocalState.get()
-                            .isManagedPreference(BravePref.STATS_REPORTING_ENABLED)) {
-                        indexData.removeEntryForKey(frag, PREF_BRAVE_STATS_USAGE_PING);
-                    }
+                    indexData.removeEntryForKey(frag, PREF_SEND_P3A);
+                    indexData.removeEntryForKey(frag, PREF_SEND_CRASH_REPORTS);
+                    indexData.removeEntryForKey(frag, PREF_BRAVE_STATS_USAGE_PING);
                     if (BraveRewardsPolicy.isDisabledByPolicy(profile)) {
                         indexData.removeEntryForKey(frag, PREF_SPONSORED_ADS_ENABLED);
                     }
