@@ -640,7 +640,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 });
     }
 
-    private void showSettings() {
+    public void showSettings() {
         if (!isAlive()) return;
         dismissDialog();
         Tab tab = mActivity.getActivityTab();

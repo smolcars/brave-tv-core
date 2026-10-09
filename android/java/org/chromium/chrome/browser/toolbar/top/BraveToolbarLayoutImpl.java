@@ -683,6 +683,8 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
 
     /** Updates the rewards layout visibility, keeping the tablet toolbar layout in sync. */
     private void setRewardsLayoutVisibility(int visibility) {
+        if ((getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION) visibility = View.GONE;
         if (mRewardsLayout == null || mRewardsLayout.getVisibility() == visibility) {
             return;
         }
@@ -1058,6 +1060,8 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
     }
 
     public void showWalletIcon(boolean show, Tab tab) {
+        if ((getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION) show = false;
         // The layout could be null in Custom Tabs layout
         if (mWalletLayout == null) {
             return;

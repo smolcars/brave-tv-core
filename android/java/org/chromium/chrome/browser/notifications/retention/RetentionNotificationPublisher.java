@@ -11,6 +11,7 @@ import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.ThreadUtils;
@@ -30,6 +31,8 @@ public class RetentionNotificationPublisher extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if ((context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION) return;
         try {
             String action = intent.getAction();
             String notificationType =

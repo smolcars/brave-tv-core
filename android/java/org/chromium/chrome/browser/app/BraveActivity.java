@@ -379,6 +379,11 @@ public abstract class BraveActivity extends ChromeActivity
         return super.dispatchKeyEvent(event);
     }
 
+    private boolean isTelevision() {
+        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION;
+    }
+
     public void showTvBrowserControls() {
         if (mTvBrowserControls != null) mTvBrowserControls.showControls();
     }
@@ -405,9 +410,7 @@ public abstract class BraveActivity extends ChromeActivity
     public void onResumeWithNative() {
         super.onResumeWithNative();
 
-        if (mTvBrowserControls == null
-                && (getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
-                        == Configuration.UI_MODE_TYPE_TELEVISION) {
+        if (mTvBrowserControls == null && isTelevision()) {
             mTvBrowserControls =
                     new TvBrowserControls(
                             this,
@@ -424,6 +427,7 @@ public abstract class BraveActivity extends ChromeActivity
             }
         }
 
+        if (isTelevision()) return;
         if (BraveVpnUtils.isVpnFeatureSupported(BraveActivity.this)) {
             BraveVpnNativeWorker.getInstance().addObserver(this);
             BraveVpnUtils.reportBackgroundUsageP3A();
@@ -510,6 +514,16 @@ public abstract class BraveActivity extends ChromeActivity
             boolean fromMenu,
             @Nullable Bundle menuItemData,
             @Nullable MotionEventInfo triggeringMotion) {
+        if (mTvBrowserControls != null) {
+            if (id == R.id.show_menu) {
+                mTvBrowserControls.showControls();
+                return true;
+            }
+            if (id == R.id.preferences_id) {
+                mTvBrowserControls.showSettings();
+                return true;
+            }
+        }
         final Tab currentTab = getActivityTab();
         // Handle items replaced by Brave.
         if (id == R.id.reload_menu_id) {
@@ -1313,10 +1327,16 @@ public abstract class BraveActivity extends ChromeActivity
         PrivacyPreferencesManagerImpl.getInstance().setUsageAndCrashReporting(false);
 
         boolean isFirstInstall = PackageUtils.isFirstInstall(this);
+        BraveHelper.maybeMigrateSettings();
+        if (isTelevision()) {
+            PreloadPagesSettingsBridge.setState(getCurrentProfile(), PreloadPagesState.NO_PRELOADING);
+            checkFingerPrintingOnUpgrade(isFirstInstall);
+            mNativeInitialized = true;
+            return;
+        }
+        String countryCode = Locale.getDefault().getCountry();
 
         BraveVpnNativeWorker.getInstance().reloadPurchasedState();
-
-        BraveHelper.maybeMigrateSettings();
 
         PrefChangeRegistrar mPrefChangeRegistrar = PrefServiceUtil.createFor(getCurrentProfile());
         mPrefChangeRegistrar.addObserver(BravePref.SCHEDULED_CAPTCHA_ID, this);
@@ -2667,6 +2687,7 @@ public abstract class BraveActivity extends ChromeActivity
 
     private void initMiscAndroidMetrics() {
         ThreadUtils.assertOnUiThread();
+        if (isTelevision()) return;
         if (mMiscAndroidMetrics != null) {
             return;
         }
