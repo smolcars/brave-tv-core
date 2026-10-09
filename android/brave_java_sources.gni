@@ -25,6 +25,7 @@ import("//brave/components/signin/public/android/java_sources.gni")
 
 brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserControls.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteInput.java",
   "../../brave/android/java/org/chromium/chrome/browser/BraveAdFreeCalloutDialogFragment.java",
   "../../brave/android/java/org/chromium/chrome/browser/BraveAppHooks.java",

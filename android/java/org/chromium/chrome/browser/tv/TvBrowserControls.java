@@ -24,18 +24,16 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-
 import org.chromium.base.supplier.NonNullObservableSupplier;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.back_press.BackPressManager;
+import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tabmodel.TabModel;
+import org.chromium.chrome.browser.tabmodel.TabModelUtils;
 import org.chromium.components.browser_ui.widget.gesture.BackPressHandler;
 import org.chromium.components.embedder_support.view.ContentView;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /** TV-only adapter around the existing browser UI and the active Chromium content view. */
 public final class TvBrowserControls implements TvRemoteInput.Target {
@@ -48,6 +46,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final OnBackPressedCallback mBackCallback;
     private @Nullable ContentView mPage;
     private @Nullable AlertDialog mDialog;
+    private int mLastAction = R.string.brave_tv_address;
     private String mPressedUrl = "";
     private boolean mDestroyed;
     private final View.OnAttachStateChangeListener mPageAttachmentListener =
@@ -197,32 +196,214 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (!isAlive()) return;
         detachCursor();
         if (mDialog != null && mDialog.isShowing()) return;
-        List<Integer> actions = new ArrayList<>();
-        actions.add(R.string.brave_tv_address);
-        if (currentPage() != null) {
-            actions.add(R.string.brave_tv_pointer);
-            actions.add(R.string.brave_tv_scroll);
+        Tab tab = mActivity.getActivityTab();
+        String url = currentUrl();
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(
+                                tab != null && tab.isIncognito()
+                                        ? R.string.brave_tv_private_controls
+                                        : R.string.brave_tv_controls),
+                        tab == null || tab.isNativePage() ? "" : url,
+                        mLastAction);
+        panel.addItem(
+                mActivity.getString(R.string.brave_tv_address),
+                R.string.brave_tv_address,
+                () -> runControl(R.string.brave_tv_address, tab, url));
+        addControl(panel, R.string.brave_tv_pointer, currentPage() != null, tab, url);
+        addControl(panel, R.string.brave_tv_scroll, currentPage() != null, tab, url);
+        addControl(panel, R.string.brave_tv_tabs, mActivity.areTabModelsInitialized(), tab, url);
+        addControl(panel, R.string.brave_tv_back, tab != null && tab.canGoBack(), tab, url);
+        addControl(panel, R.string.brave_tv_forward, tab != null && tab.canGoForward(), tab, url);
+        addControl(
+                panel,
+                tab != null && tab.isLoading() ? R.string.brave_tv_stop : R.string.brave_tv_reload,
+                tab != null && !tab.isNativePage(),
+                tab,
+                url);
+        addControl(panel, R.string.brave_tv_bookmarks, tab != null, tab, url);
+        addControl(panel, R.string.brave_tv_history, tab != null && !tab.isIncognito(), tab, url);
+        addControl(panel, R.string.brave_tv_settings, true, tab, url);
+        addControl(panel, R.string.brave_tv_shields, isWebTab(tab), tab, url);
+        addControl(panel, R.string.brave_tv_close_tab, tab != null, tab, url);
+        addControl(panel, R.string.brave_tv_menu, true, tab, url);
+        mDialog = panel.show(this::dispatchNativeBack);
+    }
+
+    private void addControl(
+            TvBrowserPanel panel, int action, boolean enabled, @Nullable Tab tab, String url) {
+        panel.addAction(action, enabled, () -> runControl(action, tab, url));
+    }
+
+    private void dismissDialog() {
+        if (mDialog != null) mDialog.dismiss();
+        mDialog = null;
+    }
+
+    private void runControl(int action, @Nullable Tab tab, String url) {
+        if (!isAlive()) return;
+        mLastAction = action;
+        dismissDialog();
+        // The page can navigate or a tab can close while the native panel is open.
+        if (tab != mActivity.getActivityTab() || !url.equals(currentUrl())) {
+            showControls();
+            return;
         }
-        actions.add(R.string.brave_tv_menu);
-        actions.add(R.string.brave_tv_reload);
-        CharSequence[] labels = new CharSequence[actions.size()];
-        for (int i = 0; i < actions.size(); i++) labels[i] = mActivity.getString(actions.get(i));
-        mDialog =
-                new MaterialAlertDialogBuilder(mActivity)
-                        .setTitle(R.string.brave_tv_controls)
-                        .setItems(
-                                labels,
-                                (dialog, index) -> {
-                                    if (!isAlive()) return;
-                                    dialog.dismiss();
-                                    performAction(actions.get(index));
-                                })
-                        .setOnCancelListener(dialog -> dispatchNativeBack())
-                        .create();
-        mDialog.setCanceledOnTouchOutside(false);
-        mDialog.show();
-        mDialog.getListView().requestFocus();
-        mDialog.getListView().setSelection(0);
+        performAction(action);
+    }
+
+    private boolean isWebTab(@Nullable Tab tab) {
+        return tab != null
+                && !tab.isDestroyed()
+                && ("https".equals(tab.getUrl().getScheme())
+                        || "http".equals(tab.getUrl().getScheme()));
+    }
+
+    private void returnToControls() {
+        if (!isAlive()) return;
+        dismissDialog();
+        showControls();
+    }
+
+    private void showTabs(boolean incognito, int start) {
+        if (!isAlive() || !mActivity.areTabModelsInitialized()) return;
+        dismissDialog();
+        TabModel model = mActivity.getTabModelSelector().getModel(incognito);
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(
+                                incognito
+                                        ? R.string.brave_tv_private_tabs
+                                        : R.string.brave_tv_tabs),
+                        "",
+                        R.string.brave_tv_new_tab);
+        panel.addAction(
+                R.string.brave_tv_new_tab,
+                true,
+                () -> {
+                    if (!isAlive()) return;
+                    dismissDialog();
+                    mActivity.onMenuOrKeyboardAction(
+                            incognito ? R.id.new_incognito_tab_menu_id : R.id.new_tab_menu_id,
+                            false);
+                    mLastAction = R.string.brave_tv_address;
+                    showControls();
+                });
+        panel.addAction(
+                incognito ? R.string.brave_tv_normal_tabs : R.string.brave_tv_private_tabs,
+                true,
+                () -> showTabs(!incognito, 0));
+        panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
+        int first = Math.max(0, Math.min(start, Math.max(0, model.getCount() - 1)));
+        int end = Math.min(first + 8, model.getCount());
+        for (int i = first; i < end; i++) {
+            Tab tab = model.getTabAt(i);
+            if (tab == null) continue;
+            int tabId = tab.getId();
+            String title = tab.getTitle();
+            if (title.isEmpty()) title = mActivity.getString(R.string.brave_tv_new_tab);
+            if (tab == mActivity.getActivityTab())
+                title = mActivity.getString(R.string.brave_tv_current_tab, title);
+            panel.addItem(
+                    title,
+                    tabId,
+                    () -> {
+                        if (!isAlive() || !mActivity.areTabModelsInitialized()) return;
+                        TabModel currentModel = mActivity.getTabModelSelector().getModel(incognito);
+                        int index = TabModelUtils.getTabIndexById(currentModel, tabId);
+                        if (index == TabModel.INVALID_TAB_INDEX) {
+                            showTabs(incognito, first);
+                            return;
+                        }
+                        dismissDialog();
+                        mActivity.getTabModelSelector().selectModel(incognito);
+                        TabModelUtils.setIndex(currentModel, index);
+                        showControls();
+                    });
+        }
+        panel.addAction(
+                R.string.brave_tv_previous,
+                first > 0,
+                () -> showTabs(incognito, Math.max(0, first - 8)));
+        panel.addAction(
+                R.string.brave_tv_next, end < model.getCount(), () -> showTabs(incognito, end));
+        mDialog = panel.show(this::returnToControls);
+    }
+
+    private void showShields() {
+        Tab tab = mActivity.getActivityTab();
+        if (!isAlive() || !isWebTab(tab) || tab == null) return;
+        String url = tab.getUrl().getSpec();
+        boolean enabled =
+                BraveShieldsContentSettings.getShields(
+                        tab.getProfile(),
+                        url,
+                        BraveShieldsContentSettings.RESOURCE_IDENTIFIER_BRAVE_SHIELDS);
+        String mode =
+                BraveShieldsContentSettings.getShieldsValue(
+                        tab.getProfile(),
+                        url,
+                        BraveShieldsContentSettings.RESOURCE_IDENTIFIER_TRACKERS);
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity, mActivity.getString(R.string.brave_tv_shields), url, 0);
+        panel.addItem(
+                mActivity.getString(
+                        enabled ? R.string.brave_tv_shields_up : R.string.brave_tv_shields_down),
+                R.string.brave_tv_shields,
+                () -> {
+                    if (!isAlive()
+                            || tab != mActivity.getActivityTab()
+                            || !url.equals(currentUrl())) return;
+                    BraveShieldsContentSettings.setShields(
+                            tab.getProfile(),
+                            url,
+                            BraveShieldsContentSettings.RESOURCE_IDENTIFIER_BRAVE_SHIELDS,
+                            !enabled,
+                            true);
+                    dismissDialog();
+                    tab.reload();
+                    showShields();
+                });
+        addShieldMode(
+                panel,
+                tab,
+                url,
+                mode,
+                R.string.brave_tv_standard,
+                BraveShieldsContentSettings.DEFAULT);
+        addShieldMode(
+                panel,
+                tab,
+                url,
+                mode,
+                R.string.brave_tv_aggressive,
+                BraveShieldsContentSettings.BLOCK_RESOURCE);
+        panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
+        mDialog = panel.show(this::returnToControls);
+    }
+
+    private void addShieldMode(
+            TvBrowserPanel panel, Tab tab, String url, String currentMode, int label, String mode) {
+        panel.addAction(
+                label,
+                !mode.equals(currentMode),
+                () -> {
+                    if (!isAlive()
+                            || tab != mActivity.getActivityTab()
+                            || !url.equals(currentUrl())) return;
+                    BraveShieldsContentSettings.setShieldsValue(
+                            tab.getProfile(),
+                            url,
+                            BraveShieldsContentSettings.RESOURCE_IDENTIFIER_TRACKERS,
+                            mode,
+                            true);
+                    dismissDialog();
+                    tab.reload();
+                    showShields();
+                });
     }
 
     private void performAction(int action) {
@@ -249,6 +430,26 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             mActivity.onMenuOrKeyboardAction(R.id.show_menu, false);
         } else if (action == R.string.brave_tv_reload) {
             mActivity.onMenuOrKeyboardAction(R.id.reload_menu_id, false);
+        } else if (action == R.string.brave_tv_tabs) {
+            Tab tab = mActivity.getActivityTab();
+            showTabs(tab != null && tab.isIncognito(), 0);
+        } else if (action == R.string.brave_tv_shields) {
+            showShields();
+        } else if (action == R.string.brave_tv_bookmarks) {
+            mActivity.onMenuOrKeyboardAction(R.id.all_bookmarks_menu_id, false);
+        } else if (action == R.string.brave_tv_history) {
+            mActivity.onMenuOrKeyboardAction(R.id.open_history_menu_id, false);
+        } else if (action == R.string.brave_tv_settings) {
+            mActivity.onMenuOrKeyboardAction(R.id.preferences_id, false);
+        } else if (action == R.string.brave_tv_close_tab) {
+            mActivity.onMenuOrKeyboardAction(R.id.close_tab, false);
+            showControls();
+        } else {
+            Tab tab = mActivity.getActivityTab();
+            if (tab == null || tab.isDestroyed()) return;
+            if (action == R.string.brave_tv_back && tab.canGoBack()) tab.goBack();
+            if (action == R.string.brave_tv_forward && tab.canGoForward()) tab.goForward();
+            if (action == R.string.brave_tv_stop) tab.stopLoading();
         }
     }
 
