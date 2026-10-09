@@ -82,8 +82,6 @@ public class BraveMenuButtonCoordinator extends MenuButtonCoordinator {
         if ((mActivity.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
                 == Configuration.UI_MODE_TYPE_TELEVISION) {
             if (button != null) {
-                button.getImageButton()
-                        .setForeground(mActivity.getDrawable(R.drawable.focusable_item_foreground));
                 button.setOnKeyListener(
                         new KeyboardNavigationListener() {
                             @Override

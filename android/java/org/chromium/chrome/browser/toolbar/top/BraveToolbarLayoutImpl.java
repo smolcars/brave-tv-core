@@ -278,16 +278,6 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         mDarkModeTint = ThemeUtils.getThemedToolbarIconTint(getContext(), false);
         mLightModeTint = ThemeUtils.getThemedToolbarIconTint(getContext(), true);
 
-        if (isTelevision()) {
-            for (View button :
-                    new View[] {mBraveShieldsButton, findViewById(R.id.tab_switcher_button)}) {
-                if (button != null) {
-                    button.setForeground(
-                            getContext().getDrawable(R.drawable.focusable_item_foreground));
-                }
-            }
-        }
-
         if (mHomeButton != null) {
             mHomeButton.setOnLongClickListener(this);
         }
