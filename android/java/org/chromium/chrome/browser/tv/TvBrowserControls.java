@@ -344,7 +344,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             incognito ? R.id.new_incognito_tab_menu_id : R.id.new_tab_menu_id,
                             false);
                     mLastAction = R.string.brave_tv_address;
-                    showControls();
                 });
         panel.addAction(
                 incognito ? R.string.brave_tv_normal_tabs : R.string.brave_tv_private_tabs,
