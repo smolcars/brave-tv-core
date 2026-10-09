@@ -429,7 +429,6 @@ public abstract class BraveActivity extends ChromeActivity
             }
         }
 
-        BraveActivityJni.get().restartStatsUpdater();
         if (BraveVpnUtils.isVpnFeatureSupported(BraveActivity.this)) {
             BraveVpnNativeWorker.getInstance().addObserver(this);
             BraveVpnUtils.reportBackgroundUsageP3A();
