@@ -3957,6 +3957,15 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_REMOVE_BOOKMARK" desc="TV button to remove the selected saved webpage from bookmarks.">Remove bookmark</message>
     <message name="IDS_BRAVE_TV_REMOVE_BOOKMARK_QUESTION" desc="Title of the TV confirmation panel for deleting one bookmark.">Remove this bookmark?</message>
     <message name="IDS_BRAVE_TV_HISTORY" desc="TV button to open normal browsing history.">History</message>
+    <message name="IDS_BRAVE_TV_LOADING_HISTORY" desc="TV history query in progress.">Loading history…</message>
+    <message name="IDS_BRAVE_TV_EMPTY_HISTORY" desc="TV history list has no entries.">No browsing history</message>
+    <message name="IDS_BRAVE_TV_PREVIOUS_HISTORY" desc="TV button for the previous page of history.">Previous visits</message>
+    <message name="IDS_BRAVE_TV_MORE_HISTORY" desc="TV button for the next page of history.">More visits</message>
+    <message name="IDS_BRAVE_TV_OPEN_HISTORY" desc="TV button to open a visited webpage.">Open page</message>
+    <message name="IDS_BRAVE_TV_REMOVE_HISTORY" desc="TV button to remove a selected entry from browsing history.">Remove from history</message>
+    <message name="IDS_BRAVE_TV_REMOVE_HISTORY_QUESTION" desc="TV confirmation for removing a selected URL's grouped visits from history.">Remove these visits from history?</message>
+    <message name="IDS_BRAVE_TV_REMOVING_HISTORY" desc="TV history removal in progress.">Removing visits…</message>
+    <message name="IDS_BRAVE_TV_HISTORY_REMOVE_FAILED" desc="TV history removal failed and may be retried.">Could not remove these visits. Try again.</message>
     <message name="IDS_BRAVE_TV_SETTINGS" desc="TV button to open browser settings.">Settings</message>
     <message name="IDS_BRAVE_TV_SHIELDS" desc="TV button and panel title for current-site protection settings.">Site protection</message>
     <message name="IDS_BRAVE_TV_SHIELDS_UP" desc="TV button showing site protection enabled; activation disables it.">Protection on · Turn off for this site</message>

@@ -450,6 +450,7 @@ brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserControls.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvHomePage.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvHistoryPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteInput.java",
   "../../brave/android/java/org/chromium/chrome/browser/ui/BraveAdaptiveToolbarUiCoordinator.java",
   "../../brave/android/java/org/chromium/chrome/browser/ui/system/BraveStatusBarColorController.java",

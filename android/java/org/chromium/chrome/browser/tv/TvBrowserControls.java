@@ -65,6 +65,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable AlertDialog mDialog;
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable CallbackController mSearchCallbacks;
+    private @Nullable TvHistoryPanel mHistoryPanel;
     private int mLastAction = R.string.brave_tv_address;
     private String mPressedUrl = "";
     private boolean mDestroyed;
@@ -238,6 +239,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     @Override
     public void showControls() {
         if (!isAlive()) return;
+        if (mHistoryPanel != null) dismissDialog();
         detachCursor();
         if (mDialog != null && mDialog.isShowing()) return;
         Tab tab = mActivity.getActivityTab();
@@ -282,6 +284,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void dismissDialog() {
+        if (mHistoryPanel != null) {
+            mHistoryPanel.destroy();
+            mHistoryPanel = null;
+        }
         if (mSearchCallbacks != null) {
             mSearchCallbacks.destroy();
             mSearchCallbacks = null;
@@ -784,7 +790,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             Tab tab = mActivity.getActivityTab();
             if (tab != null) showBookmarks(tab, currentUrl(), null, 0);
         } else if (action == R.string.brave_tv_history) {
-            mActivity.onMenuOrKeyboardAction(R.id.open_history_menu_id, false);
+            Tab tab = mActivity.getActivityTab();
+            if (tab == null || tab.isDestroyed() || tab.isIncognito()) return;
+            mHistoryPanel = new TvHistoryPanel(mActivity, tab, this::returnToControls);
+            mHistoryPanel.show();
         } else if (action == R.string.brave_tv_settings) {
             showSettings();
         } else if (action == R.string.brave_tv_close_tab) {
