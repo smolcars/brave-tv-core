@@ -11,6 +11,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ClickableSpan;
 import android.view.ContextThemeWrapper;
 import android.view.View;
 import android.view.ViewGroup;
@@ -235,11 +237,63 @@ public class OnboardingStepAdapterTest {
         assertFalse(mListener.mLastP3aEnabled);
     }
 
+    @Test
+    @Config(qualifiers = "television-land")
+    public void testTvChoicesAndPrivacyLink() {
+        int[] linkClicks = {0};
+        mWdpLearnMore.setSpan(
+                new ClickableSpan() {
+                    @Override
+                    public void onClick(View view) {
+                        linkClicks[0]++;
+                    }
+                },
+                0,
+                10,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        OnboardingStepAdapter adapter = new OnboardingStepAdapter(mWdpLearnMore, mListener);
+        View page = adapter.onCreateViewHolder(mParent, HELP_BRAVE_SEARCH).itemView;
+        Button learnMore = page.findViewById(R.id.onboarding_learn_more);
+        assertEquals("Learn more", learnMore.getText().toString());
+        learnMore.performClick();
+        assertEquals(1, linkClicks[0]);
+        assertEquals(-1, mListener.mRequestedPage);
+
+        page.findViewById(R.id.onboarding_sure).performClick();
+        assertTrue(mListener.mLastWebDiscoverEnabled);
+        assertEquals(1, mListener.mRequestedPage);
+        page.findViewById(R.id.onboarding_later).performClick();
+        assertFalse(mListener.mLastWebDiscoverEnabled);
+        assertEquals(2, mListener.mWebDiscoverChangeCount);
+        assertEquals(1, mListener.mRequestedPage);
+    }
+
+    @Test
+    @Config(qualifiers = "television-land")
+    public void testTvManagedConsentAndRepeatedToggle() {
+        OnboardingStepAdapter adapter = new OnboardingStepAdapter(mWdpLearnMore, mListener);
+        adapter.setCrashReportingManaged(true);
+        View page = adapter.onCreateViewHolder(mParent, MAKE_BRAVE_BETTER).itemView;
+        assertEquals(View.INVISIBLE, page.findViewById(R.id.send_crash_reports).getVisibility());
+        MaterialCheckBox p3a = page.findViewById(R.id.send_p3a_reports);
+        assertTrue(p3a.isFocusableInTouchMode());
+        p3a.performClick();
+        assertTrue(mListener.mLastP3aEnabled);
+        p3a.performClick();
+        assertFalse(mListener.mLastP3aEnabled);
+        assertEquals(2, mListener.mP3aChangeCount);
+        page.findViewById(R.id.onboarding_start_browsing).performClick();
+        assertEquals(1, mListener.mDismissCount);
+        adapter.onViewRecycled(adapter.onCreateViewHolder(mParent, BLOCK_INTERRUPTIONS));
+    }
+
     private static final class TestListener
             implements OnboardingStepAdapter.OnboardingNavigationListener {
         int mRequestedPage = -1;
         int mDismissCount;
         int mWebDiscoverEnabledCount;
+        int mWebDiscoverChangeCount;
+        boolean mLastWebDiscoverEnabled;
         int mCrashReportingChangeCount;
         int mP3aChangeCount;
         boolean mLastCrashReportingEnabled;
@@ -256,8 +310,10 @@ public class OnboardingStepAdapterTest {
         }
 
         @Override
-        public void onWebDiscoverPreferenceEnabled() {
-            mWebDiscoverEnabledCount++;
+        public void onWebDiscoverPreferenceChanged(boolean enabled) {
+            if (enabled) mWebDiscoverEnabledCount++;
+            mWebDiscoverChangeCount++;
+            mLastWebDiscoverEnabled = enabled;
         }
 
         @Override
@@ -276,6 +332,8 @@ public class OnboardingStepAdapterTest {
             mRequestedPage = -1;
             mDismissCount = 0;
             mWebDiscoverEnabledCount = 0;
+            mWebDiscoverChangeCount = 0;
+            mLastWebDiscoverEnabled = false;
             mCrashReportingChangeCount = 0;
             mP3aChangeCount = 0;
             mLastCrashReportingEnabled = false;

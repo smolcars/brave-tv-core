@@ -27,6 +27,7 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.Guideline;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.android.installreferrer.api.InstallReferrerClient;
@@ -174,9 +175,9 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase
                 });
     }
 
-    private void enableWebDiscoverPreference() {
+    private void setWebDiscoverPreference(boolean enabled) {
         UserPrefs.get(assumeNonNull(getProfileProviderSupplier().get()).getOriginalProfile())
-                .setBoolean(BravePref.WEB_DISCOVERY_ENABLED, true);
+                .setBoolean(BravePref.WEB_DISCOVERY_ENABLED, enabled);
     }
 
     private void finalStep() {
@@ -269,11 +270,28 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase
         mSplashGuideline = findViewById(R.id.splash_anchor);
         mOnboardingPager = findViewById(R.id.onboarding_steps_pager);
 
-        if ((getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
-                == Configuration.UI_MODE_TYPE_TELEVISION) {
+        if (isTelevision()) {
             // ViewPager2's full-screen RecyclerView otherwise traps initial D-pad focus.
             ((ViewGroup) mOnboardingPager.getChildAt(0))
                     .setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+            mOnboardingPager.registerOnPageChangeCallback(
+                    new ViewPager2.OnPageChangeCallback() {
+                        @Override
+                        public void onPageSelected(int position) {
+                            requestTvPageFocus();
+                        }
+                    });
+            ((RecyclerView) mOnboardingPager.getChildAt(0))
+                    .addOnChildAttachStateChangeListener(
+                            new RecyclerView.OnChildAttachStateChangeListener() {
+                                @Override
+                                public void onChildViewAttachedToWindow(View view) {
+                                    requestTvPageFocus();
+                                }
+
+                                @Override
+                                public void onChildViewDetachedFromWindow(View view) {}
+                            });
         }
 
         final ChromeClickableSpan wdpLearnMoreClickableSpan =
@@ -332,7 +350,17 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase
         } else {
             mStepAdapter.setP3aManaged(true);
         }
-        if (mSplashAnimationFinished) {
+        if (isTelevision()) {
+            mBraveSplash.setVisibility(View.GONE);
+            if (mBraveSplashContainer != null) mBraveSplashContainer.setVisibility(View.GONE);
+            mOnboardingPager.setCurrentItem(
+                    mHasRestoredState ? mRestoredPageIndex : (isWDPSettingAvailable() ? 0 : 1),
+                    false);
+            mOnboardingPager.setVisibility(View.VISIBLE);
+            mSplashAnimationFinished = true;
+            requestTvPageFocus();
+            if (!mHasRestoredState) maybeRequestDefaultBrowser();
+        } else if (mSplashAnimationFinished) {
             if (mBraveSplashContainer != null) {
                 mBraveSplashContainer.setVisibility(View.GONE);
             } else {
@@ -568,8 +596,45 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase
         }
     }
 
+    private boolean isTelevision() {
+        return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION;
+    }
+
+    private void requestTvPageFocus() {
+        mOnboardingPager.post(
+                () -> {
+                    if (isActivityFinishingOrDestroyed()
+                            || mOnboardingPager.getVisibility() != View.VISIBLE) return;
+                    RecyclerView pages = (RecyclerView) mOnboardingPager.getChildAt(0);
+                    RecyclerView.ViewHolder holder =
+                            pages.findViewHolderForAdapterPosition(
+                                    mOnboardingPager.getCurrentItem());
+                    if (holder == null || holder.itemView.hasFocus()) return;
+                    int[] actions = {
+                        R.id.onboarding_later,
+                        R.id.onboarding_continue,
+                        R.id.send_crash_reports,
+                        R.id.send_p3a_reports,
+                        R.id.onboarding_start_browsing
+                    };
+                    for (int id : actions) {
+                        View action = holder.itemView.findViewById(id);
+                        if (action != null && action.isShown() && action.isEnabled()) {
+                            action.requestFocus();
+                            return;
+                        }
+                    }
+                });
+    }
+
     @Override
     public @BackPressResult int handleBackPress() {
+        if (isTelevision() && mOnboardingPager.getVisibility() == View.VISIBLE) {
+            int firstPage = isWDPSettingAvailable() ? 0 : 1;
+            int currentPage = mOnboardingPager.getCurrentItem();
+            if (currentPage > firstPage) onRequestPageChange(currentPage - 1);
+        }
         return BackPressResult.SUCCESS;
     }
 
@@ -582,7 +647,12 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase
                 return;
             }
         }
-        mPageBounceAnimator.animateToPosition(position);
+        if (isTelevision()) {
+            mOnboardingPager.setCurrentItem(position, false);
+            requestTvPageFocus();
+        } else {
+            mPageBounceAnimator.animateToPosition(position);
+        }
     }
 
     @Override
@@ -591,8 +661,8 @@ public class WelcomeOnboardingActivity extends FirstRunActivityBase
     }
 
     @Override
-    public void onWebDiscoverPreferenceEnabled() {
-        enableWebDiscoverPreference();
+    public void onWebDiscoverPreferenceChanged(boolean enabled) {
+        setWebDiscoverPreference(enabled);
     }
 
     @Override
