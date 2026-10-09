@@ -388,7 +388,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         dismissDialog();
                         mActivity.getTabModelSelector().selectModel(incognito);
                         TabModelUtils.setIndex(currentModel, index);
-                        if (!UrlUtilities.isNtpUrl(tab.getUrl())) showControls();
+                        if (tab.getNativePage() instanceof TvHomePage home) {
+                            // Re-selecting the active tab does not run Chromium's attachment focus.
+                            home.getView().requestFocus();
+                        } else if (!UrlUtilities.isNtpUrl(tab.getUrl())) {
+                            showControls();
+                        }
                     });
         }
         panel.addAction(
