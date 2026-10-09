@@ -287,6 +287,11 @@ void AdBlockComponentServiceManager::StartRegionalServices() {
       }
     }
   }
+  if (HasBundledAdBlockData() &&
+      !base::FeatureList::IsEnabled(features::kAdblockDATCache)) {
+    filters_provider_manager_->OnChanged(true);
+    filters_provider_manager_->OnChanged(false);
+  }
 }
 
 void AdBlockComponentServiceManager::LoadComponentFiltersProviders() {

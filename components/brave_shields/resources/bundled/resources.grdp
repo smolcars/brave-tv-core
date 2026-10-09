@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <grit-part>
-<include name="IDR_BRAVE_ADBLOCK_BUNDLED_CATALOG" file="catalog.json" type="BINDATA" compress="gzip" />
-<include name="IDR_BRAVE_ADBLOCK_BUNDLED_RESOURCES" file="resources.json" type="BINDATA" compress="gzip" />
-<include name="IDR_BRAVE_ADBLOCK_BUNDLED_DEFAULT" file="iodkpdagapdfkphljnddpjlldadblomo.txt" type="BINDATA" compress="gzip" />
-<include name="IDR_BRAVE_ADBLOCK_BUNDLED_PRIVACY" file="kihnoaefogbkmblfimmibknnmkllbhlf.txt" type="BINDATA" compress="gzip" />
-<include name="IDR_BRAVE_ADBLOCK_BUNDLED_FIRST_PARTY" file="adcocjohghhfpidemphmcmlmhnfgikei.txt" type="BINDATA" compress="gzip" />
-<include name="IDR_BRAVE_ADBLOCK_BUNDLED_COOKIES" file="cdbbhgbmjhfnhnmgeddbliobbofkgdhe.txt" type="BINDATA" compress="gzip" />
-<include name="IDR_BRAVE_ADBLOCK_BUNDLED_MOBILE" file="bfpgedeaaibpoidldhjcknekahbikncb.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_CATALOG" file="../brave_shields/resources/bundled/catalog.json" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_RESOURCES" file="../brave_shields/resources/bundled/resources.json" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_DEFAULT" file="../brave_shields/resources/bundled/iodkpdagapdfkphljnddpjlldadblomo.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_PRIVACY" file="../brave_shields/resources/bundled/kihnoaefogbkmblfimmibknnmkllbhlf.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_FIRST_PARTY" file="../brave_shields/resources/bundled/adcocjohghhfpidemphmcmlmhnfgikei.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_COOKIES" file="../brave_shields/resources/bundled/cdbbhgbmjhfnhnmgeddbliobbofkgdhe.txt" type="BINDATA" compress="gzip" />
+<include name="IDR_BRAVE_ADBLOCK_BUNDLED_MOBILE" file="../brave_shields/resources/bundled/bfpgedeaaibpoidldhjcknekahbikncb.txt" type="BINDATA" compress="gzip" />
 </grit-part>
