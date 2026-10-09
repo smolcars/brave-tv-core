@@ -14,3 +14,8 @@ enable_mdns = true
 
 # We want it to be enabled for all configurations
 disable_android_lint = false
+
+# This independent browser does not participate in Brave telemetry programs.
+enable_web_discovery_native = false
+enable_web_discovery = false
+enable_brave_stats_updater = false

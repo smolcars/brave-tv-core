@@ -16,6 +16,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.annotation.Config;
 
 import org.chromium.base.test.BaseRobolectricTestRunner;
+import org.chromium.components.minidump_uploader.util.BraveHttpURLConnectionFactoryImpl;
 import org.chromium.components.minidump_uploader.util.HttpURLConnectionFactory;
 
 import java.io.File;
@@ -66,6 +67,16 @@ public class BraveMinidumpUploaderTest {
     @After
     public void tearDown() {
         mUploadTestFile.delete();
+    }
+
+    @Test
+    @SmallTest
+    public void testForkRefusesCrashUploadConnection() {
+        Assert.assertNull(
+                new BraveHttpURLConnectionFactoryImpl()
+                        .createHttpURLConnection("https://cr.brave.com"));
+        MinidumpUploader uploader = new MinidumpUploader(new BraveHttpURLConnectionFactoryImpl());
+        Assert.assertTrue(uploader.upload(mUploadTestFile).isFailure());
     }
 
     @Test

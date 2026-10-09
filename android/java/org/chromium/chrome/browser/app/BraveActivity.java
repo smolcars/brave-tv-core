@@ -178,6 +178,7 @@ import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettin
 import org.chromium.chrome.browser.prefetch.settings.PreloadPagesSettingsBridge;
 import org.chromium.chrome.browser.prefetch.settings.PreloadPagesState;
 import org.chromium.chrome.browser.privacy.settings.BravePrivacySettings;
+import org.chromium.chrome.browser.privacy.settings.PrivacyPreferencesManagerImpl;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.profiles.ProfileManager;
 import org.chromium.chrome.browser.rate.BraveRateDialogFragment;
@@ -1307,6 +1308,7 @@ public abstract class BraveActivity extends ChromeActivity
     @Override
     public void finishNativeInitialization() {
         super.finishNativeInitialization();
+        PrivacyPreferencesManagerImpl.getInstance().setUsageAndCrashReporting(false);
 
         boolean isFirstInstall = PackageUtils.isFirstInstall(this);
 

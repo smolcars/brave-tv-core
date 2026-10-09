@@ -4,10 +4,8 @@
  * You can obtain one at https://mozilla.org/MPL/2.0/. */
 package org.chromium.chrome.browser.firstrun;
 
-import android.content.res.Configuration;
 import android.text.SpannableString;
 import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,7 +19,6 @@ import com.google.android.material.checkbox.MaterialCheckBox;
 
 import org.chromium.brave.browser.firstrun.R;
 import org.chromium.build.annotations.NullMarked;
-import org.chromium.build.annotations.Nullable;
 
 /**
  * RecyclerView adapter for the onboarding ViewPager2, inflating one layout per step and delegating
@@ -41,7 +38,7 @@ public class OnboardingStepAdapter
 
         void onDismiss();
 
-        void onWebDiscoverPreferenceChanged(boolean enabled);
+        void onWebDiscoverPreferenceEnabled();
 
         void onCrashReportingPreferenceChanged(final boolean enabled);
 
@@ -50,12 +47,6 @@ public class OnboardingStepAdapter
 
     private static final int[] STEPS = {
         R.layout.help_brave_search, R.layout.block_interruptions, R.layout.make_brave_better
-    };
-
-    private static final int[] TV_STEPS = {
-        R.layout.tv_help_brave_search,
-        R.layout.tv_block_interruptions,
-        R.layout.tv_make_brave_better
     };
 
     private static final int HELP_BRAVE_SEARCH_POSITION = 0;
@@ -79,10 +70,7 @@ public class OnboardingStepAdapter
     @Override
     public OnboardingBaseViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        boolean isTv =
-                (parent.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
-                        == Configuration.UI_MODE_TYPE_TELEVISION;
-        View view = inflater.inflate((isTv ? TV_STEPS : STEPS)[viewType], parent, false);
+        View view = inflater.inflate(STEPS[viewType], parent, false);
         return switch (viewType) {
             case HELP_BRAVE_SEARCH_POSITION ->
                     new HelpBraveSearchViewHolder(view, mWdpLearnMore, mListener);
@@ -183,36 +171,14 @@ public class OnboardingStepAdapter
 
             mLater = itemView.findViewById(R.id.onboarding_later);
             mLater.setClipToOutline(true);
-            Button learnMore = itemView.findViewById(R.id.onboarding_learn_more);
-            if (learnMore != null) {
-                // Expose the existing privacy link as a full remote-focusable action on TV.
-                ClickableSpan[] links =
-                        wdpLearnMore.getSpans(0, wdpLearnMore.length(), ClickableSpan.class);
-                assert links.length == 1;
-                ClickableSpan link = links[0];
-                learnMore.setText(
-                        wdpLearnMore
-                                .subSequence(
-                                        wdpLearnMore.getSpanStart(link),
-                                        wdpLearnMore.getSpanEnd(link))
-                                .toString());
-                learnMore.setOnClickListener(link::onClick);
-                mSubtitle.setMovementMethod(null);
-                mSubtitle.setText(wdpLearnMore.toString());
-                mSubtitle.setFocusable(false);
-                mSubtitle.setClickable(false);
-            }
             mLater.setOnClickListener(
-                    v -> {
-                        if (learnMore != null) listener.onWebDiscoverPreferenceChanged(false);
-                        listener.onRequestPageChange(BLOCK_INTERRUPTIONS_POSITION);
-                    });
+                    v -> listener.onRequestPageChange(BLOCK_INTERRUPTIONS_POSITION));
 
             mSure = itemView.findViewById(R.id.onboarding_sure);
             mSure.setClipToOutline(true);
             mSure.setOnClickListener(
                     view -> {
-                        listener.onWebDiscoverPreferenceChanged(true);
+                        listener.onWebDiscoverPreferenceEnabled();
                         listener.onRequestPageChange(BLOCK_INTERRUPTIONS_POSITION);
                     });
         }
@@ -225,7 +191,7 @@ public class OnboardingStepAdapter
 
     private static final class BlockInterruptionsViewHolder extends OnboardingBaseViewHolder {
         final Button mContinue;
-        final @Nullable LottieAnimationView mBlockInterruptions;
+        final LottieAnimationView mBlockInterruptions;
 
         private BlockInterruptionsViewHolder(
                 final View itemView, final OnboardingNavigationListener listener) {
@@ -240,7 +206,7 @@ public class OnboardingStepAdapter
 
         @Override
         public void viewRecycled() {
-            if (mBlockInterruptions != null) mBlockInterruptions.cancelAnimation();
+            mBlockInterruptions.cancelAnimation();
         }
     }
 

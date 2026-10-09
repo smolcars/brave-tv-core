@@ -413,33 +413,12 @@ public class BravePrivacySettings extends PrivacySettings {
         mClearBrowsingDataOnExit = (ChromeSwitchPreference) findPreference(PREF_CLEAR_ON_EXIT);
         mClearBrowsingDataOnExit.setOnPreferenceChangeListener(this);
 
-        // Hide P3A setting if it's managed by policy
-        if (BraveLocalState.get().isManagedPreference(BravePref.P3A_ENABLED)) {
-            removePreferenceIfPresent(PREF_SEND_P3A);
-            mSendP3A = null;
-        } else {
-            mSendP3A = (ChromeSwitchPreference) findPreference(PREF_SEND_P3A);
-            mSendP3A.setOnPreferenceChangeListener(this);
-        }
-
-        // Hide crash reporting setting if it's disabled by policy
-        if (!mPrivacyPrefManager.isUsageAndCrashReportingPermittedByPolicy()) {
-            removePreferenceIfPresent(PREF_SEND_CRASH_REPORTS);
-            mSendCrashReports = null;
-        } else {
-            mSendCrashReports = (ChromeSwitchPreference) findPreference(PREF_SEND_CRASH_REPORTS);
-            mSendCrashReports.setOnPreferenceChangeListener(this);
-        }
-
-        // Hide stats usage ping setting if it's managed by policy
-        if (BraveLocalState.get().isManagedPreference(BravePref.STATS_REPORTING_ENABLED)) {
-            removePreferenceIfPresent(PREF_BRAVE_STATS_USAGE_PING);
-            mBraveStatsUsagePing = null;
-        } else {
-            mBraveStatsUsagePing =
-                    (ChromeSwitchPreference) findPreference(PREF_BRAVE_STATS_USAGE_PING);
-            mBraveStatsUsagePing.setOnPreferenceChangeListener(this);
-        }
+        removePreferenceIfPresent(PREF_SEND_P3A);
+        removePreferenceIfPresent(PREF_SEND_CRASH_REPORTS);
+        removePreferenceIfPresent(PREF_BRAVE_STATS_USAGE_PING);
+        mSendP3A = null;
+        mSendCrashReports = null;
+        mBraveStatsUsagePing = null;
 
         // Hide Sponsored Ads setting if Brave Rewards is disabled by policy
         if (BraveRewardsPolicy.isDisabledByPolicy(getProfile())) {

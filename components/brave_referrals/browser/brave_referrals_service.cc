@@ -190,6 +190,10 @@ BraveReferralsService::BraveReferralsService(PrefService* pref_service,
 BraveReferralsService::~BraveReferralsService() = default;
 
 void BraveReferralsService::Start() {
+#if BUILDFLAG(IS_ANDROID)
+  // The independent Android browser does not initialize referral telemetry.
+  return;
+#endif
   if (initialized_) {
     return;
   }

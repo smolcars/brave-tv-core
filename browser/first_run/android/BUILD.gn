@@ -27,8 +27,6 @@ android_library("java") {
 android_resources("java_resources") {
   sources = [
     "java/res/animator/ic_brave_splash_scale.xml",
-    "java/res/color/tv_onboarding_background.xml",
-    "java/res/color/tv_onboarding_foreground.xml",
     "java/res/drawable/ic_brave_brand.xml",
     "java/res/drawable/ic_brave_splash.xml",
     "java/res/drawable/ic_brave_splash_animated.xml",
@@ -38,7 +36,6 @@ android_resources("java_resources") {
     "java/res/drawable/onboarding_p3a_illustration.xml",
     "java/res/drawable/onboarding_rounded_corners.xml",
     "java/res/drawable/onboarding_top_rounded_corners.xml",
-    "java/res/drawable/tv_onboarding_focus.xml",
     "java/res/layout-land/block_interruptions.xml",
     "java/res/layout-land/help_brave_search.xml",
     "java/res/layout-land/make_brave_better.xml",
@@ -54,9 +51,6 @@ android_resources("java_resources") {
     "java/res/layout/help_brave_search_landscape_content.xml",
     "java/res/layout/make_brave_better.xml",
     "java/res/layout/make_brave_better_landscape_content.xml",
-    "java/res/layout/tv_block_interruptions.xml",
-    "java/res/layout/tv_help_brave_search.xml",
-    "java/res/layout/tv_make_brave_better.xml",
     "java/res/raw-night/no_video_ads.json",
     "java/res/raw/no_video_ads.json",
     "java/res/values-night/colors.xml",
@@ -66,7 +60,6 @@ android_resources("java_resources") {
     "java/res/values-sw600dp-h900dp-port/dimens.xml",
     "java/res/values/colors.xml",
     "java/res/values/dimens.xml",
-    "java/res/values/tv_onboarding_styles.xml",
   ]
 }
 
