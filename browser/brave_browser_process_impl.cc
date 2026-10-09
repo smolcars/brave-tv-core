@@ -514,6 +514,9 @@ p3a::P3AService* BraveBrowserProcessImpl::p3a_service() {
 
 brave::BraveReferralsService*
 BraveBrowserProcessImpl::brave_referrals_service() {
+#if BUILDFLAG(IS_ANDROID)
+  return nullptr;
+#else
   if (!brave_referrals_service_) {
     brave_referrals_service_ = std::make_unique<brave::BraveReferralsService>(
         local_state(), brave_stats::GetAPIKey(),
@@ -523,6 +526,7 @@ BraveBrowserProcessImpl::brave_referrals_service() {
             brave_referrals_service_.get()));
   }
   return brave_referrals_service_.get();
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 #if BUILDFLAG(ENABLE_BRAVE_STATS_UPDATER)
