@@ -21,6 +21,7 @@
 #include "brave/components/constants/pref_names.h"
 #include "brave/components/p3a_utils/custom_attributes.h"
 #include "brave/components/web_discovery/buildflags/buildflags.h"
+#include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/search_engines/template_url_service_factory.h"
@@ -143,6 +144,9 @@ SearchEngineTracker* SearchEngineTrackerFactory::GetForBrowserContext(
 std::unique_ptr<KeyedService>
 SearchEngineTrackerFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
+#if BUILDFLAG(IS_ANDROID)
+  return nullptr;
+#else
   auto* profile = Profile::FromBrowserContext(context);
   auto* template_url_service =
       TemplateURLServiceFactory::GetForProfile(profile);
@@ -153,6 +157,7 @@ SearchEngineTrackerFactory::BuildServiceInstanceForBrowserContext(
   }
   return std::make_unique<SearchEngineTracker>(template_url_service,
                                                profile_prefs, local_state);
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 bool SearchEngineTrackerFactory::ServiceIsCreatedWithBrowserContext() const {

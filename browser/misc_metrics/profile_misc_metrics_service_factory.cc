@@ -9,6 +9,7 @@
 
 #include "base/no_destructor.h"
 #include "brave/browser/misc_metrics/profile_misc_metrics_service.h"
+#include "build/build_config.h"
 #include "chrome/browser/autofill/personal_data_manager_factory.h"
 #include "chrome/browser/bookmarks/bookmark_model_factory.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
@@ -61,7 +62,11 @@ ProfileMiscMetricsServiceFactory::~ProfileMiscMetricsServiceFactory() = default;
 std::unique_ptr<KeyedService>
 ProfileMiscMetricsServiceFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
+#if BUILDFLAG(IS_ANDROID)
+  return nullptr;
+#else
   return std::make_unique<ProfileMiscMetricsService>(context);
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 }  // namespace misc_metrics

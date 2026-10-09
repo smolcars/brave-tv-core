@@ -334,8 +334,10 @@ ProfileManager* BraveBrowserProcessImpl::profile_manager() {
 void BraveBrowserProcessImpl::StartBraveServices() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  process_misc_metrics()->serp_metrics_p3a()->Init(
-      p3a_service(), profile_manager()->GetProfileAttributesStorage());
+  if (auto* metrics = process_misc_metrics()) {
+    metrics->serp_metrics_p3a()->Init(
+        p3a_service(), profile_manager()->GetProfileAttributesStorage());
+  }
 
 #if BUILDFLAG(ENABLE_BRAVE_ADS)
   resource_component();
@@ -597,6 +599,9 @@ BraveBrowserProcessImpl::brave_vpn_connection_manager() {
 
 misc_metrics::ProcessMiscMetrics*
 BraveBrowserProcessImpl::process_misc_metrics() {
+#if BUILDFLAG(IS_ANDROID)
+  return nullptr;
+#else
   if (!process_misc_metrics_) {
     process_misc_metrics_ =
         std::make_unique<misc_metrics::ProcessMiscMetrics>(local_state());
@@ -606,4 +611,5 @@ BraveBrowserProcessImpl::process_misc_metrics() {
     }
   }
   return process_misc_metrics_.get();
+#endif  // BUILDFLAG(IS_ANDROID)
 }

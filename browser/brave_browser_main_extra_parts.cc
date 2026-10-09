@@ -94,7 +94,9 @@ void BraveBrowserMainExtraParts::PreMainMessageLoopRun() {
 #if !BUILDFLAG(IS_ANDROID)
   brave::BraveWindowTracker::CreateInstance(g_browser_process->local_state());
 #endif  // !BUILDFLAG(IS_ANDROID)
-  g_brave_browser_process->process_misc_metrics()->uptime_monitor()->Init();
+  if (auto* metrics = g_brave_browser_process->process_misc_metrics()) {
+    metrics->uptime_monitor()->Init();
+  }
 }
 
 void BraveBrowserMainExtraParts::PostDestroyThreads() {

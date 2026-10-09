@@ -133,7 +133,6 @@ import org.chromium.chrome.browser.browsing_data.BraveShortcutsUtils;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataBridge;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
 import org.chromium.chrome.browser.browsing_data.TimePeriod;
-import org.chromium.chrome.browser.compositor.layouts.LayoutManagerChrome;
 import org.chromium.chrome.browser.compositor.layouts.LayoutManagerImpl;
 import org.chromium.chrome.browser.crypto_wallet.BlockchainRegistryFactory;
 import org.chromium.chrome.browser.crypto_wallet.BraveWalletPolicy;
@@ -154,8 +153,6 @@ import org.chromium.chrome.browser.informers.BraveSyncAccountDeletedInformer;
 import org.chromium.chrome.browser.layouts.LayoutType;
 import org.chromium.chrome.browser.lifetime.ApplicationLifetime;
 import org.chromium.chrome.browser.media.BraveYouTubePictureInPictureController;
-import org.chromium.chrome.browser.misc_metrics.MiscAndroidMetricsConnectionErrorHandler;
-import org.chromium.chrome.browser.misc_metrics.MiscAndroidMetricsFactory;
 import org.chromium.chrome.browser.multiwindow.BraveMultiWindowUtils;
 import org.chromium.chrome.browser.multiwindow.MultiInstanceManager;
 import org.chromium.chrome.browser.multiwindow.MultiInstanceManager.PersistedInstanceType;
@@ -219,7 +216,6 @@ import org.chromium.chrome.browser.util.BraveDbUtil;
 import org.chromium.chrome.browser.util.KeyboardVisibilityHelper;
 import org.chromium.chrome.browser.util.LiveDataUtil;
 import org.chromium.chrome.browser.util.PackageUtils;
-import org.chromium.chrome.browser.util.UsageMonitor;
 import org.chromium.chrome.browser.vpn.BraveVpnNativeWorker;
 import org.chromium.chrome.browser.vpn.BraveVpnObserver;
 import org.chromium.chrome.browser.vpn.BraveVpnPolicy;
@@ -267,8 +263,6 @@ public abstract class BraveActivity extends ChromeActivity
                 ConnectionErrorHandler,
                 PrefObserver,
                 BraveSafeBrowsingApiHandler.BraveSafeBrowsingApiHandlerDelegate,
-                MiscAndroidMetricsConnectionErrorHandler
-                        .MiscAndroidMetricsConnectionErrorHandlerDelegate,
                 QuickSearchEnginesCallback,
                 KeyboardVisibilityHelper.KeyboardVisibilityListener,
                 OnSharedPreferenceChangeListener,
@@ -323,7 +317,6 @@ public abstract class BraveActivity extends ChromeActivity
     private BraveWalletService mBraveWalletService;
     private KeyringService mKeyringService;
     private JsonRpcService mJsonRpcService;
-    private MiscAndroidMetrics mMiscAndroidMetrics;
     @Nullable private WalletModel mWalletModel;
     private BlockchainRegistry mBlockchainRegistry;
     private TxService mTxService;
@@ -338,9 +331,7 @@ public abstract class BraveActivity extends ChromeActivity
     private boolean mNativeInitialized;
     private boolean mSafeBrowsingFlagEnabled;
     private NewTabPageManager mNewTabPageManager;
-    private UsageMonitor mUsageMonitor;
     private NotificationPermissionController mNotificationPermissionController;
-    private MiscAndroidMetricsConnectionErrorHandler mMiscAndroidMetricsConnectionErrorHandler;
     private AppUpdateManager mAppUpdateManager;
     private boolean mWalletBadgeVisible;
     private boolean mSpoofCustomTab;
@@ -479,15 +470,6 @@ public abstract class BraveActivity extends ChromeActivity
         // Executes Leo voice prompt if it was triggered from quick search app widget
         maybeExecuteLeoVoicePrompt();
 
-        if (mMiscAndroidMetrics != null) {
-            Intent resumeIntent = getIntent();
-            if (resumeIntent != null
-                    && Intent.ACTION_VIEW.equals(resumeIntent.getAction())
-                    && resumeIntent.getData() != null) {
-                mMiscAndroidMetrics.recordIntentUrl(resumeIntent.getData().toString());
-            }
-        }
-
         Profile profile = mTabModelProfileSupplier.get();
         if (profile != null) {
             InAppPurchaseWrapper.getInstance()
@@ -498,9 +480,6 @@ public abstract class BraveActivity extends ChromeActivity
     @Override
     public void onPauseWithNative() {
         if (mTvBrowserControls != null) mTvBrowserControls.onPause();
-        if (mUsageMonitor != null) {
-            mUsageMonitor.stop();
-        }
         if (BraveVpnUtils.isVpnFeatureSupported(BraveActivity.this)) {
             BraveVpnNativeWorker.getInstance().removeObserver(this);
         }
@@ -659,7 +638,6 @@ public abstract class BraveActivity extends ChromeActivity
         getYouTubePictureInPictureController().onDestroy();
         super.onDestroyInternal();
         cleanUpWalletNativeServices();
-        cleanUpMiscAndroidMetrics();
     }
 
     @Override
@@ -1017,18 +995,7 @@ public abstract class BraveActivity extends ChromeActivity
     @Override
     public boolean onOptionsItemSelected(
             int itemId, @Nullable Bundle menuItemData, @Nullable MotionEventInfo triggeringMotion) {
-        if (itemId == R.id.new_tab_menu_id) {
-            LayoutManagerChrome layoutManager =
-                    (LayoutManagerChrome)
-                            BraveReflectionUtil.getField(
-                                    ChromeTabbedActivity.class, "mLayoutManager", this);
-            if (layoutManager != null
-                    && layoutManager.getHubLayoutForTesting() != null
-                    && !layoutManager.getHubLayoutForTesting().isActive()
-                    && mMiscAndroidMetrics != null) {
-                mMiscAndroidMetrics.recordAppMenuNewTab();
-            }
-        } else if (itemId == R.id.home_menu_id) {
+        if (itemId == R.id.home_menu_id) {
             if (getToolbarManager() instanceof BraveToolbarManager) {
                 ((BraveToolbarManager) getToolbarManager()).openHomepage();
             }
@@ -1205,9 +1172,6 @@ public abstract class BraveActivity extends ChromeActivity
                     BravePreferenceKeys.BRAVE_APP_OPEN_COUNT_FOR_WIDGET_PROMO,
                     appOpenCountForWidgetPromo + 1);
         } */
-        if (mUsageMonitor != null) {
-            mUsageMonitor.start();
-        }
     }
 
     @Override
@@ -1405,7 +1369,6 @@ public abstract class BraveActivity extends ChromeActivity
             BraveSyncWorker.get();
         }
 
-        initMiscAndroidMetrics();
         checkForNotificationData();
 
         if (RateUtils.getInstance().isLastSessionShown()) {
@@ -1936,8 +1899,9 @@ public abstract class BraveActivity extends ChromeActivity
         startActivity(braveWalletIntent);
     }
 
-    public MiscAndroidMetrics getMiscAndroidMetrics() {
-        return mMiscAndroidMetrics;
+    public @Nullable MiscAndroidMetrics getMiscAndroidMetrics() {
+        // Legacy UI consumers already tolerate an unavailable metrics service.
+        return null;
     }
 
     private void checkForNotificationData() {
@@ -2693,49 +2657,6 @@ public abstract class BraveActivity extends ChromeActivity
         mAssetRatioService = BraveWalletServiceFactory.getInstance().getAssetRatioService(this);
     }
 
-    @Override
-    public void initMiscAndroidMetricsFromAWorkerThread() {
-        runOnUiThread(
-                () -> {
-                    initMiscAndroidMetrics();
-                });
-    }
-
-    private void initMiscAndroidMetrics() {
-        ThreadUtils.assertOnUiThread();
-        if (isTelevision()) return;
-        if (mMiscAndroidMetrics != null) {
-            return;
-        }
-        if (mMiscAndroidMetricsConnectionErrorHandler == null) {
-            mMiscAndroidMetricsConnectionErrorHandler =
-                    new MiscAndroidMetricsConnectionErrorHandler(this);
-        }
-
-        MiscAndroidMetricsFactory.getInstance()
-                .getMetricsService(mMiscAndroidMetricsConnectionErrorHandler)
-                .then(
-                        miscAndroidMetrics -> {
-                            mMiscAndroidMetrics = miscAndroidMetrics;
-                            mMiscAndroidMetrics.recordPrivacyHubEnabledStatus(
-                                    OnboardingPrefManager.getInstance().isBraveStatsEnabled());
-                            mMiscAndroidMetrics.recordSetAsDefault(
-                                    BraveSetDefaultBrowserUtils.isAppSetAsDefaultBrowser(
-                                            BraveActivity.this));
-                            Intent launchIntent = getIntent();
-                            if (launchIntent != null
-                                    && Intent.ACTION_VIEW.equals(launchIntent.getAction())
-                                    && launchIntent.getData() != null) {
-                                mMiscAndroidMetrics.recordIntentUrl(
-                                        launchIntent.getData().toString());
-                            }
-                            if (mUsageMonitor == null) {
-                                mUsageMonitor = UsageMonitor.getInstance(mMiscAndroidMetrics);
-                            }
-                            mUsageMonitor.start();
-                        });
-    }
-
     private void initWalletNativeServices() {
         // Don't initialize wallet services if disabled by policy
         if (BraveWalletPolicy.isDisabledByPolicy(mTabModelProfileSupplier.get())) {
@@ -2770,15 +2691,6 @@ public abstract class BraveActivity extends ChromeActivity
         mSolanaTxManagerProxy = null;
         mAssetRatioService = null;
         mBraveWalletService = null;
-    }
-
-    @Override
-    public void cleanUpMiscAndroidMetrics() {
-        if (mUsageMonitor != null) {
-            mUsageMonitor.stop();
-        }
-        if (mMiscAndroidMetrics != null) mMiscAndroidMetrics.close();
-        mMiscAndroidMetrics = null;
     }
 
     @NonNull
@@ -3141,12 +3053,6 @@ public abstract class BraveActivity extends ChromeActivity
     // QuickSearchCallback
     @Override
     public void onSearchEngineClick(int position, QuickSearchEnginesModel quickSearchEnginesModel) {
-        if (mMiscAndroidMetrics != null) {
-            mMiscAndroidMetrics.recordQuickSearch(
-                    quickSearchEnginesModel.getType()
-                            == QuickSearchEnginesModel.QuickSearchEnginesModelType.AI_ASSISTANT,
-                    quickSearchEnginesModel.getKeyword());
-        }
         if (getActivityTab() == null) {
             return;
         }
