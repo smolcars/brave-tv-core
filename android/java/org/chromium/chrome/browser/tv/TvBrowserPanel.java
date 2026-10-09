@@ -23,6 +23,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import org.chromium.chrome.R;
+
 /** A bounded, scrollable TV panel with native focus and themed Material actions. */
 final class TvBrowserPanel {
     private final Activity mActivity;
@@ -56,9 +58,7 @@ final class TvBrowserPanel {
         TextView view = new TextView(mActivity);
         view.setText(text);
         view.setTextSize(size);
-        view.setTextColor(
-                MaterialColors.getColor(
-                        mContent, com.google.android.material.R.attr.colorOnSurface));
+        view.setTextColor(MaterialColors.getColor(mContent, R.attr.colorOnSurface));
         view.setMaxLines(2);
         view.setEllipsize(TextUtils.TruncateAt.END);
         view.setPadding(dp(6), 0, dp(6), dp(8));
@@ -107,14 +107,10 @@ final class TvBrowserPanel {
         button.setEllipsize(TextUtils.TruncateAt.END);
         button.setCornerRadius(dp(12));
         button.setStrokeWidth(dp(3));
-        int primary =
-                MaterialColors.getColor(button, com.google.android.material.R.attr.colorPrimary);
-        int surface =
-                MaterialColors.getColor(button, com.google.android.material.R.attr.colorSurface);
-        int onPrimary =
-                MaterialColors.getColor(button, com.google.android.material.R.attr.colorOnPrimary);
-        int onSurface =
-                MaterialColors.getColor(button, com.google.android.material.R.attr.colorOnSurface);
+        int primary = MaterialColors.getColor(button, R.attr.colorPrimary);
+        int surface = MaterialColors.getColor(button, R.attr.colorSurface);
+        int onPrimary = MaterialColors.getColor(button, R.attr.colorOnPrimary);
+        int onSurface = MaterialColors.getColor(button, R.attr.colorOnSurface);
         int[][] states = {{android.R.attr.state_focused}, {}};
         button.setBackgroundTintList(new ColorStateList(states, new int[] {primary, surface}));
         button.setTextColor(new ColorStateList(states, new int[] {onPrimary, onSurface}));
