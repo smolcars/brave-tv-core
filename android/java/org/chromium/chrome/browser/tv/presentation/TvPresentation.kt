@@ -90,6 +90,7 @@ object TvPresentation {
         var focusRequest by mutableStateOf(0)
     }
 
+    /** UI thread only, for a factory-created home view. Schedules Address focus in composition. */
     @JvmStatic
     fun focusHome(view: View) {
         (view.tag as? HomeState)?.let { it.focusRequest++ }
