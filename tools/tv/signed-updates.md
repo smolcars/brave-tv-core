@@ -2,11 +2,17 @@
 
 The packager, native verifier, atomic staging, provider integration, HTTPS
 streaming delivery and TV status/manual-check/restart UI are implemented.
-Public-feed publication and APK acceptance of delivery/UI remain pending.
+The public sequence-2 bootstrap and emulator delivery/UI acceptance pass on
+`95b26f1ba`. This republishes the existing pinned baseline, not newly refreshed
+upstream rules. See the root repository
+[publication procedure](https://github.com/smolcars/brave-tv/blob/master/docs/filter-updates.md).
 Seventeen focused native tests pass, including real signed storage, bounded
 streaming above 5 MiB, rejection, timeout, daily scheduling and HTTPS-only
-redirects. Earlier APK acceptance establishes provider load/cache behavior and
-cold-start blocking; it does not yet establish real network delivery.
+redirects. APK checks establish automatic real HTTPS staging, manual repeat, failed-download
+recovery under severe network throttling, Back/reopen, confirmed restart with
+13 normal tabs preserved, DAT identity transition and actual request blocking.
+Fresh-install delivery, complete disconnection and hardware acceptance remain
+open; the host timeout test establishes the exact 60-second deadline.
 
 The fixed feed is the `filters-current` release asset `filters.bundle` in
 `smolcars/brave-tv`. Requests omit credentials, enforce a 24 MiB limit and a
@@ -16,7 +22,8 @@ run sooner. The last attempt persists across restart. A verified download is
 staged atomically and becomes active only in a new browser process. The TV
 panel distinguishes active publication date, last attempt and restart state.
 The restart action requires explicit confirmation and uses Chromium's session
-termination path; runtime restoration still needs acceptance.
+termination path. Emulator normal-tab restoration passes; private-session and
+physical-device restart acceptance remain open.
 
 First refresh and test the pinned snapshot using the instructions in
 `components/brave_shields/resources/bundled/README.md`. The signer checks every

@@ -10,9 +10,10 @@ as fallback. Other component delivery and its signature verification remain
 unchanged.
 
 Signing, verification, storage, provider integration, bounded independent
-delivery and TV update status are implemented. Public-feed publication and
-APK delivery/UI acceptance remain pending. Continue refreshing these packaged
-data with each release for offline fallback. See
+delivery and TV update status are implemented. The public bootstrap feed and
+existing-profile emulator delivery/restart checks pass. Fresh-install delivery,
+full-disconnection and hardware checks remain open. Continue refreshing these
+packaged data with each release for offline fallback. See
 [the signed update format](../../../../tools/tv/signed-updates.md).
 
 `provenance.json` records immutable upstream revisions, source/mirror URLs and
