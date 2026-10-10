@@ -21,10 +21,13 @@ final class TvRemoteServer {
     private final Handler mUi = new Handler(Looper.getMainLooper());
     private final Delegate mDelegate;
     private long mNative;
+    private final java.util.concurrent.atomic.AtomicInteger mPending =
+            new java.util.concurrent.atomic.AtomicInteger();
 
     TvRemoteServer(String address, Delegate delegate) {
         mDelegate = delegate;
         mNative = TvRemoteServerJni.get().start(this, address);
+        if (mNative == 0) mUi.post(() -> mDelegate.onStarted(0));
     }
 
     @CalledByNative
@@ -37,9 +40,14 @@ final class TvRemoteServer {
 
     @CalledByNative
     private void request(int id, String path, String body) {
+        if (mPending.incrementAndGet() > 4) {
+            mPending.decrementAndGet();
+            return;
+        }
         long received = android.os.SystemClock.elapsedRealtime();
         mUi.post(
                 () -> {
+                    mPending.decrementAndGet();
                     if (mNative == 0 || android.os.SystemClock.elapsedRealtime() - received > 1000)
                         return;
                     String reply = mDelegate.onRequest(path, body);

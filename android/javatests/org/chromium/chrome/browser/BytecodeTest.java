@@ -274,6 +274,38 @@ public class BytecodeTest {
 
     @Test
     @SmallTest
+    public void testTvImeHooksExist() throws Exception {
+        Class<?> ime = Class.forName("org.chromium.content.browser.input.ImeAdapterImpl");
+        Class<?> span = Class.forName("org.chromium.content.browser.input.ImeTextSpan");
+        Class<?> bridge = Class.forName("org.chromium.content.browser.input.TvTextInput");
+        ime.getDeclaredMethod(
+                "focusedNodeChanged", boolean.class, int.class, int.class, int.class, int.class);
+        ime.getDeclaredMethod("destroyFromNative");
+        ime.getDeclaredMethod("resetAndHideKeyboard");
+        ime.getDeclaredMethod(
+                "updateState",
+                int.class,
+                int.class,
+                int.class,
+                int.class,
+                boolean.class,
+                boolean.class,
+                String.class,
+                int.class,
+                int.class,
+                int.class,
+                int.class,
+                boolean.class,
+                int.class,
+                int.class,
+                java.lang.reflect.Array.newInstance(span, 0).getClass());
+        bridge.getDeclaredMethod("focusChanged", ime);
+        bridge.getDeclaredMethod(
+                "stateChanged", ime, int.class, int.class, String.class, int.class, int.class);
+    }
+
+    @Test
+    @SmallTest
     public void testClassesExist() throws Exception {
         Assert.assertTrue(classExists("org/chromium/chrome/browser/tv/TvHomePage"));
         Assert.assertTrue(
@@ -2520,16 +2552,23 @@ public class BytecodeTest {
     @Test
     @SmallTest
     public void testFieldsExist() throws Exception {
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/feed/FeedSurfaceCoordinator", "mNtpHeader"));
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/feed/FeedSurfaceCoordinator", "mRootView"));
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/feed/FeedSurfaceMediator", "mCoordinator"));
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/feed/FeedSurfaceMediator", "mSnapScrollHelper"));
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/ntp/NewTabPage", "mBrowserControlsStateProvider"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/feed/FeedSurfaceCoordinator", "mNtpHeader"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/feed/FeedSurfaceCoordinator", "mRootView"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/feed/FeedSurfaceMediator", "mCoordinator"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/feed/FeedSurfaceMediator",
+                        "mSnapScrollHelper"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/ntp/NewTabPage",
+                        "mBrowserControlsStateProvider"));
         Assert.assertTrue(
                 fieldExists("org/chromium/chrome/browser/ChromeTabbedActivity", "mLayoutManager"));
         Assert.assertTrue(
@@ -2835,16 +2874,26 @@ public class BytecodeTest {
                 fieldExists("org/chromium/chrome/browser/logo/LogoMediator", "mLogoModel"));
         Assert.assertTrue(
                 fieldExists("org/chromium/chrome/browser/logo/LogoMediator", "mShouldShowLogo"));
-        Assert.assertTrue(fieldExists("org/chromium/chrome/browser/app/bookmarks/BookmarkActivity",
-                "mBookmarkManagerCoordinator"));
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/bookmarks/BookmarkManagerCoordinator", "mMediator"));
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/bookmarks/BookmarkManagerMediator", "mBookmarkModel"));
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/bookmarks/BookmarkManagerMediator", "mContext"));
-        Assert.assertTrue(fieldExists(
-                "org/chromium/chrome/browser/bookmarks/BookmarkToolbarCoordinator", "mToolbar"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/app/bookmarks/BookmarkActivity",
+                        "mBookmarkManagerCoordinator"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/bookmarks/BookmarkManagerCoordinator",
+                        "mMediator"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/bookmarks/BookmarkManagerMediator",
+                        "mBookmarkModel"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/bookmarks/BookmarkManagerMediator",
+                        "mContext"));
+        Assert.assertTrue(
+                fieldExists(
+                        "org/chromium/chrome/browser/bookmarks/BookmarkToolbarCoordinator",
+                        "mToolbar"));
         Assert.assertTrue(
                 fieldExists(
                         "org/chromium/chrome/browser/bookmarks/BookmarkPage",

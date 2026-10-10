@@ -3932,17 +3932,17 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_PERMISSIONS_GEOLOCATION_APPROXIMATE" desc="Radio button label for approximate location in the permission prompt.">
       Approximate
     </message>
-    <message name="IDS_BRAVE_TV_PHONE" desc="Local phone remote development experiment UI.">Use your phone</message>
-    <message name="IDS_BRAVE_TV_PHONE_WARNING" desc="Local phone remote development experiment UI.">Development experiment · unencrypted HTTP. Use synthetic data on an isolated network. Other devices on the network may read or change traffic. Do not enter passwords or personal information.</message>
-    <message name="IDS_BRAVE_TV_PHONE_START" desc="Local phone remote development experiment UI.">Start experiment</message>
-    <message name="IDS_BRAVE_TV_PHONE_NETWORK" desc="Local phone remote development experiment UI.">Connect the TV to one private IPv4 Wi-Fi or Ethernet network. VPN and IPv6-only connections are unsupported.</message>
-    <message name="IDS_BRAVE_TV_PHONE_CONNECTED" desc="Local phone remote development experiment UI.">Phone connected · Disconnect in controls</message>
-    <message name="IDS_BRAVE_TV_PHONE_APPROVE_DESCRIPTION" desc="Local phone remote development experiment UI.">A phone requested control. Approve only if you just paired it. This unencrypted experiment exposes normal tabs and typed text.</message>
-    <message name="IDS_BRAVE_TV_PHONE_PAIR" desc="Local phone remote development experiment UI.">Scan with your phone on the same network, or open this address and enter the code. Expires in two minutes.</message>
-    <message name="IDS_BRAVE_TV_PHONE_QR" desc="Local phone remote development experiment UI.">Pairing QR code; manual address and code above</message>
-    <message name="IDS_BRAVE_TV_PHONE_APPROVE" desc="Local phone remote development experiment UI.">Approve phone</message>
-    <message name="IDS_BRAVE_TV_PHONE_CONTINUE" desc="Local phone remote development experiment UI.">Continue browsing</message>
-    <message name="IDS_BRAVE_TV_PHONE_DISCONNECT" desc="Local phone remote development experiment UI.">Disconnect</message>
+    <message name="IDS_BRAVE_TV_PHONE" desc="TV phone remote: phone.">Use your phone</message>
+    <message name="IDS_BRAVE_TV_PHONE_WARNING" desc="TV phone remote: phone warning.">Development experiment · unencrypted HTTP. Use synthetic data on an isolated network. Other devices on the network may read or change traffic. Do not enter passwords or personal information.</message>
+    <message name="IDS_BRAVE_TV_PHONE_START" desc="TV phone remote: phone start.">Start experiment</message>
+    <message name="IDS_BRAVE_TV_PHONE_NETWORK" desc="TV phone remote: phone network.">Connect the TV to one private IPv4 Wi-Fi or Ethernet network. VPN and IPv6-only connections are unsupported.</message>
+    <message name="IDS_BRAVE_TV_PHONE_CONNECTED" desc="TV phone remote: phone connected.">Phone connected · Disconnect in controls</message>
+    <message name="IDS_BRAVE_TV_PHONE_APPROVE_DESCRIPTION" desc="TV phone remote: phone approve description.">A phone requested control. Approve only if you just paired it. This unencrypted experiment exposes normal tabs and typed text.</message>
+    <message name="IDS_BRAVE_TV_PHONE_PAIR" desc="TV phone remote: phone pair.">Scan with your phone on the same network, or open this address and enter the code. Expires in two minutes.</message>
+    <message name="IDS_BRAVE_TV_PHONE_QR" desc="TV phone remote: phone qr.">Pairing QR code; manual address and code above</message>
+    <message name="IDS_BRAVE_TV_PHONE_APPROVE" desc="TV phone remote: phone approve.">Approve phone</message>
+    <message name="IDS_BRAVE_TV_PHONE_CONTINUE" desc="TV phone remote: phone continue.">Continue browsing</message>
+    <message name="IDS_BRAVE_TV_PHONE_DISCONNECT" desc="TV phone remote: phone disconnect.">Disconnect</message>
     <message name="IDS_BRAVE_TV_CONTROLS" desc="Title and return button for the native TV browser panel.">Browser controls</message>
     <message name="IDS_BRAVE_TV_PRIVATE_CONTROLS" desc="Title of the TV browser panel in a private tab.">Private browsing</message>
     <message name="IDS_BRAVE_TV_BACK" desc="TV button to go back in the current tab history.">Go back</message>

@@ -51,7 +51,9 @@ class TvRemoteServer final : public net::HttpServer::Delegate {
 public:
   explicit TvRemoteServer(const jni_zero::JavaRef<jobject> &owner)
       : owner_(owner), thread_("TvLocalRemote") {}
-  ~TvRemoteServer() {
+  ~TvRemoteServer() override {
+    if (!thread_.IsRunning())
+      return;
     thread_.task_runner()->PostTask(
         FROM_HERE,
         base::BindOnce(&TvRemoteServer::Shutdown, base::Unretained(this)));
@@ -102,7 +104,12 @@ private:
                                 endpoint.port());
   }
   void OnConnect(int id) override {
-    if (connections_.size() >= 4) {
+    auto now = base::TimeTicks::Now();
+    if (now - admission_start_ >= base::Seconds(1)) {
+      admission_start_ = now;
+      admissions_ = 0;
+    }
+    if (++admissions_ > 40 || connections_.size() >= 4) {
       server_->Close(id);
       return;
     }
@@ -205,21 +212,24 @@ private:
   std::string origin_;
   base::TimeTicks rate_start_;
   int requests_ = 0;
+  base::TimeTicks admission_start_;
+  int admissions_ = 0;
   base::WeakPtrFactory<TvRemoteServer> weak_factory_{this};
 };
 } // namespace
 
 static int64_t
-JNI_TvRemoteServer_Start(JNIEnv *env,
-                         const jni_zero::JavaParamRef<jobject> &owner,
-                         const jni_zero::JavaParamRef<jstring> &address) {
+JNI_TvRemoteServer_Start(JNIEnv *env, const jni_zero::JavaRef<jobject> &owner,
+                         const jni_zero::JavaRef<jstring> &address) {
   auto *server = new TvRemoteServer(owner);
-  CHECK(server->Start(base::android::ConvertJavaStringToUTF8(env, address)));
+  if (!server->Start(base::android::ConvertJavaStringToUTF8(env, address))) {
+    delete server;
+    return 0;
+  }
   return reinterpret_cast<int64_t>(server);
 }
-static void
-JNI_TvRemoteServer_Reply(JNIEnv *env, int64_t pointer, int32_t id,
-                         const jni_zero::JavaParamRef<jstring> &body) {
+static void JNI_TvRemoteServer_Reply(JNIEnv *env, int64_t pointer, int32_t id,
+                                     const jni_zero::JavaRef<jstring> &body) {
   reinterpret_cast<TvRemoteServer *>(pointer)->Reply(
       id, base::android::ConvertJavaStringToUTF8(env, body));
 }

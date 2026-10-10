@@ -15,6 +15,7 @@ public final class TvTextInput {
     private static final WeakHashMap<ImeAdapterImpl, TvTextInput> ACTIVE = new WeakHashMap<>();
     private final ImeAdapterImpl mAdapter;
     private long mRevision = 1;
+    private long mVersion = 1;
     private boolean mEligible;
     private boolean mAwaitingState = true;
     private String mText = "";
@@ -38,6 +39,10 @@ public final class TvTextInput {
 
     public boolean eligible() {
         return mEligible;
+    }
+
+    public long version() {
+        return mVersion;
     }
 
     public boolean ready() {
@@ -84,6 +89,10 @@ public final class TvTextInput {
                                 == 0
                         && text.length() <= 2048;
         if (input.mEligible != eligible) input.mRevision++;
+        if (input.mEligible != eligible
+                || !input.mText.equals(text)
+                || input.mStart != start
+                || input.mEnd != end) input.mVersion++;
         input.mEligible = eligible;
         input.mAwaitingState = false;
         input.mText = eligible ? text : "";

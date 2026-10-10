@@ -4,7 +4,7 @@ let token = '', epoch = '', state = null, seq = 0, busy = false, connected = fal
 let invite = location.hash.slice(1), composing = false, field = 0, lastText = '', dirty = false;
 history.replaceState(null, '', '/');
 const pointers = new Map();
-let gesture = null, motion = null;
+let gesture = null, motion = null, polling = null, waiting = false, dirtyVersion = 0;
 function status(text) { $('status').textContent = text; }
 async function post(path, data) {
   const response = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'},
@@ -57,12 +57,18 @@ function disable(value) { document.body.classList.toggle('paused', value); for(c
 async function poll() {
   if (!token || busy || document.hidden) return;
   busy=true;
-  try { render(await post('/api',{token,op:'state'})); }
-  catch { disconnected(); } finally { busy=false; }
+  try { polling = post('/api',{token,op:'state'}); render(await polling); }
+  catch { disconnected(); } finally { busy=false; polling=null; }
 }
 function disconnected() { connected=false; state=null; resetInput(); disable(true); status('Disconnected. Reconnecting for fresh state…'); }
 async function command(op, extra={}) {
-  if (!token || !connected || busy || !state || state.paused) return false;
+  const revision = state?.revision;
+  if (polling && !waiting) {
+    waiting=true;
+    try { await polling; } catch {} finally { waiting=false; }
+  }
+  if (!token || !connected || !state || state.paused || revision!==state.revision) return false;
+  if (busy) { status('An action is still in progress. Try again.'); return false; }
   busy=true;
   try { render(await post('/api',{token,op,epoch,seq:++seq,revision:state.revision,...extra})); return true; }
   catch { disconnected(); return false; } finally { busy=false; }
@@ -107,17 +113,17 @@ pad.onpointercancel=()=>{pointers.clear();gesture=motion=null;};
 setInterval(()=>{if(!motion || busy)return;const m=motion;motion=null;command(m.op,{dx:Math.max(-1000,Math.min(1000,Math.round(m.dx))),dy:Math.max(-1000,Math.min(1000,Math.round(m.dy)))});},60);
 // Coalesce current-field edits only. A failed request or target change discards them.
 $('editor').oncompositionstart=()=>{composing=true;};
-$('editor').oncompositionend=()=>{composing=false;dirty=true;};
-$('editor').oninput=()=>{dirty=true;};
+$('editor').oncompositionend=()=>{composing=false;if(!dirty)dirtyVersion=state?.editable?.version;dirty=true;};
+$('editor').oninput=()=>{if(!dirty)dirtyVersion=state?.editable?.version;dirty=true;};
 setInterval(async()=>{
   if(!dirty || busy || !connected || !state?.editable?.ready || field!==state.editable.revision)return;
   const text=$('editor').value,start=$('editor').selectionStart,end=$('editor').selectionEnd;
   dirty=false;
-  await command('edit',{editable:field,edit:'replace',text,start,end,composing});
+  await command('edit',{editable:field,edit:'replace',version:dirtyVersion,text,start,end,composing});
 },80);
-$('editor').onselect=()=>{if(state?.editable && $('editor').selectionStart===state.editable.start && $('editor').selectionEnd===state.editable.end)return;if(!dirty&&!busy&&!composing&&state?.editable)command('edit',{editable:field,edit:'select',start:$('editor').selectionStart,end:$('editor').selectionEnd});};
-$('delete').onclick=()=>command('edit',{editable:field,edit:'delete',start:1,end:0});
-$('finish').onclick=()=>command('edit',{editable:field,edit:'finish'});
+$('editor').onselect=()=>{if(state?.editable && $('editor').selectionStart===state.editable.start && $('editor').selectionEnd===state.editable.end)return;if(!dirty&&!busy&&!composing&&state?.editable)command('edit',{editable:field,edit:'select',version:state.editable.version,start:$('editor').selectionStart,end:$('editor').selectionEnd});};
+$('delete').onclick=()=>command('edit',{editable:field,edit:'delete',version:state?.editable?.version,start:1,end:0});
+$('finish').onclick=()=>command('edit',{editable:field,edit:'finish',version:state?.editable?.version});
 document.addEventListener('visibilitychange',()=>{resetInput();connected=false;disable(true);if(!document.hidden)poll();});
 setInterval(poll,500);
 if(invite)pair(invite);

@@ -161,6 +161,7 @@ final class TvRemoteBrowser {
                     "editable",
                     new JSONObject()
                             .put("revision", mText.revision())
+                            .put("version", mText.version())
                             .put("ready", mText.ready())
                             .put("text", mText.text())
                             .put("start", mText.start())
@@ -249,6 +250,7 @@ final class TvRemoteBrowser {
             case "edit":
                 return webPage()
                         && mText != null
+                        && command.getLong("version") == mText.version()
                         && mText.edit(
                                 command.getLong("editable"),
                                 command.getString("edit"),
