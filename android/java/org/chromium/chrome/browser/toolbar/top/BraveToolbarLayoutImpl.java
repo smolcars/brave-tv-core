@@ -915,6 +915,7 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
     }
 
     private void checkForTooltip(Tab tab) {
+        if (isTelevision()) return;
         try {
             if (BraveShieldsUtils.isTooltipShown || BraveActivity.getBraveActivity().mIsDeepLink) {
                 return;

@@ -65,6 +65,7 @@ brave_java_resources = [
   "java/res/layout/location_status_incognito_badge.xml",
   "java/res/values-night/brave_colors.xml",
   "java/res/values-sw600dp/brave_dimens.xml",
+  "java/res/values-television/brave_strings.xml",
   "java/res/values/brave_colors.xml",
   "java/res/values/brave_dimens.xml",
   "java/res/xml/secure_dns_settings.xml",
