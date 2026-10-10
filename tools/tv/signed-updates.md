@@ -1,10 +1,22 @@
 # Signed Android filter snapshots
 
-The packager, native verifier, atomic staging and provider integration are
-implemented. Downloading, freshness UI and public-feed publication remain
-pending; this tool alone does not update the browser. Ten focused native tests
-cover authentication, storage and immutable loader/cache identity. APK runtime
-acceptance of the integration is pending.
+The packager, native verifier, atomic staging, provider integration, HTTPS
+streaming delivery and TV status/manual-check/restart UI are implemented.
+Public-feed publication and APK acceptance of delivery/UI remain pending.
+Seventeen focused native tests pass, including real signed storage, bounded
+streaming above 5 MiB, rejection, timeout, daily scheduling and HTTPS-only
+redirects. Earlier APK acceptance establishes provider load/cache behavior and
+cold-start blocking; it does not yet establish real network delivery.
+
+The fixed feed is the `filters-current` release asset `filters.bundle` in
+`smolcars/brave-tv`. Requests omit credentials, enforce a 24 MiB limit and a
+60-second deadline, and reject HTTP redirects. Automatic checks begin no sooner
+than 30 seconds after service startup and run at most daily; manual checks can
+run sooner. The last attempt persists across restart. A verified download is
+staged atomically and becomes active only in a new browser process. The TV
+panel distinguishes active publication date, last attempt and restart state.
+The restart action requires explicit confirmation and uses Chromium's session
+termination path; runtime restoration still needs acceptance.
 
 First refresh and test the pinned snapshot using the instructions in
 `components/brave_shields/resources/bundled/README.md`. The signer checks every

@@ -9,9 +9,10 @@ disabled, the providers prefer upstream signed components and use the APK only
 as fallback. Other component delivery and its signature verification remain
 unchanged.
 
-Signing, verification, storage and provider integration are implemented; the
-independent downloader and public feed are still pending. Until delivery is
-completed, refresh these packaged data with each release. See
+Signing, verification, storage, provider integration, bounded independent
+delivery and TV update status are implemented. Public-feed publication and
+APK delivery/UI acceptance remain pending. Continue refreshing these packaged
+data with each release for offline fallback. See
 [the signed update format](../../../../tools/tv/signed-updates.md).
 
 `provenance.json` records immutable upstream revisions, source/mirror URLs and

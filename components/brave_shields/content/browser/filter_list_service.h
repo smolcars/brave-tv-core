@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/memory/weak_ptr.h"
+#include "base/sequence_checker.h"
 #include "brave/components/brave_shields/core/common/filter_list.mojom-forward.h"
 #include "brave/components/brave_shields/core/common/filter_list.mojom.h"
 #include "components/keyed_service/core/keyed_service.h"
@@ -53,6 +54,7 @@ class FilterListService : public KeyedService,
                       AdBlockUpdateStatus status);
   raw_ptr<AdBlockService> ad_block_service_ = nullptr;
   mojo::ReceiverSet<mojom::FilterListAndroidHandler> receivers_;
+  SEQUENCE_CHECKER(sequence_checker_);
   base::WeakPtrFactory<FilterListService> weak_factory_{this};
 
   FilterListService(const FilterListService&) = delete;

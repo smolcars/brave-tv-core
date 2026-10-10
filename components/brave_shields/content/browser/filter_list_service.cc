@@ -11,6 +11,7 @@
 #include "base/feature_list.h"
 #include "base/functional/bind.h"
 #include "base/notreached.h"
+#include "base/sequence_checker.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brave/components/brave_shields/content/browser/ad_block_custom_filters_provider.h"
 #include "brave/components/brave_shields/content/browser/ad_block_service.h"
@@ -133,6 +134,7 @@ void FilterListService::UpdateFilterLists(UpdateFilterListsCallback callback) {
 
 void FilterListService::GetIndependentUpdateStatus(
     GetIndependentUpdateStatusCallback callback) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   auto* updater = ad_block_service_->bundle_updater();
   if (!updater) {
     std::move(callback).Run(nullptr);
@@ -145,6 +147,7 @@ void FilterListService::GetIndependentUpdateStatus(
 
 void FilterListService::CheckIndependentUpdate(
     CheckIndependentUpdateCallback callback) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   auto* updater = ad_block_service_->bundle_updater();
   if (!updater) {
     std::move(callback).Run(nullptr);
@@ -158,6 +161,7 @@ void FilterListService::CheckIndependentUpdate(
 void FilterListService::OnUpdateStatus(
     GetIndependentUpdateStatusCallback callback,
     AdBlockUpdateStatus status) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // Join an automatic check on this same sequence, without starting another.
   if (status.result == AdBlockUpdateResult::kChecking) {
     CheckIndependentUpdate(std::move(callback));
