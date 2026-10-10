@@ -27,7 +27,7 @@
 #include "net/socket/tcp_server_socket.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 
-#include "brave/build/android/jni_headers/TvRemoteServer_jni.h"
+#include "chrome/android/chrome_jni_headers/TvRemoteServer_jni.h"
 
 namespace {
 constexpr auto kTraffic =

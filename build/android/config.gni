@@ -132,6 +132,7 @@ brave_resources_exclusion_exceptions =
     [ "*com_google_android_material*design_bottom_*" ]
 
 brave_jni_headers_sources = [
+  "//brave/android/java/org/chromium/chrome/browser/tv/TvRemoteServer.java",
   "//brave/android/java/org/chromium/chrome/browser/BraveFeatureUtil.java",
   "//brave/android/java/org/chromium/chrome/browser/BraveLocalState.java",
   "//brave/android/java/org/chromium/chrome/browser/BraveRelaunchUtils.java",

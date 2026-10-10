@@ -26,7 +26,7 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
         if (!IME.equals(mName)) return visitor;
         boolean state = name.equals("updateState");
         boolean focus = name.equals("focusedNodeChanged");
-        boolean reset = name.equals("resetAndHideKeyboard") || name.equals("destroy");
+        boolean reset = name.equals("resetAndHideKeyboard") || name.equals("destroyFromNative");
         if (!state && !focus && !reset) return visitor;
         String expected =
                 state
