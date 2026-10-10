@@ -341,14 +341,14 @@ function flushMotion() {
 }
 setInterval(flushMotion, 60)
 // Coalesce current-field edits only. A failed request or target change discards them.
-$('editor').oncompositionstart = () => {
+$('editor').addEventListener('compositionstart', () => {
   composing = true
-}
-$('editor').oncompositionend = () => {
+})
+$('editor').addEventListener('compositionend', () => {
   composing = false
   if (!dirty) dirtyVersion = state?.editable?.version
   dirty = true
-}
+})
 $('editor').oninput = () => {
   if (!dirty) dirtyVersion = state?.editable?.version
   dirty = true
