@@ -14,6 +14,7 @@
 #include "brave/components/brave_shields/core/browser/filter_list_catalog_entry.h"
 #include "brave/components/brave_shields/core/common/features.h"
 #include "brave/components/brave_shields/core/common/pref_names.h"
+#include "build/build_config.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/testing_pref_service.h"
 #include "content/public/test/browser_task_environment.h"
@@ -46,6 +47,16 @@ class AdBlockListP3ATest : public testing::Test {
   std::unique_ptr<AdBlockListP3A> ad_block_list_p3a_;
 };
 
+#if BUILDFLAG(IS_ANDROID)
+TEST_F(AdBlockListP3ATest, AndroidDoesNotCollectFilterListUsage) {
+  local_state_.SetBoolean(prefs::kAdBlockOnlyModeEnabled, true);
+  ad_block_list_p3a_->OnFilterListCatalogLoaded({}, "en-US");
+  ad_block_list_p3a_->ReportFilterListUsage();
+  task_environment_.FastForwardBy(base::Hours(6));
+  histogram_tester_.ExpectTotalCount(kFilterListUsageHistogramName, 0);
+  histogram_tester_.ExpectTotalCount(kAdBlockOnlyModeEnabledHistogramName, 0);
+}
+#else
 TEST_F(AdBlockListP3ATest, ReportsMetricsOnlyWhenEnabled) {
   histogram_tester_.ExpectTotalCount(kAdBlockOnlyModeEnabledHistogramName, 0);
 
@@ -98,5 +109,7 @@ TEST_F(AdBlockListP3ATest, ReportFilterListUsage) {
   ad_block_list_p3a_->OnFilterListCatalogLoaded(catalog, "en-US");
   histogram_tester_.ExpectUniqueSample(kFilterListUsageHistogramName, 3, 1);
 }
+
+#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace brave_shields

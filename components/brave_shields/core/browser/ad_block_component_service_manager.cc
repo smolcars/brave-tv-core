@@ -38,6 +38,7 @@
 #include "brave/components/brave_shields/core/common/brave_shield_constants.h"
 #include "brave/components/brave_shields/core/common/features.h"
 #include "brave/components/brave_shields/core/common/pref_names.h"
+#include "build/build_config.h"
 #include "components/component_updater/component_updater_service.h"
 #include "components/prefs/pref_change_registrar.h"
 #include "components/prefs/pref_service.h"
@@ -321,6 +322,9 @@ void AdBlockComponentServiceManager::UpdateFilterListPrefs(
 }
 
 void AdBlockComponentServiceManager::RecordP3ACookieListEnabled() {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   UMA_HISTOGRAM_BOOLEAN(kCookieListEnabledHistogram,
                         IsFilterListEnabled(kCookieListUuid));

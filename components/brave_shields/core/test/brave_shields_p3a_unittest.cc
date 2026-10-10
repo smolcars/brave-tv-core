@@ -13,6 +13,7 @@
 #include "brave/components/brave_shields/core/browser/brave_shields_utils.h"
 #include "brave/components/brave_shields/core/common/brave_shield_utils.h"
 #include "brave/components/brave_shields/core/common/features.h"
+#include "build/build_config.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/test/base/testing_profile.h"
 #include "components/prefs/testing_pref_service.h"
@@ -44,6 +45,32 @@ class BraveShieldsP3ATest : public testing::Test {
   std::unique_ptr<base::HistogramTester> histogram_tester_;
 };
 
+#if BUILDFLAG(IS_ANDROID)
+TEST_F(BraveShieldsP3ATest, AndroidSettingsDoNotCollectUsage) {
+  auto* map = HostContentSettingsMapFactory::GetForProfile(profile_.get());
+  auto* prefs = profile_->GetPrefs();
+  SetCosmeticFilteringControlType(map, ControlType::BLOCK, GURL());
+  SetCosmeticFilteringControlType(map, ControlType::ALLOW,
+                                  GURL("https://example.com"));
+  SetFingerprintingControlType(map, ControlType::BLOCK, GURL());
+  SetFingerprintingControlType(map, ControlType::ALLOW,
+                               GURL("https://example.com"));
+  MaybeRecordInitialShieldsSettings(&local_state_, prefs, map,
+                                    ControlType::BLOCK, ControlType::BLOCK);
+  MaybeRecordShieldsUsageP3A(kChangedPerSiteShields, &local_state_);
+  RecordForgetFirstPartySetting(map);
+  RecordHTTPSUpgradeSettingP3A(map);
+  ReportAutoShredSettingsP3A(*map);
+  RecordManualShredP3A(local_state_);
+  EXPECT_TRUE(
+      histogram_tester_->GetTotalCountsForPrefix("Brave.Shields.").empty());
+  EXPECT_EQ(local_state_.GetInteger(kUsagePrefName), -1);
+  EXPECT_FALSE(local_state_.GetBoolean(kManualShredTriggeredPrefName));
+  EXPECT_EQ(prefs->GetInteger(kFirstReportedRevisionPrefName), 0);
+  EXPECT_EQ(prefs->GetInteger(kAdsAllowCountPrefName), 0);
+  EXPECT_EQ(prefs->GetInteger(kFPAllowCountPrefName), 0);
+}
+#else
 TEST_F(BraveShieldsP3ATest, RecordGlobalAdBlockSetting) {
   auto* map = HostContentSettingsMapFactory::GetForProfile(profile_.get());
   SetCosmeticFilteringControlType(map, ControlType::BLOCK,
@@ -348,5 +375,7 @@ TEST_F(BraveShieldsP3ATest, ShredMetrics_NotReportedWhenFeatureDisabled) {
   RecordManualShredP3A(local_state_);
   histogram_tester_->ExpectTotalCount(kManualShredHistogramName, 0);
 }
+
+#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace brave_shields
