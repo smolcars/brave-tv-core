@@ -211,9 +211,12 @@ final class TvBrowserPanel {
             attributes.x = dp(24);
             attributes.dimAmount = 0.55f;
             window.setAttributes(attributes);
-            window.setLayout(
-                    Math.min(dp(mWide ? 740 : 460), Math.round(metrics.widthPixels * 0.92f)),
-                    Math.round(metrics.heightPixels * 0.9f));
+            int width = Math.min(dp(mWide ? 740 : 460), Math.round(metrics.widthPixels * 0.92f));
+            mRoot.measure(
+                    View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(
+                            Math.round(metrics.heightPixels * 0.9f), View.MeasureSpec.AT_MOST));
+            window.setLayout(width, mRoot.getMeasuredHeight());
         }
         View focus = mPreferredView != null ? mPreferredView : mFirstAction;
         if (focus != null) focus.requestFocus();
