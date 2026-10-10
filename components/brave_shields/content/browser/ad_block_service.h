@@ -8,21 +8,22 @@
 
 #include <stdint.h>
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "base/files/file_path.h"
-#include "base/functional/bind.h"
 #include "base/functional/callback.h"
-#include "base/location.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "base/sequence_checker.h"
+#include "base/task/bind_post_task.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/threading/sequence_bound.h"
 #include "base/values.h"
@@ -154,11 +155,8 @@ class AdBlockService {
   AdBlockCustomFiltersProvider* custom_filters_provider();
   AdBlockCustomResourceProvider* custom_resource_provider();
 
-  // Call a callback on the task runner with the engine wrapper
-  void AsyncCall(base::OnceCallback<void(AdBlockEngineWrapper* wrapper)> task) {
-    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-    engine_wrapper_.PostTaskWithThisObject(std::move(task));
-  }
+  // Independent bundled engines defer queries until filters and resources load.
+  void AsyncCall(base::OnceCallback<void(AdBlockEngineWrapper* wrapper)> task);
 
   // Call a callback on the task runner with the engine wrapper and post the
   // result back to the calling sequence (current default task runner).
@@ -167,17 +165,8 @@ class AdBlockService {
       base::OnceCallback<T(AdBlockEngineWrapper* wrapper)> task,
       base::OnceCallback<void(T)> reply) {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-    engine_wrapper_.PostTaskWithThisObject(base::BindOnce(
-        [](base::OnceCallback<T(AdBlockEngineWrapper * wrapper)> task,
-           base::OnceCallback<void(T)> reply,
-           scoped_refptr<base::SequencedTaskRunner> task_runner,
-           AdBlockEngineWrapper* wrapper) {
-          auto result = std::move(task).Run(wrapper);
-          task_runner->PostTask(
-              FROM_HERE, base::BindOnce(std::move(reply), std::move(result)));
-        },
-        std::move(task), std::move(reply),
-        base::SequencedTaskRunner::GetCurrentDefault()));
+    AsyncCall(std::move(task).Then(
+        base::BindPostTaskToCurrentDefault(std::move(reply))));
   }
 
   void AddObserver(Observer* observer);
@@ -208,6 +197,8 @@ class AdBlockService {
 
  private:
   static std::string g_ad_block_dat_file_version_;
+
+  void MaybeRunPendingQueries();
 
   void OnResourcesLoaded(
       bool is_default_engine,
@@ -253,6 +244,13 @@ class AdBlockService {
 
   // Lives on `task_runner_`; constructed and destroyed there via SequenceBound.
   base::SequenceBound<AdBlockEngineWrapper> engine_wrapper_
+      GUARDED_BY_CONTEXT(sequence_checker_);
+
+  bool queries_ready_ GUARDED_BY_CONTEXT(sequence_checker_) = true;
+  // Default engine first, additional engine second.
+  std::array<bool, 2> filters_loaded_ GUARDED_BY_CONTEXT(sequence_checker_){};
+  std::array<bool, 2> resources_loaded_ GUARDED_BY_CONTEXT(sequence_checker_){};
+  std::vector<base::OnceCallback<void(AdBlockEngineWrapper*)>> pending_queries_
       GUARDED_BY_CONTEXT(sequence_checker_);
 
   std::unique_ptr<AdBlockFiltersProviderManager> filters_provider_manager_

@@ -5,6 +5,8 @@
 
 #include "brave/components/brave_shields/content/browser/ad_block_service.h"
 
+#include <stddef.h>
+
 #include <memory>
 #include <optional>
 #include <utility>
@@ -20,6 +22,7 @@
 #include "base/logging.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/sequence_checker.h"
+#include "base/task/bind_post_task.h"
 #include "base/trace_event/trace_event.h"
 #include "brave/components/brave_shields/content/browser/ad_block_custom_filters_provider.h"
 #include "brave/components/brave_shields/content/browser/ad_block_engine.h"
@@ -212,6 +215,7 @@ AdBlockService::AdBlockService(
 
   if (HasBundledAdBlockData() &&
       base::FeatureList::IsEnabled(features::kIndependentAdBlockUpdates)) {
+    queries_ready_ = false;
     bundle_store_ = base::MakeRefCounted<AdBlockBundleStore>(
         profile_dir_.AppendASCII("adblock_snapshot")
             .AppendASCII("filters.bundle"),
@@ -284,6 +288,29 @@ AdBlockService::AdBlockService(
 
 AdBlockService::~AdBlockService() = default;
 
+void AdBlockService::AsyncCall(
+    base::OnceCallback<void(AdBlockEngineWrapper*)> task) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  if (!queries_ready_) {
+    pending_queries_.push_back(std::move(task));
+    return;
+  }
+  engine_wrapper_.PostTaskWithThisObject(std::move(task));
+}
+
+void AdBlockService::MaybeRunPendingQueries() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  if (queries_ready_ || !filters_loaded_[0] || !filters_loaded_[1] ||
+      !resources_loaded_[0] || !resources_loaded_[1]) {
+    return;
+  }
+  queries_ready_ = true;
+  for (auto& query : pending_queries_) {
+    engine_wrapper_.PostTaskWithThisObject(std::move(query));
+  }
+  pending_queries_.clear();
+}
+
 void AdBlockService::OnResourcesLoaded(
     bool is_default_engine,
     std::optional<DATFileDataBuffer> dat,
@@ -291,9 +318,10 @@ void AdBlockService::OnResourcesLoaded(
     AdblockResourceStorageBox storage) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
+  // Initialization must bypass the query queue it will release.
   if (dat.has_value()) {
     CHECK(base::FeatureList::IsEnabled(features::kAdblockDATCache));
-    AsyncCallAndReplyWithResult(
+    engine_wrapper_.PostTaskWithThisObject(
         base::BindOnce(
             [](bool is_default, std::optional<DATFileDataBuffer> dat,
                AdblockResourceStorageBox storage,
@@ -301,13 +329,14 @@ void AdBlockService::OnResourcesLoaded(
               return wrapper->LoadDAT(is_default, std::move(*dat),
                                       std::move(storage));
             },
-            is_default_engine, std::move(*dat), std::move(storage)),
-        base::BindOnce(&AdBlockService::OnDATLoaded, weak_factory_.GetWeakPtr(),
-                       is_default_engine));
+            is_default_engine, std::move(*dat), std::move(storage))
+            .Then(base::BindPostTaskToCurrentDefault(base::BindOnce(
+                &AdBlockService::OnDATLoaded, weak_factory_.GetWeakPtr(),
+                is_default_engine))));
   } else {
     bool should_cache =
         base::FeatureList::IsEnabled(features::kAdblockDATCache);
-    AsyncCallAndReplyWithResult(
+    engine_wrapper_.PostTaskWithThisObject(
         base::BindOnce(
             [](bool is_default, bool cache,
                std::unique_ptr<rust::Box<adblock::FilterSet>> fs,
@@ -328,9 +357,10 @@ void AdBlockService::OnResourcesLoaded(
                       wrapper->Serialize(is_default)};
             },
             is_default_engine, should_cache, std::move(filter_set),
-            std::move(storage)),
-        base::BindOnce(&AdBlockService::OnEngineLoaded,
-                       weak_factory_.GetWeakPtr(), is_default_engine));
+            std::move(storage))
+            .Then(base::BindPostTaskToCurrentDefault(base::BindOnce(
+                &AdBlockService::OnEngineLoaded, weak_factory_.GetWeakPtr(),
+                is_default_engine))));
   }
 }
 
@@ -340,6 +370,10 @@ void AdBlockService::OnDATLoaded(bool is_default_engine, bool success) {
     default_dat_loaded_for_testing_ = true;
   } else {
     additional_dat_loaded_for_testing_ = true;
+  }
+  if (success) {
+    filters_loaded_[is_default_engine ? 0 : 1] = true;
+    MaybeRunPendingQueries();
   }
   // If the cached DAT failed to load, fall back to loading from filter lists.
   if (!success) {
@@ -359,6 +393,14 @@ void AdBlockService::OnEngineLoaded(
     std::pair<FilterListLoadResult, std::optional<DATFileDataBuffer>> result) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   auto [load_result, serialized_dat] = std::move(result);
+  if (load_result != FilterListLoadResult::kFailed) {
+    const size_t engine_index = is_default_engine ? 0 : 1;
+    resources_loaded_[engine_index] = true;
+    if (load_result == FilterListLoadResult::kLoaded) {
+      filters_loaded_[engine_index] = true;
+    }
+    MaybeRunPendingQueries();
+  }
 
   if (load_result != FilterListLoadResult::kResourcesOnly) {
     if (is_default_engine) {
