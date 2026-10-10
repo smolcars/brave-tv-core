@@ -11,6 +11,7 @@
 #include "brave/components/brave_shields/core/common/features.h"
 #include "brave/components/brave_shields/core/common/pref_names.h"
 #include "brave/components/p3a_utils/bucket.h"
+#include "build/build_config.h"
 #include "components/prefs/pref_service.h"
 
 namespace brave_shields {
@@ -24,6 +25,9 @@ constexpr int kFilterListCountBuckets[] = {0, 1, 2, 5};
 
 AdBlockListP3A::AdBlockListP3A(PrefService* local_state)
     : local_state_(local_state) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   if (local_state_) {
     pref_change_registrar_.Init(local_state_);
     pref_change_registrar_.Add(
@@ -37,6 +41,9 @@ AdBlockListP3A::AdBlockListP3A(PrefService* local_state)
 AdBlockListP3A::~AdBlockListP3A() = default;
 
 void AdBlockListP3A::ReportFilterListUsage() {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   const auto& regional_filter_dict =
       local_state_->GetDict(prefs::kAdBlockRegionalFilters);
 
@@ -59,6 +66,9 @@ void AdBlockListP3A::ReportFilterListUsage() {
 void AdBlockListP3A::OnFilterListCatalogLoaded(
     const std::vector<FilterListCatalogEntry>& entries,
     const std::string& locale) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   for (const auto& entry : entries) {
     if (entry.default_enabled) {
       default_filter_list_uuids_.insert(entry.uuid);
@@ -71,6 +81,9 @@ void AdBlockListP3A::OnFilterListCatalogLoaded(
 }
 
 void AdBlockListP3A::ReportAdBlockOnlyEnabled() {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   if (!base::FeatureList::IsEnabled(features::kAdblockOnlyMode)) {
     return;
   }

@@ -18,6 +18,7 @@
 #include "brave/components/brave_shields/core/common/features.h"
 #include "brave/components/p3a/utils.h"
 #include "brave/components/p3a_utils/bucket.h"
+#include "build/build_config.h"
 #include "components/content_settings/core/browser/host_content_settings_map.h"
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/prefs/pref_registry_simple.h"
@@ -182,21 +183,33 @@ void ReportManualShredP3A(const PrefService& local_state) {
 
 void MaybeRecordShieldsUsageP3A(ShieldsIconUsage usage,
                                 PrefService* local_state) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   p3a::RecordValueIfGreater<ShieldsIconUsage>(usage, kUsageStatusHistogramName,
                                               kUsagePrefName, local_state);
 }
 
 void RecordShieldsAdsSetting(ControlType setting) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   RecordShieldsLevelSetting(kAdsSettingHistogramName, setting);
 }
 
 void RecordShieldsFingerprintSetting(ControlType setting) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   RecordShieldsLevelSetting(kFingerprintSettingHistogramName, setting);
 }
 
 void RecordShieldsDomainSettingCounts(PrefService* profile_prefs,
                                       bool is_fingerprint,
                                       ControlType global_setting) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   if (profile_prefs == nullptr) {
     return;
   }
@@ -233,6 +246,9 @@ void RecordShieldsDomainSettingCountsWithChange(PrefService* profile_prefs,
                                                 ControlType global_setting,
                                                 ControlType* prev_setting,
                                                 ControlType new_setting) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   if (profile_prefs == nullptr) {
     return;
   }
@@ -252,6 +268,9 @@ void RecordShieldsDomainSettingCountsWithChange(PrefService* profile_prefs,
 }
 
 void RecordForgetFirstPartySetting(HostContentSettingsMap* map) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   ContentSetting global_setting = map->GetContentSetting(
       {}, {}, ContentSettingsType::BRAVE_REMEMBER_1P_STORAGE);
   auto per_site_settings = map->GetSettingsForOneType(
@@ -276,6 +295,9 @@ void RecordForgetFirstPartySetting(HostContentSettingsMap* map) {
 }
 
 void RecordHTTPSUpgradeSettingP3A(HostContentSettingsMap* map) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   ContentSetting global_setting = map->GetContentSetting(
       GURL(), GURL(), ContentSettingsType::BRAVE_HTTPS_UPGRADE);
   constexpr int kHTTPSUpgradeStrict = 2;
@@ -305,6 +327,9 @@ void RecordHTTPSUpgradeSettingP3A(HostContentSettingsMap* map) {
 }
 
 void ReportAutoShredSettingsP3A(const HostContentSettingsMap& map) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   if (!base::FeatureList::IsEnabled(features::kBraveShredFeature)) {
     return;
   }
@@ -335,6 +360,9 @@ void ReportAutoShredSettingsP3A(const HostContentSettingsMap& map) {
 }
 
 void RecordManualShredP3A(PrefService& local_state) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   local_state.SetBoolean(kManualShredTriggeredPrefName, true);
   ReportManualShredP3A(local_state);
 }
@@ -345,6 +373,9 @@ void MaybeRecordInitialShieldsSettings(
     HostContentSettingsMap* map,
     ControlType cosmetic_filtering_control_type,
     ControlType fingerprinting_control_type) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   if (map) {
     ReportAutoShredSettingsP3A(*map);
   }
