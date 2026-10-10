@@ -1078,6 +1078,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void hideCursor() {
+        if (!isAlive()) return;
         mCursorView.setVisibility(View.INVISIBLE);
     }
 
