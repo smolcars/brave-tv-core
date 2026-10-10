@@ -57,7 +57,8 @@ object TvPresentation {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool)
     }
 
-    /** Call on the UI thread with an enabled first action; dispose when the native page dies. */
+    /** UI thread only. Context must own lifecycle/saved state (BraveActivity).
+     * First action must be enabled; caller disposes when the native page dies. */
     @JvmStatic
     fun home(
         context: Context,
@@ -100,7 +101,8 @@ object TvPresentation {
         }
     }
 
-    /** A modal sibling to Chromium content; the native dialog owns Back and dismissal. */
+    /** UI thread only, with a lifecycle/saved-state owning context (BraveActivity).
+     * A modal sibling to Chromium content; native dialog owns Back and dismissal. */
     @JvmStatic
     fun controls(
         context: Context,

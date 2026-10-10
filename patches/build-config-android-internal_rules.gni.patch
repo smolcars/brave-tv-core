@@ -22,7 +22,7 @@ index 72c9c992e8b542bf24390b15c9a48f9d8340e830..0abde5d60a75dd33b01b67dc2a216cc3
            "//chrome/browser/ui/android/bricks/internal/*",
            "//android_webview/javatests/*",
          ]
-+        _kt_allowlist += [ "//brave/android/java/org/chromium/chrome/browser/tv/presentation/*" ]
++        import("//brave/third_party/androidx_tv/kotlin_allowlist.gni") _kt_allowlist += brave_tv_kotlin_sources
          _found_kt = filter_exclude(_abs_kt_files, _kt_allowlist)
          assert(
              _found_kt == [],
