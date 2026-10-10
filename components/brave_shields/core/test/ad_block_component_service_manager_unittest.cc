@@ -13,11 +13,17 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/flat_set.h"
+#include "base/files/file_path.h"
+#include "base/files/scoped_temp_dir.h"
 #include "base/json/json_writer.h"
+#include "base/memory/ref_counted.h"
 #include "base/test/scoped_feature_list.h"
 #include "base/test/task_environment.h"
 #include "base/values.h"
 #include "brave/components/brave_shields/content/browser/ad_block_service.h"
+#include "brave/components/brave_shields/content/test/test_filters_provider.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_public_key.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filter_list_catalog_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider_manager.h"
@@ -83,6 +89,43 @@ constexpr auto kFilterListCatalogEntries =
         });
 
 }  // namespace
+
+TEST(AdBlockComponentServiceManagerTest,
+     IndependentStartupWaitsForCatalogWithoutDATCache) {
+  base::test::TaskEnvironment task_environment;
+  base::test::ScopedFeatureList feature_list;
+  feature_list.InitAndDisableFeature(features::kAdblockDATCache);
+  base::ScopedTempDir directory;
+  ASSERT_TRUE(directory.CreateUniqueTempDir());
+  TestingPrefServiceSimple prefs;
+  RegisterPrefsForAdBlockService(prefs.registry());
+  AdBlockFiltersProviderManager filters_provider_manager;
+  AdBlockFilterListCatalogProvider catalog_provider(nullptr);
+  AdBlockListP3A list_p3a(&prefs);
+  auto store = base::MakeRefCounted<AdBlockBundleStore>(
+      directory.GetPath().AppendASCII("filters.bundle"),
+      kAdBlockBundlePublicKey, std::string(64, '0'));
+  AdBlockComponentServiceManager service_manager(
+      &prefs, &filters_provider_manager, "en", nullptr, &catalog_provider,
+      &list_p3a, store);
+  TestFiltersProvider default_local_filters("", true);
+  TestFiltersProvider additional_local_filters("", false);
+  default_local_filters.RegisterAsSourceProvider(&filters_provider_manager);
+  additional_local_filters.RegisterAsSourceProvider(&filters_provider_manager);
+
+  CountingObserver observer;
+  // Local providers are ready, but the asynchronous catalog has not arrived.
+  filters_provider_manager.MaybeNotifyObserver(observer, true);
+  filters_provider_manager.MaybeNotifyObserver(observer, false);
+  EXPECT_EQ(observer.default_count, 0);
+  EXPECT_EQ(observer.additional_count, 0);
+
+  service_manager.SetFilterListCatalog({});
+  filters_provider_manager.MaybeNotifyObserver(observer, true);
+  filters_provider_manager.MaybeNotifyObserver(observer, false);
+  EXPECT_EQ(observer.default_count, 1);
+  EXPECT_EQ(observer.additional_count, 1);
+}
 
 class AdBlockComponentServiceManagerDATCacheTest
     : public testing::TestWithParam<bool> {

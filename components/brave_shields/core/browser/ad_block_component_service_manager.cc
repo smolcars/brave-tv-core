@@ -156,12 +156,10 @@ AdBlockComponentServiceManager::AdBlockComponentServiceManager(
       list_p3a_(list_p3a) {
   // The gates block filter set loading until the catalog loads and all
   // component providers are registered, so a single engine build happens
-  // once everything is ready. They are scoped to the DAT cache feature
-  // since that's the path that benefits from deferring the first build;
-  // without DAT cache, the pre-existing startup-suppression flag is
-  // sufficient and we want to avoid changing behavior for users not on
-  // the new path.
-  if (base::FeatureList::IsEnabled(features::kAdblockDATCache)) {
+  // once everything is ready. Independent engines must also wait when DAT
+  // caching is disabled, rather than declare a partial provider set ready.
+  if (bundle_store_ ||
+      base::FeatureList::IsEnabled(features::kAdblockDATCache)) {
     default_gate_ = std::make_unique<ComponentProvidersGate>(
         true, filters_provider_manager_);
     additional_gate_ = std::make_unique<ComponentProvidersGate>(
@@ -231,7 +229,7 @@ void AdBlockComponentServiceManager::StartRegionalServices() {
   // any regional component providers below are registered. Running via
   // absl::Cleanup ensures gates fire even on early returns (no local state,
   // empty catalog) so filter set loading is unblocked in all cases. Gates are
-  // only created when the DAT cache feature is enabled, so they may be null.
+  // only created for DAT caching or independent data, so they may be null.
   ComponentProvidersGate* default_gate = default_gate_.get();
   ComponentProvidersGate* additional_gate = additional_gate_.get();
   absl::Cleanup initialize_gates = [default_gate, additional_gate] {
