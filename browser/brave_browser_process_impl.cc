@@ -203,7 +203,7 @@ void BraveBrowserProcessImpl::Init() {
                           base::Unretained(this)));
 #endif
 
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(IS_WIN)
   day_zero_browser_ui_expt_manager_ =
       DayZeroBrowserUIExptManager::Create(profile_manager());
 #endif
@@ -386,6 +386,9 @@ brave_shields::AdBlockService* BraveBrowserProcessImpl::ad_block_service() {
 
 NTPBackgroundImagesService*
 BraveBrowserProcessImpl::ntp_background_images_service() {
+#if BUILDFLAG(IS_ANDROID)
+  return nullptr;
+#else
   if (!ntp_background_images_service_) {
     ntp_background_images_service_ =
         std::make_unique<NTPBackgroundImagesService>(
@@ -394,6 +397,7 @@ BraveBrowserProcessImpl::ntp_background_images_service() {
   }
 
   return ntp_background_images_service_.get();
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 https_upgrade_exceptions::HttpsUpgradeExceptionsService*

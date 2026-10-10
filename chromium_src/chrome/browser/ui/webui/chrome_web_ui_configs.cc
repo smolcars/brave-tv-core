@@ -52,7 +52,6 @@
 
 #else  // !BUILDFLAG(IS_ANDROID)
 #include "brave/browser/ui/webui/brave_account/brave_account_ui_android.h"
-#include "brave/browser/ui/webui/new_tab_takeover/android/new_tab_takeover_ui_config.h"
 #endif  // !BUILDFLAG(IS_ANDROID)
 
 #include "brave/browser/ui/webui/brave_adblock_internals_ui.h"
@@ -145,7 +144,6 @@ void RegisterChromeWebUIConfigs() {
     map.AddWebUIConfig(std::make_unique<BraveAccountUIDesktopConfig>());
   }
 #else   // !BUILDFLAG(IS_ANDROID)
-  map.AddWebUIConfig(std::make_unique<NewTabTakeoverUIConfig>());
   if (brave_account::features::IsBraveAccountEnabled()) {
     map.AddWebUIConfig(std::make_unique<BraveAccountUIAndroidConfig>());
   }

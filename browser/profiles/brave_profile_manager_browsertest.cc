@@ -7,6 +7,8 @@
 
 #include "base/functional/callback_helpers.h"
 #include "base/test/scoped_feature_list.h"
+#include "brave/browser/brave_browser_process.h"
+#include "brave/browser/ntp_background/view_counter_service_factory.h"
 #include "brave/components/ai_chat/core/common/buildflags/buildflags.h"
 #include "brave/components/brave_ads/buildflags/buildflags.h"
 #include "brave/components/brave_rewards/core/buildflags/buildflags.h"
@@ -55,6 +57,15 @@
 #endif
 
 class BraveProfileManagerTest : public PlatformBrowserTest {};
+
+#if BUILDFLAG(IS_ANDROID)
+IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest, SponsoredHomeServicesDisabled) {
+  EXPECT_EQ(g_brave_browser_process->ntp_background_images_service(), nullptr);
+  EXPECT_EQ(ntp_background_images::ViewCounterServiceFactory::GetForProfile(
+                ProfileManager::GetLastUsedProfile()),
+            nullptr);
+}
+#endif  // BUILDFLAG(IS_ANDROID)
 
 #if BUILDFLAG(IS_ANDROID) && BUILDFLAG(ENABLE_AI_CHAT)
 IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest, LeoDisabledWithPrefsPreserved) {
