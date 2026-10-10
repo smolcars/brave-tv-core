@@ -5,37 +5,28 @@
 
 package org.chromium.chrome.browser.tv;
 
-import android.content.res.ColorStateList;
 import android.content.res.Configuration;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
-import android.view.Gravity;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
-import androidx.core.graphics.ColorUtils;
-
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.color.MaterialColors;
+import androidx.compose.ui.platform.ComposeView;
 
 import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.chrome.browser.ui.native_page.BasicNativePage;
 import org.chromium.chrome.browser.ui.native_page.NativePage;
 import org.chromium.chrome.browser.ui.native_page.NativePageHost;
 import org.chromium.content_public.browser.LoadUrlParams;
 
+import java.util.List;
+
 /** A native home with no feed, promotions, analytics, or web renderer. */
 public final class TvHomePage extends BasicNativePage {
     private final BraveActivity mActivity;
     private final Tab mTab;
-    private final LinearLayout mContent;
+    private final ComposeView mContent;
     private boolean mDestroyed;
 
     public static @Nullable NativePage createIfTelevision(NativePageHost host, Tab tab) {
@@ -53,193 +44,60 @@ public final class TvHomePage extends BasicNativePage {
         super(host);
         mActivity = activity;
         mTab = tab;
-        mContent = new LinearLayout(activity);
-        mContent.setOrientation(LinearLayout.VERTICAL);
-        mContent.setPadding(dp(52), dp(36), dp(52), dp(24));
-        int surface = MaterialColors.getColor(mContent, R.attr.colorSurface);
-        int primary = MaterialColors.getColor(mContent, R.attr.colorPrimary);
-        mContent.setBackground(
-                new GradientDrawable(
-                        GradientDrawable.Orientation.TR_BL,
-                        new int[] {ColorUtils.blendARGB(surface, primary, 0.16f), surface}));
-        TextView heading =
-                addText(
-                        tab.isIncognito()
-                                ? R.string.brave_tv_private_home
-                                : R.string.brave_tv_home_heading,
-                        36,
-                        false);
-        heading.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        heading.setLetterSpacing(-0.02f);
-        addText(
-                tab.isIncognito()
-                        ? R.string.brave_tv_private_home_description
-                        : R.string.brave_tv_home_tagline,
-                18,
-                true);
+        mContent =
+                TvPresentation.home(
+                        activity,
+                        activity.getString(
+                                tab.isIncognito()
+                                        ? R.string.brave_tv_private_home
+                                        : R.string.brave_tv_home_heading),
+                        activity.getString(
+                                tab.isIncognito()
+                                        ? R.string.brave_tv_private_home_description
+                                        : R.string.brave_tv_home_tagline),
+                        activity.getString(R.string.brave_tv_attribution),
+                        List.of(
+                                action(
+                                        R.string.brave_tv_address,
+                                        () ->
+                                                activity.onMenuOrKeyboardAction(
+                                                        R.id.focus_url_bar, false)),
+                                action(R.string.brave_tv_controls, activity::showTvBrowserControls),
+                                action(R.string.brave_tv_bookmarks, activity::showTvBookmarks)),
+                        !tab.isIncognito() && TvPhoneRemote.available()
+                                ? List.of(
+                                        action(
+                                                R.string.brave_tv_phone,
+                                                activity::showTvPhoneRemote),
+                                        action(
+                                                R.string.brave_tv_source,
+                                                () -> open("https://github.com/smolcars/brave-tv")),
+                                        action(
+                                                R.string.brave_tv_licenses,
+                                                () -> open("chrome://credits")))
+                                : List.of(
+                                        action(
+                                                R.string.brave_tv_source,
+                                                () -> open("https://github.com/smolcars/brave-tv")),
+                                        action(
+                                                R.string.brave_tv_licenses,
+                                                () -> open("chrome://credits"))));
+        initWithView(mContent);
+    }
 
-        LinearLayout actions = new LinearLayout(activity);
-        actions.setBaselineAligned(false);
-        actions.setPadding(0, dp(24), 0, dp(8));
-        mContent.addView(actions);
-        MaterialButton address =
-                addButton(
-                        actions,
-                        R.string.brave_tv_address,
-                        R.drawable.ic_search,
-                        false,
-                        2,
-                        () -> activity.onMenuOrKeyboardAction(R.id.focus_url_bar, false));
-        MaterialButton controls =
-                addButton(
-                        actions,
-                        R.string.brave_tv_controls,
-                        R.drawable.ic_tune,
-                        false,
-                        1,
-                        activity::showTvBrowserControls);
-        MaterialButton bookmarks =
-                addButton(
-                        actions,
-                        R.string.brave_tv_bookmarks,
-                        R.drawable.ic_bookmark_menu_view,
-                        false,
-                        1,
-                        activity::showTvBookmarks);
-        MaterialButton phoneButton = null;
-        if (!tab.isIncognito() && TvPhoneRemote.available()) {
-            LinearLayout phone = new LinearLayout(activity);
-            phone.setPadding(0, dp(8), 0, 0);
-            mContent.addView(phone);
-            phoneButton =
-                    addButton(
-                            phone,
-                            R.string.brave_tv_phone,
-                            R.drawable.ic_windows_open,
-                            true,
-                            1,
-                            activity::showTvPhoneRemote);
-        }
-        View space = new View(activity);
-        space.setMinimumHeight(dp(24));
-        mContent.addView(space, new LinearLayout.LayoutParams(1, 0, 1));
-        addText(R.string.brave_tv_attribution, 14, true);
-        LinearLayout links = new LinearLayout(activity);
-        links.setPadding(0, dp(8), 0, 0);
-        mContent.addView(links);
-        MaterialButton source =
-                addButton(
-                        links,
-                        R.string.brave_tv_source,
-                        R.drawable.ic_code,
-                        true,
-                        1,
-                        () -> open("https://github.com/smolcars/brave-tv"));
-        MaterialButton licenses =
-                addButton(
-                        links,
-                        R.string.brave_tv_licenses,
-                        R.drawable.ic_info_outline,
-                        true,
-                        1,
-                        () -> open("chrome://credits"));
-        address.setNextFocusDownId(source.getId());
-        controls.setNextFocusDownId(licenses.getId());
-        bookmarks.setNextFocusDownId(licenses.getId());
-        source.setNextFocusUpId(address.getId());
-        licenses.setNextFocusUpId(controls.getId());
-        if (phoneButton != null) {
-            address.setNextFocusDownId(phoneButton.getId());
-            controls.setNextFocusDownId(phoneButton.getId());
-            bookmarks.setNextFocusDownId(phoneButton.getId());
-            phoneButton.setNextFocusUpId(address.getId());
-            phoneButton.setNextFocusDownId(source.getId());
-            source.setNextFocusUpId(phoneButton.getId());
-            licenses.setNextFocusUpId(phoneButton.getId());
-        }
-        ScrollView scroll = new ScrollView(activity);
-        scroll.setFillViewport(true);
-        scroll.addView(mContent);
-        // Chromium focuses the root after attachment; wait for the buttons to be laid out.
-        scroll.setOnFocusChangeListener(
-                (view, focused) -> {
-                    if (!focused) return;
-                    address.post(
-                            () -> {
-                                if (!mDestroyed
-                                        && !activity.isFinishing()
-                                        && !activity.isDestroyed()
-                                        && scroll.isAttachedToWindow()
-                                        && scroll.isFocused()) {
-                                    address.requestFocus();
-                                }
-                            });
+    private TvPresentation.Action action(int label, Runnable callback) {
+        return new TvPresentation.Action(
+                mActivity.getString(label),
+                true,
+                () -> {
+                    if (!mDestroyed
+                            && !mActivity.isFinishing()
+                            && !mActivity.isDestroyed()
+                            && !mTab.isDestroyed()
+                            && mActivity.getActivityTab() == mTab) {
+                        callback.run();
+                    }
                 });
-        initWithView(scroll);
-        address.requestFocus();
-    }
-
-    private int dp(int value) {
-        return Math.round(value * mActivity.getResources().getDisplayMetrics().density);
-    }
-
-    private TextView addText(int text, int size, boolean secondary) {
-        TextView view = new TextView(mActivity);
-        view.setText(text);
-        view.setTextSize(size);
-        int foreground = MaterialColors.getColor(mContent, R.attr.colorOnSurface);
-        int surface = MaterialColors.getColor(mContent, R.attr.colorSurface);
-        view.setTextColor(
-                secondary ? ColorUtils.blendARGB(surface, foreground, 0.75f) : foreground);
-        view.setPadding(dp(4), 0, dp(4), dp(10));
-        mContent.addView(view);
-        return view;
-    }
-
-    private MaterialButton addButton(
-            LinearLayout row, int label, int icon, boolean compact, float weight, Runnable action) {
-        MaterialButton button =
-                TvBrowserPanel.createButton(
-                        mActivity,
-                        mActivity.getString(label),
-                        true,
-                        () -> {
-                            if (!mDestroyed
-                                    && !mActivity.isFinishing()
-                                    && !mActivity.isDestroyed()
-                                    && !mTab.isDestroyed()
-                                    && mActivity.getActivityTab() == mTab) {
-                                action.run();
-                            }
-                        });
-        int primary = MaterialColors.getColor(button, R.attr.colorPrimary);
-        int surface = MaterialColors.getColor(button, R.attr.colorSurface);
-        int onPrimary = MaterialColors.getColor(button, R.attr.colorOnPrimary);
-        int onSurface = MaterialColors.getColor(button, R.attr.colorOnSurface);
-        int[][] states = {{android.R.attr.state_focused}, {}};
-        button.setBackgroundTintList(
-                new ColorStateList(
-                        states,
-                        new int[] {primary, ColorUtils.blendARGB(surface, primary, 0.07f)}));
-        button.setStrokeColor(
-                new ColorStateList(
-                        states,
-                        new int[] {onPrimary, ColorUtils.blendARGB(surface, primary, 0.12f)}));
-        button.setIconTint(new ColorStateList(states, new int[] {onPrimary, onSurface}));
-        button.setIconResource(icon);
-        button.setIconSize(dp(compact ? 20 : 28));
-        button.setIconPadding(dp(12));
-        button.setIconGravity(MaterialButton.ICON_GRAVITY_TEXT_START);
-        button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-        button.setTextSize(compact ? 15 : 20);
-        button.setMinHeight(dp(compact ? 52 : 88));
-        button.setCornerRadius(dp(compact ? 12 : 18));
-        button.setPaddingRelative(dp(compact ? 16 : 22), dp(8), dp(16), dp(8));
-        LinearLayout.LayoutParams params =
-                new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, weight);
-        params.setMargins(dp(4), dp(4), dp(4), dp(4));
-        row.addView(button, params);
-        return button;
     }
 
     private void open(String url) {
@@ -260,6 +118,7 @@ public final class TvHomePage extends BasicNativePage {
     @Override
     public void destroy() {
         mDestroyed = true;
+        mContent.disposeComposition();
         super.destroy();
     }
 }
