@@ -108,6 +108,12 @@ final class TvRemoteBrowser {
                             }
 
                             @Override
+                            public void didToggleFullscreenModeForTab(
+                                    boolean enteredFullscreen, boolean willCauseResize) {
+                                invalidate();
+                            }
+
+                            @Override
                             public void onWebContentsLostFocus() {
                                 invalidate();
                             }
@@ -137,7 +143,7 @@ final class TvRemoteBrowser {
         if (mPaused || mTab == null) return state;
         state.put("title", cut(mTab.getTitle(), 160))
                 .put("url", cut(mTab.getUrl().getSpec(), 2048))
-                .put("back", mTab.canGoBack())
+                .put("back", mControls.isPageFullscreen() || mTab.canGoBack())
                 .put("forward", mTab.canGoForward())
                 .put("loading", mTab.isLoading())
                 .put("error", mTab.isShowingErrorPage())
@@ -176,7 +182,9 @@ final class TvRemoteBrowser {
 
     boolean command(JSONObject command) throws JSONException {
         refresh();
-        if (mPaused || mTab == null || TvRemoteSession.parseInteger(command.opt("revision")) != mRevision) return false;
+        if (mPaused
+                || mTab == null
+                || TvRemoteSession.parseInteger(command.opt("revision")) != mRevision) return false;
         String op = command.getString("op");
         switch (op) {
             case "navigate":
@@ -199,6 +207,7 @@ final class TvRemoteBrowser {
                 mTab.loadUrl(new LoadUrlParams(destination.getSpec()));
                 return true;
             case "back":
+                if (mControls.exitPageFullscreen()) return true;
                 if (!mTab.canGoBack()) return false;
                 invalidate();
                 mTab.goBack();

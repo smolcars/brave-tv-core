@@ -45,6 +45,7 @@ import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
 import org.chromium.chrome.browser.search_engines.settings.BraveSearchEngineAdapter;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabModel;
+import org.chromium.chrome.browser.tabmodel.TabModelSelectorTabModelObserver;
 import org.chromium.chrome.browser.tabmodel.TabModelUtils;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.bookmarks.BookmarkItem;
@@ -74,6 +75,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final Cursor mCursor;
     private final View mCursorView;
     private final OnBackPressedCallback mBackCallback;
+    private final TabModelSelectorTabModelObserver mTabObserver;
     private @Nullable ContentView mPage;
     private @Nullable AlertDialog mDialog;
     private @Nullable CallbackController mBookmarkCallbacks;
@@ -140,13 +142,52 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     public void handleOnBackPressed() {
                         if (!isAlive()) return;
                         if (!keyboardVisible() && !nativeUiOwnsInput(true)) {
-                            if (!mInput.back()) showControls();
+                            if (!exitPageFullscreen() && !mInput.back()) showControls();
                             return;
                         }
                         dispatchNativeBack();
                     }
                 };
         activity.getOnBackPressedDispatcher().addCallback(activity, mBackCallback);
+        mTabObserver =
+                new TabModelSelectorTabModelObserver(activity.getTabModelSelector()) {
+                    @Override
+                    public void didRemoveTabForClosure(Tab tab) {
+                        if (!tab.isIncognito()) {
+                            // Let the model finish closing/selecting before creating TV home.
+                            mActivity
+                                    .getWindow()
+                                    .getDecorView()
+                                    .post(TvBrowserControls.this::restoreEmptyHome);
+                        }
+                    }
+                };
+        mActivity.getWindow().getDecorView().post(this::restoreEmptyHome);
+    }
+
+    private void restoreEmptyHome() {
+        if (!isAlive()
+                || !mActivity.hasWindowFocus()
+                || !mActivity.areTabModelsInitialized()
+                || mActivity.getTabModelSelector().isIncognitoSelected()
+                || mActivity.getTabModelSelector().getModel(false).getCount() != 0
+                || (mModalDialogs != null && mModalDialogs.isShowing())
+                || (mDialog != null && mDialog.isShowing())) return;
+        mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false);
+    }
+
+    boolean isPageFullscreen() {
+        Tab tab = mActivity.getActivityTab();
+        WebContents contents = tab == null ? null : tab.getWebContents();
+        return contents != null && contents.isFullscreenForCurrentTab();
+    }
+
+    boolean exitPageFullscreen() {
+        if (!isPageFullscreen()) return false;
+        mInput.cancelPress();
+        mPhoneRemote.invalidate();
+        mActivity.getActivityTab().getWebContents().exitFullscreen();
+        return true;
     }
 
     private void dispatchNativeBack() {
@@ -239,6 +280,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 type++) {
             // Web CloseWatcher must not trap the remote inside a page.
             if (type != BackPressHandler.Type.CLOSE_WATCHER
+                    && type != BackPressHandler.Type.FULLSCREEN
                     && mBackPressManager.isBackPressHandlerConsumingBackEvent(type)) return true;
         }
         return false;
@@ -321,7 +363,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     public void onWindowFocusChanged(boolean focused) {
         if (!focused) mInput.cancelPress();
-        else restoreModalPageFocus();
+        else {
+            restoreModalPageFocus();
+            restoreEmptyHome();
+        }
     }
 
     public void onPause() {
@@ -1284,6 +1329,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);
         mInput.cancelPress();
         mBackCallback.remove();
+        mTabObserver.destroy();
         detachCursor();
         dismissDialog();
     }
