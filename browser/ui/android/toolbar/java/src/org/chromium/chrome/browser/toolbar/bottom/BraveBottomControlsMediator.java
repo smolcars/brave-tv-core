@@ -5,7 +5,10 @@
 
 package org.chromium.chrome.browser.toolbar.bottom;
 
+import android.content.res.Configuration;
+
 import org.chromium.base.BravePreferenceKeys;
+import org.chromium.base.ContextUtils;
 import org.chromium.base.supplier.MonotonicObservableSupplier;
 import org.chromium.base.supplier.NonNullObservableSupplier;
 import org.chromium.base.supplier.NullableObservableSupplier;
@@ -136,7 +139,9 @@ class BraveBottomControlsMediator extends BottomControlsMediator {
     }
 
     private boolean isTabGroupUiEffectivelyVisible() {
-        return mTabGroupUiRequestedVisible
+        int uiMode = ContextUtils.getApplicationContext().getResources().getConfiguration().uiMode;
+        return (uiMode & Configuration.UI_MODE_TYPE_MASK) != Configuration.UI_MODE_TYPE_TELEVISION
+                && mTabGroupUiRequestedVisible
                 && ChromeSharedPreferences.getInstance()
                         .readBoolean(BravePreferenceKeys.BRAVE_TAB_GROUPS_FEATURE_ENABLED, true)
                 && ChromeSharedPreferences.getInstance()
