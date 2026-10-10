@@ -106,17 +106,19 @@ public final class TvHomePage extends BasicNativePage {
                         false,
                         1,
                         activity::showTvBookmarks);
+        MaterialButton phoneButton = null;
         if (!tab.isIncognito() && TvPhoneRemote.available(activity)) {
             LinearLayout phone = new LinearLayout(activity);
             phone.setPadding(0, dp(8), 0, 0);
             mContent.addView(phone);
-            addButton(
-                    phone,
-                    R.string.brave_tv_phone,
-                    R.drawable.ic_windows_open,
-                    true,
-                    1,
-                    activity::showTvPhoneRemote);
+            phoneButton =
+                    addButton(
+                            phone,
+                            R.string.brave_tv_phone,
+                            R.drawable.ic_windows_open,
+                            true,
+                            1,
+                            activity::showTvPhoneRemote);
         }
         View space = new View(activity);
         space.setMinimumHeight(dp(24));
@@ -146,6 +148,15 @@ public final class TvHomePage extends BasicNativePage {
         bookmarks.setNextFocusDownId(licenses.getId());
         source.setNextFocusUpId(address.getId());
         licenses.setNextFocusUpId(controls.getId());
+        if (phoneButton != null) {
+            address.setNextFocusDownId(phoneButton.getId());
+            controls.setNextFocusDownId(phoneButton.getId());
+            bookmarks.setNextFocusDownId(phoneButton.getId());
+            phoneButton.setNextFocusUpId(address.getId());
+            phoneButton.setNextFocusDownId(source.getId());
+            source.setNextFocusUpId(phoneButton.getId());
+            licenses.setNextFocusUpId(phoneButton.getId());
+        }
         ScrollView scroll = new ScrollView(activity);
         scroll.setFillViewport(true);
         scroll.addView(mContent);
