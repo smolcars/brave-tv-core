@@ -68,12 +68,16 @@ network::mojom::NetworkContext* GetNetworkContextForProfile(
 
 // static
 AdsService* AdsServiceFactory::GetForProfile(Profile* profile) {
+#if BUILDFLAG(IS_ANDROID)
+  return nullptr;
+#else
   if (!profile->IsRegularProfile()) {
     return nullptr;
   }
 
   return static_cast<AdsService*>(
       GetInstance()->GetServiceForBrowserContext(profile, true));
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 // static
