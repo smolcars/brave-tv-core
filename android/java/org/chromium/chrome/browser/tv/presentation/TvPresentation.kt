@@ -6,6 +6,7 @@
 package org.chromium.chrome.browser.tv.presentation
 
 import android.content.Context
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -67,7 +68,7 @@ object TvPresentation {
         attribution: String,
         actions: List<Action>,
         links: List<Action>,
-    ): ComposeView = view(context).apply {
+    ): View = view(context).apply {
         require(actions.isNotEmpty() && actions.first().enabled)
         setContent {
             Theme {
@@ -110,7 +111,7 @@ object TvPresentation {
         subtitle: String,
         actions: List<Action>,
         preferredKey: Int,
-    ): ComposeView = view(context).apply {
+    ): View = view(context).apply {
         setContent {
             Theme {
                 val initial = remember { FocusRequester() }
@@ -140,6 +141,12 @@ object TvPresentation {
                 }
             }
         }
+    }
+
+    /** UI-thread disposal for a View returned by these factories. */
+    @JvmStatic
+    fun dispose(view: View) {
+        (view as ComposeView).disposeComposition()
     }
 
     @Composable

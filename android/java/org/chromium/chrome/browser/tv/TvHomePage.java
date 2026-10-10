@@ -6,9 +6,9 @@
 package org.chromium.chrome.browser.tv;
 
 import android.content.res.Configuration;
+import android.view.View;
 
 import androidx.annotation.Nullable;
-import androidx.compose.ui.platform.ComposeView;
 
 import org.chromium.base.ContextUtils;
 import org.chromium.chrome.R;
@@ -27,7 +27,7 @@ import java.util.List;
 public final class TvHomePage extends BasicNativePage {
     private final BraveActivity mActivity;
     private final Tab mTab;
-    private final ComposeView mContent;
+    private final View mContent;
     private boolean mDestroyed;
 
     public static @Nullable NativePage createIfTelevision(NativePageHost host, Tab tab) {
@@ -111,7 +111,7 @@ public final class TvHomePage extends BasicNativePage {
     @Override
     public void destroy() {
         mDestroyed = true;
-        mContent.disposeComposition();
+        TvPresentation.dispose(mContent);
         super.destroy();
     }
 }
