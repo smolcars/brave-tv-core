@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
@@ -255,10 +256,13 @@ object TvPresentation {
         entries: List<PanelEntry>, preferredKey: Int,
     ): View = view(context).apply {
         val actions = entries.filterIsInstance<ActionRow>().flatMap { it.actions }
+        val metrics = context.resources.displayMetrics
+        val maxHeight = (metrics.heightPixels * 0.9f / metrics.density).dp
         setContent {
             Theme {
                 val initialTargets = remember { actions.associateWith { FocusRequester() } }
-                Column(Modifier.fillMaxWidth().background(backgroundColor).padding(24.dp),
+                Column(Modifier.fillMaxWidth().heightIn(max = maxHeight)
+                    .background(backgroundColor).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(title, fontSize = 26.sp, fontWeight = FontWeight.Medium,
                         modifier = Modifier.semantics { heading() })

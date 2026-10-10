@@ -106,11 +106,7 @@ final class TvBrowserPanel {
         if (window != null) {
             var metrics = mActivity.getResources().getDisplayMetrics();
             int width = Math.min(dp(mWide ? 740 : 540), Math.round(metrics.widthPixels * 0.92f));
-            content.measure(
-                    View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                    View.MeasureSpec.makeMeasureSpec(
-                            Math.round(metrics.heightPixels * 0.9f), View.MeasureSpec.AT_MOST));
-            window.setLayout(width, content.getMeasuredHeight());
+            window.setLayout(width, android.view.ViewGroup.LayoutParams.WRAP_CONTENT);
         }
         return dialog;
     }
