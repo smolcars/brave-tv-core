@@ -10,7 +10,6 @@ import android.content.Context;
 import org.chromium.base.BraveFeatureList;
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.build.annotations.Nullable;
-import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.ui.permissions.AndroidPermissionDelegate;
 
@@ -40,13 +39,13 @@ public class BraveAdaptiveToolbarStatePredictor
     public static boolean isValidSegment(@AdaptiveToolbarButtonVariant int variant) {
         // Check Brave-specific variants first
         switch (variant) {
-                // Add more Brave-specific variants here as needed
+            // Add more Brave-specific variants here as needed
             case AdaptiveToolbarButtonVariant.BOOKMARKS:
             case AdaptiveToolbarButtonVariant.HISTORY:
             case AdaptiveToolbarButtonVariant.DOWNLOADS:
                 return true;
             case AdaptiveToolbarButtonVariant.LEO:
-                return ChromeFeatureList.isEnabled(BraveFeatureList.AI_CHAT);
+                return BraveFeatureList.IS_AI_CHAT_SUPPORTED;
             case AdaptiveToolbarButtonVariant.WALLET:
                 return true;
         }

@@ -10,12 +10,25 @@
 #include "base/time/time.h"
 #include "brave/components/ai_chat/core/common/constants.h"
 #include "brave/components/ai_chat/core/common/features.h"
+#include "build/build_config.h"
 #include "components/prefs/pref_registry_simple.h"
 
 namespace ai_chat::prefs {
+namespace {
+
+bool ShouldRegisterProfilePrefs() {
+#if BUILDFLAG(IS_ANDROID)
+  // Preserve stored preferences while the fork excludes the Leo service.
+  return true;
+#else
+  return features::IsAIChatEnabled();
+#endif  // BUILDFLAG(IS_ANDROID)
+}
+
+}  // namespace
 
 void RegisterProfilePrefs(PrefRegistrySimple* registry) {
-  if (ai_chat::features::IsAIChatEnabled()) {
+  if (ShouldRegisterProfilePrefs()) {
     registry->RegisterTimePref(kLastAcceptedDisclaimer, {});
     registry->RegisterBooleanPref(kBraveChatStorageEnabled, true);
     registry->RegisterBooleanPref(kBraveChatAutocompleteProviderEnabled, true);
@@ -51,7 +64,7 @@ void RegisterProfilePrefs(PrefRegistrySimple* registry) {
 }
 
 void RegisterProfilePrefsForMigration(PrefRegistrySimple* registry) {
-  if (ai_chat::features::IsAIChatEnabled()) {
+  if (ShouldRegisterProfilePrefs()) {
     registry->RegisterBooleanPref(kObseleteBraveChatAutoGenerateQuestions,
                                   false);
   }

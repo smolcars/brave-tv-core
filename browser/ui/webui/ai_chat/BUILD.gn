@@ -133,7 +133,9 @@ source_set("unit_tests") {
     "//ui/shell_dialogs",
   ]
 
-  sources = [ "ai_chat_ui_page_handler_unittest.cc" ]
+  if (!is_android) {
+    sources = [ "ai_chat_ui_page_handler_unittest.cc" ]
+  }
 }
 
 source_set("browser_tests") {
@@ -160,5 +162,7 @@ source_set("browser_tests") {
     ]
   }
 
-  sources = [ "ai_chat_ui_page_handler_browsertest.cc" ]
+  if (!is_android) {
+    sources = [ "ai_chat_ui_page_handler_browsertest.cc" ]
+  }
 }

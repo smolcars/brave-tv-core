@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "base/functional/callback_helpers.h"
+#include "base/test/scoped_feature_list.h"
+#include "brave/components/ai_chat/core/common/buildflags/buildflags.h"
 #include "brave/components/brave_ads/buildflags/buildflags.h"
 #include "brave/components/brave_rewards/core/buildflags/buildflags.h"
 #include "brave/components/brave_shields/core/browser/brave_shields_utils.h"
@@ -45,7 +47,30 @@
 #include "brave/browser/brave_rewards/rewards_service_factory.h"
 #endif
 
+#if BUILDFLAG(ENABLE_AI_CHAT)
+#include "brave/browser/ai_chat/ai_chat_service_factory.h"
+#include "brave/browser/ai_chat/model_service_factory.h"
+#include "brave/components/ai_chat/core/common/features.h"
+#include "brave/components/ai_chat/core/common/pref_names.h"
+#endif
+
 class BraveProfileManagerTest : public PlatformBrowserTest {};
+
+#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(ENABLE_AI_CHAT)
+IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest, LeoDisabledWithPrefsPreserved) {
+  base::test::ScopedFeatureList feature_list;
+  feature_list.InitAndEnableFeature(ai_chat::features::kAIChat);
+  Profile* profile = ProfileManager::GetLastUsedProfile();
+  EXPECT_EQ(ai_chat::AIChatServiceFactory::GetForBrowserContext(profile), nullptr);
+  EXPECT_EQ(ai_chat::ModelServiceFactory::GetForBrowserContext(profile), nullptr);
+  EXPECT_NE(profile->GetPrefs()->FindPreference(
+                ai_chat::prefs::kBraveChatStorageEnabled),
+            nullptr);
+  EXPECT_NE(profile->GetPrefs()->FindPreference(
+                ai_chat::prefs::kBraveChatSubscriptionActiveAndroid),
+            nullptr);
+}
+#endif  // BUILDFLAG(IS_ANDROID) && BUILDFLAG(ENABLE_AI_CHAT)
 
 // We use x86 builds on Android to run tests and rewards with ads
 // are off on x86 builds

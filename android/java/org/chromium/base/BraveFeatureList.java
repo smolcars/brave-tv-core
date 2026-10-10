@@ -27,6 +27,8 @@ public abstract class BraveFeatureList {
     public static final String HTTPS_BY_DEFAULT = "HttpsByDefault";
     public static final String BRAVE_FORGET_FIRST_PARTY_STORAGE = "BraveForgetFirstPartyStorage";
     public static final String BRAVE_REQUEST_OTR_TAB = "BraveRequestOTRTab";
+    // The Android fork excludes Leo regardless of upstream feature overrides.
+    public static final boolean IS_AI_CHAT_SUPPORTED = false;
     public static final String AI_CHAT = "AIChat";
     public static final String AI_CHAT_HISTORY = "AIChatHistory";
     public static final String BRAVE_SHOW_STRICT_FINGERPRINTING_MODE =
