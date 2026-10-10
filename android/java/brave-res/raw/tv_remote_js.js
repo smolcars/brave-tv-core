@@ -102,6 +102,7 @@ function render(result) {
     $('title').textContent = 'Control paused'
     $('url').textContent = ''
     $('tabs').replaceChildren()
+    delete $('tabs').dataset.state
     resetInput()
     return
   }
