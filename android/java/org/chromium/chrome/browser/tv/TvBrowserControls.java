@@ -421,6 +421,14 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 && canAccessTabs(tab.isIncognito());
     }
 
+    public void showBookmarks() {
+        if (!isAlive()) return;
+        Tab tab = mActivity.getActivityTab();
+        if (tab == null || tab.isDestroyed() || !canAccessTabs(tab.isIncognito())) return;
+        mLastAction = R.string.brave_tv_bookmarks;
+        showBookmarks(tab, currentUrl(), null, 0);
+    }
+
     private void showBookmarks(Tab tab, String url, @Nullable BookmarkId folderId, int start) {
         if (!tabContextValid(tab, url)) return;
         dismissDialog();
@@ -895,8 +903,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         } else if (action == R.string.brave_tv_shields) {
             showShields();
         } else if (action == R.string.brave_tv_bookmarks) {
-            Tab tab = mActivity.getActivityTab();
-            if (tab != null) showBookmarks(tab, currentUrl(), null, 0);
+            showBookmarks();
         } else if (action == R.string.brave_tv_history) {
             Tab tab = mActivity.getActivityTab();
             if (tab == null || tab.isDestroyed() || tab.isIncognito()) return;

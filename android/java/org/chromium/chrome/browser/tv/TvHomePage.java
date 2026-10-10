@@ -97,6 +97,14 @@ public final class TvHomePage extends BasicNativePage {
                         false,
                         1,
                         activity::showTvBrowserControls);
+        MaterialButton bookmarks =
+                addButton(
+                        actions,
+                        R.string.brave_tv_bookmarks,
+                        R.drawable.ic_bookmark_menu_view,
+                        false,
+                        1,
+                        activity::showTvBookmarks);
         View space = new View(activity);
         space.setMinimumHeight(dp(24));
         mContent.addView(space, new LinearLayout.LayoutParams(1, 0, 1));
@@ -122,6 +130,7 @@ public final class TvHomePage extends BasicNativePage {
                         () -> open("chrome://credits"));
         address.setNextFocusDownId(source.getId());
         controls.setNextFocusDownId(licenses.getId());
+        bookmarks.setNextFocusDownId(licenses.getId());
         source.setNextFocusUpId(address.getId());
         licenses.setNextFocusUpId(controls.getId());
         ScrollView scroll = new ScrollView(activity);

@@ -382,6 +382,10 @@ public abstract class BraveActivity extends ChromeActivity
         if (mTvBrowserControls != null) mTvBrowserControls.showShields();
     }
 
+    public void showTvBookmarks() {
+        if (mTvBrowserControls != null) mTvBrowserControls.showBookmarks();
+    }
+
     public void showTvTabs() {
         if (mTvBrowserControls != null) mTvBrowserControls.showTabs();
     }
