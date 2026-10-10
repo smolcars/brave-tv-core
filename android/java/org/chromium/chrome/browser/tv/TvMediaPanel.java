@@ -29,8 +29,8 @@ final class TvMediaPanel {
     private final BraveActivity mActivity;
     private final Tab mTab;
     private final WebContents mWebContents;
-    private final MediaSession mSession;
-    private final MediaSessionObserver mObserver;
+    private final @Nullable MediaSession mSession;
+    private final @Nullable MediaSessionObserver mObserver;
     private final TvBrowserPanel mPanel;
     private final Runnable mOnClose;
     private final MaterialButton mPlayPause;
@@ -72,7 +72,7 @@ final class TvMediaPanel {
         mWebContents = contents;
         mOnClose = onClose;
         mSession = MediaSession.fromWebContents(contents);
-        mControllable = mSession.isControllable();
+        mControllable = mSession != null && mSession.isControllable();
         mPanel =
                 new TvBrowserPanel(
                         activity,
@@ -85,25 +85,28 @@ final class TvMediaPanel {
         mControls = mPanel.addAction(R.string.brave_tv_controls, true, onClose);
         // Registration immediately replays cached state, so build the buttons first.
         mObserver =
-                new MediaSessionObserver(mSession) {
-                    @Override
-                    public void mediaSessionStateChanged(boolean controllable, boolean suspended) {
-                        mControllable = controllable;
-                        mSuspended = suspended;
-                        updateButtons();
-                    }
+                mSession == null
+                        ? null
+                        : new MediaSessionObserver(mSession) {
+                            @Override
+                            public void mediaSessionStateChanged(
+                                    boolean controllable, boolean suspended) {
+                                mControllable = controllable;
+                                mSuspended = suspended;
+                                updateButtons();
+                            }
 
-                    @Override
-                    public void mediaSessionActionsChanged(Set<Integer> actions) {
-                        mActions = Set.copyOf(actions);
-                        updateButtons();
-                    }
+                            @Override
+                            public void mediaSessionActionsChanged(Set<Integer> actions) {
+                                mActions = Set.copyOf(actions);
+                                updateButtons();
+                            }
 
-                    @Override
-                    public void mediaSessionDestroyed() {
-                        destroy();
-                    }
-                };
+                            @Override
+                            public void mediaSessionDestroyed() {
+                                destroy();
+                            }
+                        };
         tab.addObserver(mTabObserver);
     }
 
@@ -124,7 +127,7 @@ final class TvMediaPanel {
     void destroy() {
         if (mDestroyed) return;
         mDestroyed = true;
-        mObserver.stopObserving();
+        if (mObserver != null) mObserver.stopObserving();
         mTab.removeObserver(mTabObserver);
         if (mDialog != null) mDialog.dismiss();
         mDialog = null;
@@ -151,7 +154,7 @@ final class TvMediaPanel {
     }
 
     private void togglePlayback() {
-        if (!isUsable() || !mControllable) return;
+        if (!isUsable() || !mControllable || mSession == null) return;
         if (mSuspended) {
             mSession.resume(SuspendType.UI);
         } else {
@@ -162,6 +165,6 @@ final class TvMediaPanel {
     private void seek(long millis) {
         int action =
                 millis < 0 ? MediaSessionAction.SEEK_BACKWARD : MediaSessionAction.SEEK_FORWARD;
-        if (isUsable() && canSeek(action)) mSession.seek(millis);
+        if (isUsable() && canSeek(action) && mSession != null) mSession.seek(millis);
     }
 }
