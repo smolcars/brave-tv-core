@@ -67,11 +67,11 @@ std::string GetBundledAdBlockVersion(scoped_refptr<AdBlockBundleStore> store) {
       return "TV signed adblock " + active->digest + "\n";
     }
   }
+  std::string version;
 #if BUILDFLAG(IS_ANDROID)
-  return kAdBlockBundleVersion;
-#else
-  return {};
+  version = kAdBlockBundleVersion;
 #endif  // BUILDFLAG(IS_ANDROID)
+  return store ? "TV independent packaged\n" + version : version;
 }
 
 std::string_view GetBundledAdBlockCatalogHash() {

@@ -1,8 +1,10 @@
 # Signed Android filter snapshots
 
-The packager is implemented. Native download, verification, activation and
-public-feed publication are separate work; this tool alone does not update
-the browser.
+The packager, native verifier, atomic staging and provider integration are
+implemented. Downloading, freshness UI and public-feed publication remain
+pending; this tool alone does not update the browser. Ten focused native tests
+cover authentication, storage and immutable loader/cache identity. APK runtime
+acceptance of the integration is pending.
 
 First refresh and test the pinned snapshot using the instructions in
 `components/brave_shields/resources/bundled/README.md`. The signer checks every

@@ -198,6 +198,8 @@ TEST_F(AdBlockSignedBundleTest, StagePreservesActiveUntilRestart) {
   auto store =
       base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
   EXPECT_FALSE(store->GetActive(now_));
+  const auto legacy_dat = GetBundledAdBlockVersion() + "serialized filters";
+  EXPECT_FALSE(legacy_dat.starts_with(GetBundledAdBlockVersion(store)));
   EXPECT_EQ(store->Stage(SignPayload(), now_).value(),
             AdBlockBundleStageResult::kStaged);
   EXPECT_FALSE(store->GetActive(now_));

@@ -1,10 +1,18 @@
 # Android filter baseline
 
-These public upstream data files bootstrap Shields before signed components are
-available. The native providers prefer an installed signed component. This is
-an APK snapshot, not an independent update service: refresh it with each release
-until a separately verified public update path is implemented. Optional lists
-outside this fallback catalog still require component delivery.
+These public upstream data files provide Android's packaged Shields baseline.
+With `IndependentAdBlockUpdates` enabled (the default), the five baseline groups
+and resources use one verified cached snapshot for the process, or these APK
+files when no cache is valid. The catalog and permissions remain fixed by the
+APK. Their duplicate upstream components are not registered. With the feature
+disabled, the providers prefer upstream signed components and use the APK only
+as fallback. Other component delivery and its signature verification remain
+unchanged.
+
+Signing, verification, storage and provider integration are implemented; the
+independent downloader and public feed are still pending. Until delivery is
+completed, refresh these packaged data with each release. See
+[the signed update format](../../../../tools/tv/signed-updates.md).
 
 `provenance.json` records immutable upstream revisions, source/mirror URLs and
 SHA-256 hashes. The catalog preserves upstream component IDs, defaults,
