@@ -519,7 +519,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         enabled,
                         () -> runControl(action, tab, url),
                         action,
-                        action == R.string.brave_tv_cursor ? R.drawable.ic_cursor : 0));
+                        action == R.string.brave_tv_pointer ? R.drawable.ic_cursor : 0));
     }
 
     private void dismissDialog() {
