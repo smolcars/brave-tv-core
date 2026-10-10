@@ -41,7 +41,7 @@ constexpr auto kTraffic =
   }
   policy {
     cookies_allowed: NO
-    setting: "Off by default; requires debug APK, process switch and TV opt-in."
+    setting: "Off by default; requires non-official local-channel build, process switch and TV opt-in."
     policy_exception_justification: "Development-only user initiated local experiment."
   })");
 
