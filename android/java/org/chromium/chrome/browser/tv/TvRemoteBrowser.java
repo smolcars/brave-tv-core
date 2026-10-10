@@ -12,16 +12,13 @@ import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
 import org.chromium.chrome.browser.tab.Tab;
-import org.chromium.chrome.browser.tab.TabObserver;
 import org.chromium.chrome.browser.tabmodel.TabClosureParams;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelUtils;
 import org.chromium.components.url_formatter.UrlFormatter;
 import org.chromium.content.browser.input.TvTextInput;
 import org.chromium.content_public.browser.LoadUrlParams;
-import org.chromium.content_public.browser.NavigationHandle;
 import org.chromium.content_public.browser.WebContents;
-import org.chromium.content_public.browser.WebContentsObserver;
 import org.chromium.url.GURL;
 
 import java.util.IdentityHashMap;
@@ -33,7 +30,7 @@ final class TvRemoteBrowser {
     private final IdentityHashMap<Tab, String> mIds = new IdentityHashMap<>();
     private Tab mTab;
     private WebContents mContents;
-    private WebContentsObserver mObserver;
+    private long mSessionRevision;
     private TvTextInput mText;
     private long mRevision = 1;
     private int mWidth;
@@ -42,23 +39,6 @@ final class TvRemoteBrowser {
     private int mX;
     private int mY;
     private boolean mPaused = true;
-    private final TabObserver mTabObserver =
-            new TabObserver() {
-                @Override
-                public void onHidden(Tab tab, int type) {
-                    invalidate();
-                }
-
-                @Override
-                public void onContentChanged(Tab tab) {
-                    invalidate();
-                }
-
-                @Override
-                public void onDestroyed(Tab tab) {
-                    invalidate();
-                }
-            };
 
     TvRemoteBrowser(BraveActivity activity, TvBrowserControls controls) {
         mActivity = activity;
@@ -71,9 +51,7 @@ final class TvRemoteBrowser {
     }
 
     void destroy() {
-        if (mObserver != null) mObserver.observe(null);
         if (mText != null) mText.destroy();
-        if (mTab != null) mTab.removeObserver(mTabObserver);
         mIds.clear();
     }
 
@@ -85,40 +63,12 @@ final class TvRemoteBrowser {
             mTab = tab;
             mContents = contents;
             mText = null;
-            mObserver = null;
-            mRevision++;
-            if (tab != null) tab.addObserver(mTabObserver);
-            if (contents != null) {
-                mText = new TvTextInput(contents);
-                mObserver =
-                        new WebContentsObserver(contents) {
-                            @Override
-                            public void didStartNavigationInPrimaryMainFrame(NavigationHandle h) {
-                                invalidate();
-                            }
-
-                            @Override
-                            public void didFinishNavigationInPrimaryMainFrame(NavigationHandle h) {
-                                invalidate();
-                            }
-
-                            @Override
-                            public void primaryMainFrameRenderProcessGone(int status) {
-                                invalidate();
-                            }
-
-                            @Override
-                            public void didToggleFullscreenModeForTab(
-                                    boolean enteredFullscreen, boolean willCauseResize) {
-                                invalidate();
-                            }
-
-                            @Override
-                            public void onWebContentsLostFocus() {
-                                invalidate();
-                            }
-                        };
-            }
+            if (contents != null) mText = new TvTextInput(contents);
+        }
+        TvBrowserSession.Context context = mControls.session().capture();
+        if (context.revision != mSessionRevision) {
+            mSessionRevision = context.revision;
+            invalidate();
         }
         int width =
                 tab == null || tab.getContentView() == null ? 0 : tab.getContentView().getWidth();
@@ -208,23 +158,24 @@ final class TvRemoteBrowser {
                 return true;
             case "back":
                 if (mControls.exitPageFullscreen()) return true;
-                if (!mTab.canGoBack()) return false;
-                invalidate();
-                mTab.goBack();
-                return true;
+                return mControls
+                        .session()
+                        .navigate(mControls.session().capture(), TvBrowserSession.Navigation.BACK);
             case "forward":
-                if (!mTab.canGoForward()) return false;
-                invalidate();
-                mTab.goForward();
-                return true;
+                return mControls
+                        .session()
+                        .navigate(
+                                mControls.session().capture(), TvBrowserSession.Navigation.FORWARD);
             case "reload":
                 if (!webPage()) return false;
-                invalidate();
-                mTab.reload();
-                return true;
+                return mControls
+                        .session()
+                        .navigate(
+                                mControls.session().capture(), TvBrowserSession.Navigation.RELOAD);
             case "stop":
-                mTab.stopLoading();
-                return true;
+                return mControls
+                        .session()
+                        .navigate(mControls.session().capture(), TvBrowserSession.Navigation.STOP);
             case "new":
                 if (mActivity.getTabModelSelector().getModel(false).getCount() >= 64) return false;
                 invalidate();

@@ -97,6 +97,10 @@ public final class TvHomePage extends BasicNativePage {
         mHost.loadUrl(new LoadUrlParams(url), mTab.isIncognito());
     }
 
+    void focusAddress() {
+        if (!mDestroyed) TvPresentation.focusHome(mContent);
+    }
+
     @Override
     public String getTitle() {
         return mActivity.getString(

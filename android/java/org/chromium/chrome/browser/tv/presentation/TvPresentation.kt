@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,9 +79,20 @@ object TvPresentation {
         val icon: Int = 0,
     )
 
-    private class ControlsState(preferred: Int) {
+    private class ControlsState(preferred: Int, subtitle: String, actions: List<Action>) {
+        var subtitle by mutableStateOf(subtitle)
+        var actions by mutableStateOf(actions)
         var expanded by mutableStateOf(false)
         var preferredKey by mutableStateOf(preferred)
+    }
+
+    private class HomeState {
+        var focusRequest by mutableStateOf(0)
+    }
+
+    @JvmStatic
+    fun focusHome(view: View) {
+        (view.tag as? HomeState)?.let { it.focusRequest++ }
     }
 
     /** Called only by this panel's dialog window, after the IME/native window owner. */
@@ -113,6 +125,8 @@ object TvPresentation {
         links: List<Action>,
     ): View = view(context).apply {
         require(actions.isNotEmpty() && actions.first().enabled)
+        val state = HomeState()
+        tag = state
         setContent {
             Theme {
                 val initial = remember { FocusRequester() }
@@ -138,7 +152,7 @@ object TvPresentation {
                         links.forEach { ActionButton(it) }
                     }
                 }
-                LaunchedEffect(Unit) {
+                LaunchedEffect(state.focusRequest) {
                     withFrameNanos { }
                     initial.requestFocus()
                 }
@@ -157,11 +171,12 @@ object TvPresentation {
         preferredKey: Int,
         moreLabel: String,
     ): View = view(context).apply {
-        val state = ControlsState(preferredKey)
+        val state = ControlsState(preferredKey, subtitle, actions)
         tag = state
         setContent {
             Theme {
                 val initial = remember { FocusRequester() }
+                val actions = state.actions
                 val toggle = Action(if (state.expanded) title else moreLabel, true, Runnable {
                     state.expanded = !state.expanded
                     state.preferredKey = if (state.expanded) actions.getOrNull(7)?.key ?: 0
@@ -178,14 +193,16 @@ object TvPresentation {
                 ) {
                     Text(title, fontSize = 24.sp, fontWeight = FontWeight.Medium,
                         modifier = Modifier.semantics { heading() })
-                    if (subtitle.isNotEmpty()) Text(subtitle, color = secondary,
+                    if (state.subtitle.isNotEmpty()) Text(state.subtitle, color = secondary,
                         fontSize = 16.sp, maxLines = 2)
                     visible.chunked(4).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             row.forEach { action ->
-                                ActionButton(action, Modifier.weight(1f).then(
-                                    if (action === selected) Modifier.focusRequester(initial)
-                                    else Modifier))
+                                key(action.key) {
+                                    ActionButton(action, Modifier.weight(1f).then(
+                                        if (action === selected) Modifier.focusRequester(initial)
+                                        else Modifier))
+                                }
                             }
                         }
                     }
@@ -196,6 +213,14 @@ object TvPresentation {
                 }
             }
         }
+    }
+
+    /** Native observer updates retain the dialog and keyed focus targets. UI thread only. */
+    @JvmStatic
+    fun updateControls(view: View, subtitle: String, actions: List<Action>) {
+        val state = view.tag as? ControlsState ?: return
+        state.subtitle = subtitle
+        state.actions = actions
     }
 
     /** UI-thread disposal for a View returned by these factories. */
