@@ -28,6 +28,21 @@ source_set("signed_bundle") {
   }
 }
 
+source_set("bundle_updater") {
+  visibility = [ ":*" ]
+  sources = [
+    "ad_block_bundle_updater.cc",
+    "ad_block_bundle_updater.h",
+  ]
+  public_deps = [ ":signed_bundle" ]
+  deps = [
+    "//components/prefs",
+    "//net",
+    "//services/network/public/cpp",
+    "//url",
+  ]
+}
+
 group("ad_block_signed_bundle_host_tests") {
   testonly = true
   deps = [ ":ad_block_signed_bundle_unittests($host_toolchain)" ]
@@ -37,10 +52,13 @@ if (current_toolchain == host_toolchain) {
   test("ad_block_signed_bundle_unittests") {
     sources = [ "ad_block_signed_bundle_unittest.cc" ]
     deps = [
+      ":bundle_updater",
       ":signed_bundle",
-      "//base/test:run_all_unittests",
       "//base/test:test_support",
+      "//components/prefs:test_support",
       "//crypto",
+      "//mojo/core/test:run_all_unittests",
+      "//services/network:test_support",
       "//testing/gtest",
     ]
   }
@@ -107,6 +125,7 @@ static_library("browser") {
     "//url",
   ]
   public_deps = [
+    ":bundle_updater",
     ":signed_bundle",
     "//base",
     "//brave/components/brave_shields/core/common/adblock",
@@ -125,6 +144,7 @@ source_set("unit_tests") {
 
   deps = [
     ":browser",
+    ":bundle_updater",
     ":signed_bundle",
     ":test_support",
     "//base/test:test_support",
@@ -138,6 +158,7 @@ source_set("unit_tests") {
     "//components/prefs:test_support",
     "//components/sync_preferences:test_support",
     "//crypto",
+    "//services/network:test_support",
     "//testing/gtest",
     "//url",
   ]

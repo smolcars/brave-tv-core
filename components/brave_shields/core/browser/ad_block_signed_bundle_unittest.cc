@@ -14,18 +14,36 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_temp_dir.h"
+#include "base/functional/callback_helpers.h"
 #include "base/json/json_writer.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/stringprintf.h"
+#include "base/test/bind.h"
+#include "base/test/task_environment.h"
+#include "base/test/test_future.h"
 #include "base/time/time.h"
 #include "base/types/expected.h"
 #include "base/values.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_updater.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
+#include "components/prefs/testing_pref_service.h"
 #include "crypto/hash.h"
 #include "crypto/keypair.h"
 #include "crypto/sign.h"
+#include "net/base/load_flags.h"
+#include "net/base/net_errors.h"
+#include "net/http/http_status_code.h"
+#include "net/url_request/redirect_info.h"
+#include "services/network/public/cpp/resource_request.h"
+#include "services/network/public/cpp/url_loader_completion_status.h"
+#include "services/network/public/mojom/fetch_api.mojom-shared.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
+#include "services/network/test/test_url_loader_factory.h"
+#include "services/network/test/test_utils.h"
 #include "testing/gtest/include/gtest/gtest.h"
+#include "url/gurl.h"
 
 namespace brave_shields {
 namespace {
@@ -280,6 +298,169 @@ TEST_F(AdBlockSignedBundleTest, InvalidCacheAndWriteFailure) {
       base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
   ASSERT_TRUE(retained->GetActive(now_));
   EXPECT_EQ(retained->GetActive(now_)->sequence, 12);
+}
+
+class AdBlockBundleUpdateTest : public AdBlockSignedBundleTest {
+ protected:
+  void SetUp() override {
+    AdBlockSignedBundleTest::SetUp();
+    ASSERT_TRUE(directory_.CreateUniqueTempDir());
+    AdBlockBundleUpdater::RegisterPrefs(prefs_.registry());
+    base::Time::Exploded date;
+    base::Time::Now().UTCExplode(&date);
+    payload_.Set(
+        "published",
+        base::StringPrintf("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", date.year,
+                           date.month, date.day_of_month, date.hour,
+                           date.minute, date.second, date.millisecond));
+    path_ = directory_.GetPath().AppendASCII("filters.bundle");
+    store_ =
+        base::MakeRefCounted<AdBlockBundleStore>(path_, public_key_, catalog_);
+    RestartUpdater();
+  }
+
+  void RestartUpdater() {
+    updater_ = std::make_unique<AdBlockBundleUpdater>(
+        store_, factory_.GetSafeWeakWrapper(), &prefs_);
+  }
+
+  AdBlockUpdateStatus Status() {
+    base::test::TestFuture<AdBlockUpdateStatus> status;
+    updater_->GetStatus(status.GetCallback());
+    return status.Take();
+  }
+
+  AdBlockUpdateStatus Fetch(std::string_view body,
+                            net::HttpStatusCode code = net::HTTP_OK) {
+    factory_.AddResponse(kAdBlockBundleUpdateUrl, body, code);
+    base::test::TestFuture<void> done;
+    updater_->CheckForUpdate(done.GetCallback());
+    EXPECT_TRUE(done.Wait());
+    return Status();
+  }
+
+  base::test::TaskEnvironment environment_{
+      base::test::TaskEnvironment::TimeSource::MOCK_TIME};
+  base::ScopedTempDir directory_;
+  base::FilePath path_;
+  TestingPrefServiceSimple prefs_;
+  network::TestURLLoaderFactory factory_;
+  scoped_refptr<AdBlockBundleStore> store_;
+  std::unique_ptr<AdBlockBundleUpdater> updater_;
+};
+
+TEST_F(AdBlockBundleUpdateTest, CoalescesAndStagesWithoutReplacingActiveData) {
+  EXPECT_EQ(Status().active_sequence, 0);
+  base::test::TestFuture<void> first;
+  base::test::TestFuture<void> second;
+  updater_->CheckForUpdate(first.GetCallback());
+  updater_->CheckForUpdate(second.GetCallback());
+  factory_.WaitForRequest(GURL(kAdBlockBundleUpdateUrl));
+  ASSERT_EQ(factory_.pending_requests()->size(), 1u);
+  const auto& request = factory_.GetPendingRequest(0)->request;
+  EXPECT_EQ(request.credentials_mode, network::mojom::CredentialsMode::kOmit);
+  EXPECT_TRUE(request.do_not_prompt_for_login);
+  EXPECT_TRUE(request.referrer.is_empty());
+  EXPECT_EQ(request.load_flags,
+            net::LOAD_BYPASS_CACHE | net::LOAD_DISABLE_CACHE);
+  EXPECT_EQ(Status().result, AdBlockUpdateResult::kChecking);
+  ASSERT_TRUE(factory_.SimulateResponseForPendingRequest(
+      kAdBlockBundleUpdateUrl, SignPayload()));
+  ASSERT_TRUE(first.Wait());
+  ASSERT_TRUE(second.Wait());
+  auto status = Status();
+  EXPECT_EQ(status.result, AdBlockUpdateResult::kStaged);
+  EXPECT_TRUE(status.restart_required);
+  EXPECT_EQ(status.active_sequence, 0);
+  EXPECT_FALSE(status.last_attempt.is_null());
+  auto restart =
+      base::MakeRefCounted<AdBlockBundleStore>(path_, public_key_, catalog_);
+  ASSERT_TRUE(restart->GetActive(base::Time::Now()));
+  EXPECT_EQ(restart->GetActive(base::Time::Now())->sequence, 12);
+  status = Fetch(SignPayload());
+  EXPECT_EQ(status.result, AdBlockUpdateResult::kCurrent);
+  EXPECT_TRUE(status.restart_required);
+}
+
+TEST_F(AdBlockBundleUpdateTest,
+       CurrentAndRejectedUpdatesKeepTheActiveSnapshot) {
+  const auto original = SignPayload();
+  ASSERT_TRUE(base::WriteFile(path_, original));
+  auto status = Fetch(original);
+  EXPECT_EQ(status.result, AdBlockUpdateResult::kCurrent);
+  EXPECT_EQ(status.active_sequence, 12);
+  EXPECT_FALSE(status.active_published.is_null());
+  EXPECT_FALSE(status.restart_required);
+  auto tampered = original;
+  tampered.back() ^= 1;
+  EXPECT_EQ(Fetch(tampered).result, AdBlockUpdateResult::kRejected);
+  payload_.Set("sequence", 11);
+  EXPECT_EQ(Fetch(SignPayload()).result, AdBlockUpdateResult::kRejected);
+  std::string retained;
+  ASSERT_TRUE(base::ReadFileToString(path_, &retained));
+  EXPECT_EQ(retained, original);
+  EXPECT_EQ(Status().active_sequence, 12);
+}
+
+TEST_F(AdBlockBundleUpdateTest, FailedAndOversizedDownloadsDoNotCreateACache) {
+  EXPECT_EQ(Fetch("unavailable", net::HTTP_SERVICE_UNAVAILABLE).result,
+            AdBlockUpdateResult::kDownloadFailed);
+  EXPECT_EQ(Fetch(std::string(kMaxSignedAdBlockBundleBytes + 1, 'x')).result,
+            AdBlockUpdateResult::kDownloadFailed);
+  EXPECT_FALSE(base::PathExists(path_));
+}
+
+TEST_F(AdBlockBundleUpdateTest, TimesOutAndAllowsAManualRetry) {
+  base::test::TestFuture<void> done;
+  updater_->CheckForUpdate(done.GetCallback());
+  factory_.WaitForRequest(GURL(kAdBlockBundleUpdateUrl));
+  environment_.FastForwardBy(base::Seconds(60));
+  ASSERT_TRUE(done.Wait());
+  EXPECT_EQ(Status().result, AdBlockUpdateResult::kDownloadFailed);
+  EXPECT_EQ(Fetch(SignPayload()).result, AdBlockUpdateResult::kStaged);
+}
+
+TEST_F(AdBlockBundleUpdateTest, RejectsAnHttpRedirect) {
+  net::RedirectInfo redirect;
+  redirect.new_url = GURL("http://example.test/filters.bundle");
+  network::TestURLLoaderFactory::Redirects redirects;
+  redirects.emplace_back(redirect,
+                         network::CreateURLResponseHead(net::HTTP_FOUND));
+  factory_.AddResponse(
+      GURL(kAdBlockBundleUpdateUrl),
+      network::CreateURLResponseHead(net::HTTP_OK), SignPayload(),
+      network::URLLoaderCompletionStatus(net::OK), std::move(redirects));
+  base::test::TestFuture<void> done;
+  updater_->CheckForUpdate(done.GetCallback());
+  ASSERT_TRUE(done.Wait());
+  EXPECT_EQ(Status().result, AdBlockUpdateResult::kDownloadFailed);
+  EXPECT_FALSE(base::PathExists(path_));
+}
+
+TEST_F(AdBlockBundleUpdateTest,
+       DailyScheduleSurvivesRecreationAndManualChecks) {
+  int requests = 0;
+  factory_.SetInterceptor(base::BindLambdaForTesting(
+      [&](const network::ResourceRequest&) { ++requests; }));
+  factory_.AddResponse(kAdBlockBundleUpdateUrl, "",
+                       net::HTTP_SERVICE_UNAVAILABLE);
+  environment_.FastForwardBy(base::Seconds(29));
+  EXPECT_EQ(requests, 0);
+  environment_.FastForwardBy(base::Seconds(1));
+  EXPECT_EQ(requests, 1);
+  RestartUpdater();
+  environment_.FastForwardBy(base::Hours(23));
+  EXPECT_EQ(requests, 1);
+  environment_.FastForwardBy(base::Hours(1));
+  EXPECT_EQ(requests, 2);
+  EXPECT_EQ(Fetch("", net::HTTP_SERVICE_UNAVAILABLE).result,
+            AdBlockUpdateResult::kDownloadFailed);
+  EXPECT_EQ(requests, 3);
+  RestartUpdater();
+  environment_.FastForwardBy(base::Hours(23));
+  EXPECT_EQ(requests, 3);
+  environment_.FastForwardBy(base::Hours(1));
+  EXPECT_EQ(requests, 4);
 }
 
 }  // namespace
