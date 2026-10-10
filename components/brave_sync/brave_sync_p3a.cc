@@ -6,12 +6,16 @@
 #include "brave/components/brave_sync/brave_sync_p3a.h"
 
 #include "brave/components/p3a_utils/bucket.h"
+#include "build/build_config.h"
 #include "components/sync/base/user_selectable_type.h"
 
 namespace brave_sync::p3a {
 
 void RecordEnabledTypes(bool sync_everything_enabled,
                         const syncer::UserSelectableTypeSet& selected_types) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   using syncer::UserSelectableType;
   using syncer::UserSelectableTypeSet;
 
@@ -45,6 +49,9 @@ void RecordEnabledTypes(bool sync_everything_enabled,
 }
 
 void RecordSyncedObjectsCount(int total_entities) {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   // "Brave.Sync.SyncedObjectsCount.2"
   // 0 - 0..1000
   // 1 - 1001..10000
@@ -55,12 +62,18 @@ void RecordSyncedObjectsCount(int total_entities) {
 }
 
 void SyncCodeMonitor::RecordCodeGenerated() {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   code_generated_ = true;
   base::UmaHistogramEnumeration(kSyncJoinTypeHistogramName,
                                 SyncJoinType::kChainCreated);
 }
 
 void SyncCodeMonitor::RecordCodeSet() {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   if (!code_generated_) {
     base::UmaHistogramEnumeration(kSyncJoinTypeHistogramName,
                                   SyncJoinType::kChainJoined);

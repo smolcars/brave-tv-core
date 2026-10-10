@@ -6,11 +6,24 @@
 #include "brave/components/brave_sync/brave_sync_p3a.h"
 
 #include "base/test/metrics/histogram_tester.h"
+#include "build/build_config.h"
 #include "components/sync/base/user_selectable_type.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace brave_sync::p3a {
 
+#if BUILDFLAG(IS_ANDROID)
+TEST(BraveSyncP3ATest, AndroidDoesNotCollectSyncUsage) {
+  base::HistogramTester histogram_tester;
+  RecordEnabledTypes(true, {});
+  RecordSyncedObjectsCount(100);
+  SyncCodeMonitor monitor;
+  monitor.RecordCodeGenerated();
+  monitor.RecordCodeSet();
+  monitor.RecordCodeSet();
+  EXPECT_TRUE(histogram_tester.GetTotalCountsForPrefix("Brave.Sync.").empty());
+}
+#else
 TEST(BraveSyncP3ATest, TestEnabledTypes) {
   using syncer::UserSelectableType;
 
@@ -102,5 +115,7 @@ TEST(BraveSyncP3ATest, TestSyncCodeMonitor) {
 
   histogram_tester.ExpectTotalCount(kSyncJoinTypeHistogramName, 3);
 }
+
+#endif  // BUILDFLAG(IS_ANDROID)
 
 }  // namespace brave_sync::p3a

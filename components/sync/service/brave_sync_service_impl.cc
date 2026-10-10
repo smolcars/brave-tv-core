@@ -178,7 +178,8 @@ void BraveSyncServiceImpl::Initialize(
     DataTypeController::TypeVector controllers) {
   base::AutoReset<bool> is_initializing_resetter(&is_initializing_, true);
   SyncServiceImpl::Initialize(std::move(controllers));
-  if (!user_settings_->IsInitialSyncFeatureSetupComplete()) {
+  if (!BUILDFLAG(IS_ANDROID) &&
+      !user_settings_->IsInitialSyncFeatureSetupComplete()) {
     base::UmaHistogramExactLinear("Brave.Sync.Status.2", 0, 3);
   }
 }
@@ -332,7 +333,9 @@ void BraveSyncServiceImpl::OnBraveSyncPrefsChanged(const std::string& path) {
       // Send updated status here, because OnDeviceInfoChange is not triggered
       // when device leaves the chain by `Leave Sync Chain` button
       // 0 means disabled or 1 device
-      base::UmaHistogramExactLinear("Brave.Sync.Status.2", 0, 3);
+      if (!BUILDFLAG(IS_ANDROID)) {
+        base::UmaHistogramExactLinear("Brave.Sync.Status.2", 0, 3);
+      }
     }
   }
 }
@@ -516,6 +519,9 @@ constexpr int kCyclesBeforeFirstUpdatesP3A = 10;
 void BraveSyncServiceImpl::OnSyncCycleCompleted(
     const SyncCycleSnapshot& snapshot) {
   SyncServiceImpl::OnSyncCycleCompleted(snapshot);
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   if (completed_cycles_count_ == kCyclesBeforeFirstUpdatesP3A ||
       completed_cycles_count_ % kCyclesBeforeUpdateP3AObjects == 0) {
     UpdateP3AObjectsNumber();
@@ -524,6 +530,9 @@ void BraveSyncServiceImpl::OnSyncCycleCompleted(
 }
 
 void BraveSyncServiceImpl::UpdateP3AObjectsNumber() {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   synced_objects_context_.Reset(GetUserSettings()->GetSelectedTypes().size());
 
   data_type_manager_->GetEntityCountsForDebugging(
@@ -556,6 +565,9 @@ void BraveSyncServiceImpl::OnGetTypeEntitiesCount(
 
 void BraveSyncServiceImpl::OnSelectedTypesChanged() {
   SyncServiceImpl::OnSelectedTypesChanged();
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
 
   brave_sync::p3a::RecordEnabledTypes(
       GetUserSettings()->IsSyncEverythingEnabled(),

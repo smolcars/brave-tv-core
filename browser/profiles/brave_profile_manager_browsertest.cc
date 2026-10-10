@@ -11,6 +11,7 @@
 #include "brave/browser/ntp_background/view_counter_service_factory.h"
 #include "brave/components/ai_chat/core/common/buildflags/buildflags.h"
 #include "brave/components/brave_ads/buildflags/buildflags.h"
+#include "brave/components/brave_news/common/buildflags/buildflags.h"
 #include "brave/components/brave_rewards/core/buildflags/buildflags.h"
 #include "brave/components/brave_shields/core/browser/brave_shields_utils.h"
 #include "brave/components/brave_shields/core/common/features.h"
@@ -56,7 +57,23 @@
 #include "brave/components/ai_chat/core/common/pref_names.h"
 #endif
 
+#if BUILDFLAG(ENABLE_BRAVE_NEWS)
+#include "brave/browser/brave_news/brave_news_controller_factory.h"
+#endif
+
 class BraveProfileManagerTest : public PlatformBrowserTest {};
+
+#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(ENABLE_BRAVE_NEWS)
+IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest, NewsServiceDisabled) {
+  auto* profile = ProfileManager::GetLastUsedProfile();
+  EXPECT_EQ(
+      brave_news::BraveNewsControllerFactory::GetForBrowserContext(profile),
+      nullptr);
+  EXPECT_FALSE(
+      brave_news::BraveNewsControllerFactory::GetRemoteForProfile(profile)
+          .is_valid());
+}
+#endif  // BUILDFLAG(IS_ANDROID) && BUILDFLAG(ENABLE_BRAVE_NEWS)
 
 #if BUILDFLAG(IS_ANDROID)
 IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest, SponsoredHomeServicesDisabled) {
@@ -72,8 +89,10 @@ IN_PROC_BROWSER_TEST_F(BraveProfileManagerTest, LeoDisabledWithPrefsPreserved) {
   base::test::ScopedFeatureList feature_list;
   feature_list.InitAndEnableFeature(ai_chat::features::kAIChat);
   Profile* profile = ProfileManager::GetLastUsedProfile();
-  EXPECT_EQ(ai_chat::AIChatServiceFactory::GetForBrowserContext(profile), nullptr);
-  EXPECT_EQ(ai_chat::ModelServiceFactory::GetForBrowserContext(profile), nullptr);
+  EXPECT_EQ(ai_chat::AIChatServiceFactory::GetForBrowserContext(profile),
+            nullptr);
+  EXPECT_EQ(ai_chat::ModelServiceFactory::GetForBrowserContext(profile),
+            nullptr);
   EXPECT_NE(profile->GetPrefs()->FindPreference(
                 ai_chat::prefs::kBraveChatStorageEnabled),
             nullptr);

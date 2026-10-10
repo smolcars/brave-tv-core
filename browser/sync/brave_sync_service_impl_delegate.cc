@@ -13,6 +13,7 @@
 #include "base/metrics/histogram_functions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "brave/components/sync/service/brave_sync_service_impl.h"
+#include "build/build_config.h"
 #include "components/history/core/browser/history_service.h"
 #include "components/sync_device_info/device_info_sync_service.h"
 #include "components/sync_device_info/device_info_tracker.h"
@@ -93,6 +94,9 @@ void BraveSyncServiceImplDelegate::ResumeDeviceObserver() {
 }
 
 void BraveSyncServiceImplDelegate::RecordP3ASyncStatus() {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return;
+  }
   int num_devices = device_info_tracker_->GetAllDeviceInfo().size();
 
   // 0 - sync is disabled

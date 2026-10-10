@@ -22,6 +22,7 @@
 #include "brave/components/brave_news/browser/brave_news_controller.h"
 #include "brave/components/brave_news/common/brave_news.mojom.h"
 #include "brave/components/brave_news/common/pref_names.h"
+#include "build/build_config.h"
 #include "chrome/browser/profiles/profile.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
@@ -64,7 +65,8 @@ BraveNewsTabHelper::FeedDetails& BraveNewsTabHelper::FeedDetails::operator=(
 // static
 void BraveNewsTabHelper::MaybeCreateForWebContents(
     content::WebContents* contents) {
-  if (contents->GetBrowserContext()->IsOffTheRecord()) {
+  if (BUILDFLAG(IS_ANDROID) ||
+      contents->GetBrowserContext()->IsOffTheRecord()) {
     return;
   }
 

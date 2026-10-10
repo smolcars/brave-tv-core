@@ -71,6 +71,9 @@ bool BraveNewsControllerFactory::ServiceIsCreatedWithBrowserContext() const {
 std::unique_ptr<KeyedService>
 BraveNewsControllerFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
+  if (BUILDFLAG(IS_ANDROID)) {
+    return nullptr;
+  }
   if (!Profile::FromBrowserContext(context)->IsRegularProfile()) {
     return nullptr;
   }

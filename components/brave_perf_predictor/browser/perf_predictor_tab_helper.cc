@@ -31,7 +31,8 @@ PerfPredictorTabHelper::PerfPredictorTabHelper(
       bandwidth_predictor_(std::make_unique<BandwidthSavingsPredictor>(
           NamedThirdPartyRegistryFactory::GetForBrowserContext(
               web_contents->GetBrowserContext()))) {
-  if (web_contents->GetBrowserContext()->IsOffTheRecord()) {
+  if (BUILDFLAG(IS_ANDROID) ||
+      web_contents->GetBrowserContext()->IsOffTheRecord()) {
     return;
   }
 
