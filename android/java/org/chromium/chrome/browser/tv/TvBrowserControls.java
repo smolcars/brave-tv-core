@@ -23,6 +23,7 @@ import android.view.ViewGroup;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.view.OneShotPreDrawListener;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
@@ -92,7 +93,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     if (!isAlive()) return;
                     mModalReturnPage = currentPage();
                     detachCursor();
-                    dialogView.post(() -> focusNativeDialog(dialogView));
+                    OneShotPreDrawListener.add(dialogView, () -> focusNativeDialog(dialogView));
                 }
 
                 @Override
@@ -206,11 +207,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void focusNativeDialog(View dialog) {
         if (!isAlive() || !dialog.isAttachedToWindow() || !dialog.isShown()) return;
-        View focused = dialog.findFocus();
         ArrayList<View> controls = new ArrayList<>();
         dialog.addFocusables(controls, View.FOCUS_FORWARD, View.FOCUSABLES_ALL);
         View preferred = null;
         for (View control : controls) {
+            // Custom confirmation buttons have an inert, focusable spinner container.
+            if (control.getId() == R.id.spinner_button) control.setFocusable(false);
             if (control == dialog
                     || !control.isEnabled()
                     || !control.isShown()
@@ -232,14 +234,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             if (preferred == null
                     || (!preferred.onCheckIsTextEditor()
                             && (control.onCheckIsTextEditor()
-                                    || control.getId() == R.id.negative_button))) {
+                                    || control.getId() == R.id.negative_button
+                                    || control.getId() == R.id.button_secondary))) {
                 preferred = control;
             }
         }
-        if (focused != null
-                && focused != dialog
-                && focused.isEnabled()
-                && (focused.isClickable() || focused.onCheckIsTextEditor())) return;
         if (preferred != null) preferred.requestFocus();
     }
 
