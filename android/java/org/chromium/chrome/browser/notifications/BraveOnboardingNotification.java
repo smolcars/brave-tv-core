@@ -12,6 +12,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 
 import org.chromium.base.ContextUtils;
@@ -44,6 +45,8 @@ public class BraveOnboardingNotification extends BroadcastReceiver {
     public static void showOnboardingNotification() {
         Context context = ContextUtils.getApplicationContext();
         if (context == null) return;
+        if ((context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION) return;
         NotificationManagerProxyImpl notificationManager = new NotificationManagerProxyImpl();
 
         NotificationBuilderBase notificationBuilder =
@@ -74,6 +77,8 @@ public class BraveOnboardingNotification extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        if ((context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
+                == Configuration.UI_MODE_TYPE_TELEVISION) return;
         String action = intent.getAction();
         try {
             BraveActivity braveActivity = BraveActivity.getBraveActivity();

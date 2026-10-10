@@ -157,6 +157,7 @@ import org.chromium.chrome.browser.multiwindow.BraveMultiWindowUtils;
 import org.chromium.chrome.browser.multiwindow.MultiInstanceManager;
 import org.chromium.chrome.browser.multiwindow.MultiInstanceManager.PersistedInstanceType;
 import org.chromium.chrome.browser.multiwindow.MultiWindowUtils;
+import org.chromium.chrome.browser.notifications.BraveOnboardingNotification;
 import org.chromium.chrome.browser.notifications.permissions.NotificationPermissionController;
 import org.chromium.chrome.browser.notifications.retention.RetentionNotificationUtil;
 import org.chromium.chrome.browser.ntp.BraveFreshNtpHelper;
@@ -1304,6 +1305,7 @@ public abstract class BraveActivity extends ChromeActivity
         boolean isFirstInstall = PackageUtils.isFirstInstall(this);
         BraveHelper.maybeMigrateSettings();
         if (isTelevision()) {
+            BraveOnboardingNotification.cancelOnboardingNotification();
             PreloadPagesSettingsBridge.setState(
                     getCurrentProfile(), PreloadPagesState.NO_PRELOADING);
             checkFingerPrintingOnUpgrade(isFirstInstall);
