@@ -162,22 +162,29 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         panel.useWideLayout();
         if (!mSession.pending() && !mSession.approved()) {
             try {
+                int sizeDp = 180;
+                int sizePx =
+                        Math.round(sizeDp * mActivity.getResources().getDisplayMetrics().density);
                 var matrix =
                         new MultiFormatWriter()
                                 .encode(
                                         mOrigin + "/#" + mSession.invitation,
                                         BarcodeFormat.QR_CODE,
-                                        320,
-                                        320);
-                int[] pixels = new int[320 * 320];
-                for (int y = 0; y < 320; y++)
-                    for (int x = 0; x < 320; x++)
-                        pixels[y * 320 + x] = matrix.get(x, y) ? Color.BLACK : Color.WHITE;
+                                        sizePx,
+                                        sizePx);
+                int[] pixels = new int[sizePx * sizePx];
+                for (int y = 0; y < sizePx; y++)
+                    for (int x = 0; x < sizePx; x++)
+                        pixels[y * sizePx + x] = matrix.get(x, y) ? Color.BLACK : Color.WHITE;
+                Bitmap bitmap =
+                        Bitmap.createBitmap(pixels, sizePx, sizePx, Bitmap.Config.ARGB_8888);
+                // Resampling QR modules can make valid invitations unreadable.
+                bitmap.setDensity(Bitmap.DENSITY_NONE);
                 ImageView image = new ImageView(mActivity);
-                image.setImageBitmap(
-                        Bitmap.createBitmap(pixels, 320, 320, Bitmap.Config.ARGB_8888));
+                image.setScaleType(ImageView.ScaleType.CENTER);
+                image.setImageBitmap(bitmap);
                 image.setContentDescription(text(R.string.brave_tv_phone_qr));
-                panel.addContent(image, 180);
+                panel.addContent(image, sizeDp);
             } catch (WriterException exception) {
                 /* Manual pairing remains available. */
             }
