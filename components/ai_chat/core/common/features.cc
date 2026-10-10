@@ -60,8 +60,11 @@ const base::FeatureParam<base::TimeDelta> kRemoteModelsCacheTTL{
     &kAIChatRemoteModelsConfig, "cache_ttl", base::Days(1)};
 
 bool IsAIChatEnabled() {
-  return !BUILDFLAG(IS_ANDROID) &&
-         base::FeatureList::IsEnabled(features::kAIChat);
+#if BUILDFLAG(IS_ANDROID)
+  return false;
+#else
+  return base::FeatureList::IsEnabled(features::kAIChat);
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 BASE_FEATURE(kAIChatHistory, base::FEATURE_ENABLED_BY_DEFAULT);

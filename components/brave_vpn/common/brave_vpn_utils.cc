@@ -219,9 +219,12 @@ bool IsBraveVPNDisabledByPolicy(PrefService* prefs) {
 }
 
 bool IsBraveVPNFeatureEnabled() {
-  return !BUILDFLAG(IS_ANDROID) &&
-         base::FeatureList::IsEnabled(brave_vpn::features::kBraveVPN) &&
+#if BUILDFLAG(IS_ANDROID)
+  return false;
+#else
+  return base::FeatureList::IsEnabled(brave_vpn::features::kBraveVPN) &&
          base::FeatureList::IsEnabled(skus::features::kSkusFeature);
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 bool IsBraveVPNEnabled(PrefService* prefs) {
