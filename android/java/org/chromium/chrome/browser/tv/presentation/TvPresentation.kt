@@ -41,7 +41,7 @@ import androidx.tv.material3.darkColorScheme
 
 /** Presentation only: callbacks retain native tab, profile and security ownership. */
 object TvPresentation {
-    private val background = Color(0xFF151719)
+    private val backgroundColor = Color(0xFF151719)
     private val surface = Color(0xFF25282B)
     private val text = Color(0xFFF3EFE7)
     private val secondary = Color(0xFFBBB9B3)
@@ -74,7 +74,7 @@ object TvPresentation {
                 val initial = remember { FocusRequester() }
                 Column(
                     Modifier.fillMaxSize()
-                        .background(Brush.linearGradient(listOf(Color(0xFF222827), background)))
+                        .background(Brush.linearGradient(listOf(Color(0xFF222827), backgroundColor)))
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 48.dp, vertical = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -117,7 +117,7 @@ object TvPresentation {
                 val selected = actions.firstOrNull { it.key == preferredKey && it.enabled }
                     ?: actions.firstOrNull { it.enabled }
                 Column(
-                    Modifier.fillMaxWidth().background(background)
+                    Modifier.fillMaxWidth().background(backgroundColor)
                         .verticalScroll(rememberScrollState()).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
@@ -146,7 +146,7 @@ object TvPresentation {
     private fun Theme(content: @Composable () -> Unit) {
         MaterialTheme(
             colorScheme = darkColorScheme(
-                primary = accent, onPrimary = background, background = background,
+                primary = accent, onPrimary = backgroundColor, background = backgroundColor,
                 onBackground = text, surface = surface, onSurface = text,
             ),
             content = content,
@@ -162,7 +162,7 @@ object TvPresentation {
             scale = ButtonDefaults.scale(focusedScale = 1.02f),
             colors = ButtonDefaults.colors(
                 containerColor = surface, contentColor = text,
-                focusedContainerColor = accent, focusedContentColor = background,
+                focusedContainerColor = accent, focusedContentColor = backgroundColor,
             ),
         ) {
             Text(action.label, fontSize = 18.sp, maxLines = 2,
