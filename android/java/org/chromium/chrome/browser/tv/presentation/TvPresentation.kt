@@ -33,12 +33,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.focused
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
@@ -212,12 +217,19 @@ object TvPresentation {
 
     @Composable
     private fun ActionButton(action: Action, modifier: Modifier = Modifier) {
+        var hasFocus by remember { mutableStateOf(false) }
         Button(
             onClick = { action.run.run() },
             enabled = action.enabled,
-            modifier = modifier.semantics(mergeDescendants = true) {
+            modifier = modifier.onFocusChanged { hasFocus = it.isFocused }.clearAndSetSemantics {
                 role = Role.Button
                 contentDescription = action.label
+                focused = hasFocus
+                if (!action.enabled) disabled()
+                onClick {
+                    if (action.enabled) action.run.run()
+                    action.enabled
+                }
             },
             shape = ButtonDefaults.shape(shape = RoundedCornerShape(12.dp)),
             border = ButtonDefaults.border(focusedBorder = Border(BorderStroke(2.dp, text))),
