@@ -31,6 +31,7 @@
 #include "brave/components/brave_shields/content/browser/ad_block_subscription_service_manager.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundle_public_key.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_updater.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_service_manager.h"
@@ -48,6 +49,7 @@
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/cpp/shared_url_loader_factory.h"
 
 namespace brave_shields {
 
@@ -142,6 +144,11 @@ void AdBlockService::SourceProviderObserver::OnAllLoaded(
                            std::move(filter_set), std::move(storage));
 }
 
+AdBlockBundleUpdater* AdBlockService::bundle_updater() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  return bundle_updater_.get();
+}
+
 AdBlockComponentServiceManager* AdBlockService::component_service_manager() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return component_service_manager_.get();
@@ -170,7 +177,8 @@ AdBlockService::AdBlockService(
     scoped_refptr<base::SequencedTaskRunner> task_runner,
     AdBlockSubscriptionDownloadManager::DownloadManagerGetter
         subscription_download_manager_getter,
-    const base::FilePath& profile_dir)
+    const base::FilePath& profile_dir,
+    scoped_refptr<network::SharedURLLoaderFactory> update_factory)
     : local_state_(local_state),
       locale_(locale),
       profile_dir_(profile_dir),
@@ -220,6 +228,10 @@ AdBlockService::AdBlockService(
         profile_dir_.AppendASCII("adblock_snapshot")
             .AppendASCII("filters.bundle"),
         kAdBlockBundlePublicKey, std::string(GetBundledAdBlockCatalogHash()));
+    if (update_factory) {
+      bundle_updater_ = std::make_unique<AdBlockBundleUpdater>(
+          bundle_store_, std::move(update_factory), *local_state_);
+    }
   }
 
   auto default_resource_provider =
@@ -504,6 +516,7 @@ void AdBlockService::SetDebugMode(bool debug_mode) {
 }
 
 void RegisterPrefsForAdBlockService(PrefRegistrySimple* registry) {
+  AdBlockBundleUpdater::RegisterPrefs(registry);
   registry->RegisterBooleanPref(prefs::kAdBlockCookieListSettingTouched, false);
   registry->RegisterBooleanPref(
       prefs::kAdBlockMobileNotificationsListSettingTouched, false);

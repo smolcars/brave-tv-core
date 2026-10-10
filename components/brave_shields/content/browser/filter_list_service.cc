@@ -9,10 +9,13 @@
 
 #include <string>
 #include "base/feature_list.h"
+#include "base/functional/bind.h"
+#include "base/notreached.h"
 #include "base/strings/utf_string_conversions.h"
 #include "brave/components/brave_shields/content/browser/ad_block_custom_filters_provider.h"
 #include "brave/components/brave_shields/content/browser/ad_block_service.h"
 #include "brave/components/brave_shields/content/browser/ad_block_subscription_service_manager.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_updater.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_service_manager.h"
 #include "brave/components/brave_shields/core/common/features.h"
 #include "brave/components/brave_shields/core/common/filter_list.mojom-forward.h"
@@ -126,6 +129,74 @@ void FilterListService::UpdateCustomFilters(
 void FilterListService::UpdateFilterLists(UpdateFilterListsCallback callback) {
   ad_block_service_->component_service_manager()->UpdateFilterLists(
       std::move(callback));
+}
+
+void FilterListService::GetIndependentUpdateStatus(
+    GetIndependentUpdateStatusCallback callback) {
+  auto* updater = ad_block_service_->bundle_updater();
+  if (!updater) {
+    std::move(callback).Run(nullptr);
+    return;
+  }
+  updater->GetStatus(base::BindOnce(&FilterListService::OnUpdateStatus,
+                                    weak_factory_.GetWeakPtr(),
+                                    std::move(callback)));
+}
+
+void FilterListService::CheckIndependentUpdate(
+    CheckIndependentUpdateCallback callback) {
+  auto* updater = ad_block_service_->bundle_updater();
+  if (!updater) {
+    std::move(callback).Run(nullptr);
+    return;
+  }
+  updater->CheckForUpdate(
+      base::BindOnce(&FilterListService::GetIndependentUpdateStatus,
+                     weak_factory_.GetWeakPtr(), std::move(callback)));
+}
+
+void FilterListService::OnUpdateStatus(
+    GetIndependentUpdateStatusCallback callback,
+    AdBlockUpdateStatus status) {
+  // Join an automatic check on this same sequence, without starting another.
+  if (status.result == AdBlockUpdateResult::kChecking) {
+    CheckIndependentUpdate(std::move(callback));
+    return;
+  }
+  auto result = mojom::FilterUpdateStatus::New();
+  switch (status.result) {
+    case AdBlockUpdateResult::kIdle:
+      result->result = mojom::FilterUpdateResult::kIdle;
+      break;
+    case AdBlockUpdateResult::kCurrent:
+      result->result = mojom::FilterUpdateResult::kCurrent;
+      break;
+    case AdBlockUpdateResult::kStaged:
+      result->result = mojom::FilterUpdateResult::kStaged;
+      break;
+    case AdBlockUpdateResult::kDownloadFailed:
+      result->result = mojom::FilterUpdateResult::kDownloadFailed;
+      break;
+    case AdBlockUpdateResult::kRejected:
+      result->result = mojom::FilterUpdateResult::kRejected;
+      break;
+    case AdBlockUpdateResult::kSaveFailed:
+      result->result = mojom::FilterUpdateResult::kSaveFailed;
+      break;
+    case AdBlockUpdateResult::kChecking:
+      NOTREACHED();
+  }
+  result->restart_required = status.restart_required;
+  if (status.active) {
+    result->active = mojom::FilterSnapshotInfo::New(
+        status.active->sequence,
+        status.active->published.InMillisecondsSinceUnixEpoch());
+  }
+  if (!status.last_attempt.is_null()) {
+    result->last_attempt_unix_ms =
+        status.last_attempt.InMillisecondsSinceUnixEpoch();
+  }
+  std::move(callback).Run(std::move(result));
 }
 
 }  // namespace brave_shields

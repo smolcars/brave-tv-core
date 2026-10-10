@@ -3985,6 +3985,22 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_FILTER_OFF" desc="TV disabled optional filter-list button."><ph name="TITLE">%s<ex>Cookie notices</ex></ph>: Off</message>
     <message name="IDS_BRAVE_TV_PREVIOUS_FILTERS" desc="TV previous optional filter-list page.">Previous lists</message>
     <message name="IDS_BRAVE_TV_MORE_FILTERS" desc="TV next optional filter-list page.">More lists</message>
+    <message name="IDS_BRAVE_TV_FILTER_UPDATES" desc="TV panel title and button for signed ad-blocking filter updates.">Filter updates</message>
+    <message name="IDS_BRAVE_TV_CHECK_UPDATES" desc="TV button to manually check the signed filter feed.">Check for updates</message>
+    <message name="IDS_BRAVE_TV_UPDATE_CHECKING" desc="TV filter update status while waiting for a check or loading its result.">Checking filter status…</message>
+    <message name="IDS_BRAVE_TV_UPDATE_AUTOMATIC" desc="TV filter update description of automatic maintenance.">Updates are checked automatically once a day.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_UNAVAILABLE" desc="TV filter update status when independent delivery is unavailable.">Filter updates are unavailable in this build.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_CURRENT" desc="TV filter update status after the feed matches the active snapshot.">You have the latest published snapshot.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_STAGED" desc="TV filter update status for a verified download awaiting process restart.">Update downloaded. Restart the browser to apply it.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_DOWNLOAD_FAILED" desc="TV filter update error when the download fails or exceeds limits.">Could not download an update. Your current filters are still in use.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_REJECTED" desc="TV filter update error for a download that fails authenticity or compatibility validation.">The update could not be verified. Your current filters are still in use.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_SAVE_FAILED" desc="TV filter update error when saving a verified update fails.">Could not save the update. Check available storage and try again.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_PACKAGED" desc="TV filter update description when the active rules came with the APK.">Using filters included with this app.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_ACTIVE" desc="TV description of the publication date of the active signed filter snapshot, not its download time.">Active signed snapshot · Published <ph name="DATE">%s<ex>Oct 10, 2026</ex></ph></message>
+    <message name="IDS_BRAVE_TV_UPDATE_NEVER_CHECKED" desc="TV filter update description when no download attempt has been recorded.">No update check recorded yet.</message>
+    <message name="IDS_BRAVE_TV_UPDATE_LAST_ATTEMPT" desc="TV filter update description with the last check attempt time, which may have failed.">Last attempt: <ph name="TIME">%s<ex>Oct 10, 2026, 9:00 AM</ex></ph></message>
+    <message name="IDS_BRAVE_TV_RESTART_BROWSER" desc="TV button and confirmation title for applying a staged filter update by restarting.">Restart browser</message>
+    <message name="IDS_BRAVE_TV_RESTART_SCOPE" desc="TV confirmation warning before a user-requested browser restart.">Restart to apply the update. Unsaved changes may be lost and private tabs may close.</message>
     <message name="IDS_BRAVE_TV_SETTINGS_DESCRIPTION" desc="Short description under the TV browser Settings heading.">Search, privacy and your browser.</message>
     <message name="IDS_BRAVE_TV_PANEL_BACK_HINT" desc="TV panel hint explaining the remote Back button.">Press Back to return</message>
     <message name="IDS_BRAVE_TV_SETTINGS" desc="TV button to open browser settings.">Settings</message>

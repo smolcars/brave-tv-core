@@ -18,6 +18,7 @@
 
 namespace brave_shields {
 class AdBlockService;
+struct AdBlockUpdateStatus;
 
 // This class is not thread-safe and should have single owner
 class FilterListService : public KeyedService,
@@ -43,7 +44,13 @@ class FilterListService : public KeyedService,
                            UpdateCustomFiltersCallback callback) override;
   void UpdateFilterLists(UpdateFilterListsCallback callback) override;
 
+  void GetIndependentUpdateStatus(
+      GetIndependentUpdateStatusCallback callback) override;
+  void CheckIndependentUpdate(CheckIndependentUpdateCallback callback) override;
+
  private:
+  void OnUpdateStatus(GetIndependentUpdateStatusCallback callback,
+                      AdBlockUpdateStatus status);
   raw_ptr<AdBlockService> ad_block_service_ = nullptr;
   mojo::ReceiverSet<mojom::FilterListAndroidHandler> receivers_;
   base::WeakPtrFactory<FilterListService> weak_factory_{this};

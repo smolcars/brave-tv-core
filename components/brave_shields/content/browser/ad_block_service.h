@@ -40,6 +40,10 @@
 #include "third_party/rust/cxx/v1/cxx.h"
 #include "url/gurl.h"
 
+namespace network {
+class SharedURLLoaderFactory;
+}
+
 class PrefService;
 
 class PrefChangeRegistrar;
@@ -54,6 +58,7 @@ struct RegexManagerDiscardPolicy;
 namespace brave_shields {
 
 class AdBlockBundleStore;
+class AdBlockBundleUpdater;
 class AdBlockComponentFiltersProvider;
 class AdBlockDefaultResourceProvider;
 class AdBlockComponentServiceManager;
@@ -144,11 +149,13 @@ class AdBlockService {
       component_updater::ComponentUpdateService* cus,
       scoped_refptr<base::SequencedTaskRunner> task_runner,
       AdBlockSubscriptionDownloadManager::DownloadManagerGetter getter,
-      const base::FilePath& profile_dir);
+      const base::FilePath& profile_dir,
+      scoped_refptr<network::SharedURLLoaderFactory> update_factory = nullptr);
   AdBlockService(const AdBlockService&) = delete;
   AdBlockService& operator=(const AdBlockService&) = delete;
   ~AdBlockService();
 
+  AdBlockBundleUpdater* bundle_updater();
   AdBlockComponentServiceManager* component_service_manager();
   AdBlockSubscriptionServiceManager* subscription_service_manager();
   AdBlockDefaultResourceProvider* default_resource_provider();
@@ -244,6 +251,9 @@ class AdBlockService {
 
   // Lives on `task_runner_`; constructed and destroyed there via SequenceBound.
   base::SequenceBound<AdBlockEngineWrapper> engine_wrapper_
+      GUARDED_BY_CONTEXT(sequence_checker_);
+
+  std::unique_ptr<AdBlockBundleUpdater> bundle_updater_
       GUARDED_BY_CONTEXT(sequence_checker_);
 
   bool queries_ready_ GUARDED_BY_CONTEXT(sequence_checker_) = true;

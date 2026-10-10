@@ -9,12 +9,17 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
 import org.chromium.brave_shields.mojom.FilterListAndroidHandler;
+import org.chromium.brave_shields.mojom.FilterUpdateResult;
+import org.chromium.brave_shields.mojom.FilterUpdateStatus;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
+import org.chromium.chrome.browser.lifetime.ApplicationLifetime;
 import org.chromium.chrome.browser.shields.FilterListServiceFactory;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.mojo_base.mojom.Value;
 
+import java.text.DateFormat;
+import java.util.Date;
 import java.util.Map;
 
 /** Owns optional-list preferences and the connection behind their native TV panel. */
@@ -29,6 +34,7 @@ final class TvFilterPanel {
     private int mStart;
     private boolean mLoading;
     private boolean mDestroyed;
+    private int mUpdateGeneration;
 
     TvFilterPanel(BraveActivity activity, Tab tab, Runnable onClose) {
         mActivity = activity;
@@ -55,7 +61,7 @@ final class TvFilterPanel {
     }
 
     void show() {
-        refresh(-1);
+        refresh(0);
     }
 
     void destroy() {
@@ -68,9 +74,13 @@ final class TvFilterPanel {
     }
 
     private void show(TvBrowserPanel panel) {
+        show(panel, mOnClose);
+    }
+
+    private void show(TvBrowserPanel panel, Runnable onClose) {
         if (!isUsable()) return;
         if (mDialog != null) mDialog.dismiss();
-        mDialog = panel.show(mOnClose);
+        mDialog = panel.show(onClose);
     }
 
     private void showMessage(int message) {
@@ -112,7 +122,7 @@ final class TvFilterPanel {
                                 mFilters.length == 0
                                         ? R.string.brave_tv_no_filters
                                         : R.string.brave_tv_filters_scope),
-                        preferred + 1);
+                        preferred);
         int end = Math.min(mStart + PAGE_SIZE, mFilters.length);
         for (int i = mStart; i < end; i++) {
             int index = i;
@@ -128,24 +138,135 @@ final class TvFilterPanel {
                     () -> {
                         if (!isUsable() || mHandler == null || mLoading) return;
                         mHandler.enableFilter(uuid, !enabled);
-                        refresh(index);
+                        refresh(index + 1);
                     });
         }
+        panel.addItem(
+                        mActivity.getString(R.string.brave_tv_filter_updates),
+                        R.string.brave_tv_filter_updates,
+                        () -> loadUpdateStatus(false))
+                .setIconResource(R.drawable.ic_refresh_24dp);
         panel.addAction(
                 R.string.brave_tv_previous_filters,
                 mStart > 0,
                 () -> {
                     mStart -= PAGE_SIZE;
-                    showList(-1);
+                    showList(0);
                 });
         panel.addAction(
                 R.string.brave_tv_more_filters,
                 end < mFilters.length,
                 () -> {
                     mStart = end;
-                    showList(-1);
+                    showList(0);
                 });
         panel.addAction(R.string.brave_tv_settings, true, mOnClose);
         show(panel);
+    }
+
+    private void returnToFilters() {
+        ++mUpdateGeneration;
+        showList(R.string.brave_tv_filter_updates);
+    }
+
+    private void loadUpdateStatus(boolean check) {
+        if (!isUsable()) return;
+        int generation = ++mUpdateGeneration;
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_filter_updates),
+                        mActivity.getString(R.string.brave_tv_update_checking),
+                        R.string.content_filters_title);
+        panel.addAction(R.string.content_filters_title, true, this::returnToFilters);
+        show(panel, this::returnToFilters);
+        if (mHandler == null) {
+            showUpdateStatus(null, generation);
+        } else if (check) {
+            mHandler.checkIndependentUpdate(status -> showUpdateStatus(status, generation));
+        } else {
+            mHandler.getIndependentUpdateStatus(status -> showUpdateStatus(status, generation));
+        }
+    }
+
+    private void showUpdateStatus(@Nullable FilterUpdateStatus status, int generation) {
+        if (!isUsable() || generation != mUpdateGeneration) return;
+        int message = R.string.brave_tv_update_automatic;
+        if (status == null) {
+            message = R.string.brave_tv_update_unavailable;
+        } else {
+            switch (status.result) {
+                case FilterUpdateResult.CURRENT:
+                    message =
+                            status.restartRequired
+                                    ? R.string.brave_tv_update_staged
+                                    : R.string.brave_tv_update_current;
+                    break;
+                case FilterUpdateResult.STAGED:
+                    message = R.string.brave_tv_update_staged;
+                    break;
+                case FilterUpdateResult.DOWNLOAD_FAILED:
+                    message = R.string.brave_tv_update_download_failed;
+                    break;
+                case FilterUpdateResult.REJECTED:
+                    message = R.string.brave_tv_update_rejected;
+                    break;
+                case FilterUpdateResult.SAVE_FAILED:
+                    message = R.string.brave_tv_update_save_failed;
+                    break;
+                default:
+                    break;
+            }
+        }
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_filter_updates),
+                        mActivity.getString(message),
+                        R.string.brave_tv_check_updates);
+        if (status != null) {
+            panel.addDescription(
+                    status.active == null
+                            ? mActivity.getString(R.string.brave_tv_update_packaged)
+                            : mActivity.getString(
+                                    R.string.brave_tv_update_active,
+                                    DateFormat.getDateInstance()
+                                            .format(new Date(status.active.publishedUnixMs))));
+            panel.addDescription(
+                    status.lastAttemptUnixMs == null
+                            ? mActivity.getString(R.string.brave_tv_update_never_checked)
+                            : mActivity.getString(
+                                    R.string.brave_tv_update_last_attempt,
+                                    DateFormat.getDateTimeInstance()
+                                            .format(new Date(status.lastAttemptUnixMs))));
+            if (status.restartRequired && message != R.string.brave_tv_update_staged) {
+                panel.addDescription(mActivity.getString(R.string.brave_tv_update_staged));
+            }
+        }
+        panel.addAction(
+                R.string.brave_tv_check_updates, status != null, () -> loadUpdateStatus(true));
+        if (status != null && status.restartRequired) {
+            panel.addAction(R.string.brave_tv_restart_browser, true, this::confirmRestart);
+        }
+        panel.addAction(R.string.content_filters_title, true, this::returnToFilters);
+        show(panel, this::returnToFilters);
+    }
+
+    private void confirmRestart() {
+        if (!isUsable()) return;
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_restart_browser),
+                        mActivity.getString(R.string.brave_tv_restart_scope),
+                        R.string.cancel);
+        panel.addAction(R.string.cancel, true, () -> loadUpdateStatus(false));
+        panel.addAction(
+                R.string.brave_tv_restart_browser,
+                true,
+                () -> {
+                    if (isUsable()) ApplicationLifetime.terminate(true);
+                });
+        show(panel, () -> loadUpdateStatus(false));
     }
 }

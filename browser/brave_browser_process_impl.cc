@@ -379,7 +379,8 @@ brave_shields::AdBlockService* BraveBrowserProcessImpl::ad_block_service() {
         local_state(), GetApplicationLocale(), component_updater(), task_runner,
         AdBlockSubscriptionDownloadManagerGetter(),
         profile_manager()->user_data_dir().Append(
-            profile_manager()->GetInitialProfileDir()));
+            profile_manager()->GetInitialProfileDir()),
+        shared_url_loader_factory());
   }
   return ad_block_service_.get();
 }

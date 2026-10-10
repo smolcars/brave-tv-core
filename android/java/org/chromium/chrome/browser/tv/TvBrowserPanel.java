@@ -50,8 +50,8 @@ final class TvBrowserPanel {
         mRoot = new LinearLayout(activity);
         mRoot.setOrientation(LinearLayout.VERTICAL);
         mRoot.setPadding(dp(24), dp(24), dp(24), dp(16));
-        mTitle = addText(title, 30, true);
-        if (!subtitle.isEmpty()) addText(subtitle, 15, false);
+        mTitle = addText(mRoot, title, 30, true);
+        if (!subtitle.isEmpty()) addText(mRoot, subtitle, 15, false);
         mContent = new LinearLayout(activity);
         mContent.setOrientation(LinearLayout.VERTICAL);
         mContent.setPadding(0, dp(12), 0, dp(8));
@@ -60,7 +60,8 @@ final class TvBrowserPanel {
         mScroll.addView(mContent);
         mRoot.addView(
                 mScroll, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
-        TextView hint = addText(activity.getString(R.string.brave_tv_panel_back_hint), 13, false);
+        TextView hint =
+                addText(mRoot, activity.getString(R.string.brave_tv_panel_back_hint), 13, false);
         hint.setPadding(dp(4), dp(12), dp(4), 0);
     }
 
@@ -75,7 +76,7 @@ final class TvBrowserPanel {
         return Math.round(value * mActivity.getResources().getDisplayMetrics().density);
     }
 
-    private TextView addText(String text, int size, boolean heading) {
+    private TextView addText(LinearLayout parent, String text, int size, boolean heading) {
         TextView view = new TextView(mActivity);
         view.setText(text);
         view.setTextSize(size);
@@ -90,8 +91,12 @@ final class TvBrowserPanel {
             view.setLetterSpacing(-0.02f);
             view.setAccessibilityHeading(true);
         }
-        mRoot.addView(view);
+        parent.addView(view);
         return view;
+    }
+
+    void addDescription(String text) {
+        addText(mContent, text, 15, false);
     }
 
     MaterialButton addAction(int label, boolean enabled, Runnable action) {
