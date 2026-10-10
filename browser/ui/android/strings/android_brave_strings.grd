@@ -3985,6 +3985,8 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_FILTER_OFF" desc="TV disabled optional filter-list button."><ph name="TITLE">%s<ex>Cookie notices</ex></ph>: Off</message>
     <message name="IDS_BRAVE_TV_PREVIOUS_FILTERS" desc="TV previous optional filter-list page.">Previous lists</message>
     <message name="IDS_BRAVE_TV_MORE_FILTERS" desc="TV next optional filter-list page.">More lists</message>
+    <message name="IDS_BRAVE_TV_SETTINGS_DESCRIPTION" desc="Short description under the TV browser Settings heading.">Search, privacy and your browser.</message>
+    <message name="IDS_BRAVE_TV_PANEL_BACK_HINT" desc="TV panel hint explaining the remote Back button.">Press Back to return</message>
     <message name="IDS_BRAVE_TV_SETTINGS" desc="TV button to open browser settings.">Settings</message>
     <message name="IDS_BRAVE_TV_SHIELDS" desc="TV button and panel title for current-site protection settings.">Site protection</message>
     <message name="IDS_BRAVE_TV_SHIELDS_UP" desc="TV button showing site protection enabled; activation disables it.">Protection on · Turn off for this site</message>

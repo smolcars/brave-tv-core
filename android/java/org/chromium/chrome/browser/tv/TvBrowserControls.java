@@ -355,30 +355,89 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                         : R.string.brave_tv_controls),
                         tab == null || tab.isNativePage() ? "" : url,
                         mLastAction);
+        panel.useWideLayout();
         panel.addItem(
-                mActivity.getString(R.string.brave_tv_address),
-                R.string.brave_tv_address,
-                () -> runControl(R.string.brave_tv_address, tab, url));
-        addControl(panel, R.string.brave_tv_pointer, currentPage() != null, tab, url);
-        addControl(panel, R.string.brave_tv_scroll, currentPage() != null, tab, url);
-        addControl(panel, R.string.brave_tv_tabs, mActivity.areTabModelsInitialized(), tab, url);
-        addControl(panel, R.string.brave_tv_back, tab != null && tab.canGoBack(), tab, url);
-        addControl(panel, R.string.brave_tv_forward, tab != null && tab.canGoForward(), tab, url);
+                        mActivity.getString(R.string.brave_tv_address),
+                        R.string.brave_tv_address,
+                        () -> runControl(R.string.brave_tv_address, tab, url))
+                .setIconResource(R.drawable.ic_search);
+        addControl(
+                panel,
+                R.string.brave_tv_pointer,
+                R.drawable.ic_cursor,
+                currentPage() != null,
+                tab,
+                url);
+        addControl(
+                panel,
+                R.string.brave_tv_scroll,
+                R.drawable.ic_arrow_up_and_down,
+                currentPage() != null,
+                tab,
+                url);
+        addControl(
+                panel,
+                R.string.brave_tv_tabs,
+                R.drawable.ic_windows_open,
+                mActivity.areTabModelsInitialized(),
+                tab,
+                url);
+        addControl(
+                panel,
+                R.string.brave_tv_back,
+                R.drawable.ic_arrow_left,
+                tab != null && tab.canGoBack(),
+                tab,
+                url);
+        addControl(
+                panel,
+                R.string.brave_tv_forward,
+                R.drawable.arrow_forward_24px,
+                tab != null && tab.canGoForward(),
+                tab,
+                url);
         addControl(
                 panel,
                 tab != null && tab.isLoading() ? R.string.brave_tv_stop : R.string.brave_tv_reload,
+                tab != null && tab.isLoading() ? R.drawable.ic_close : R.drawable.ic_refresh_24dp,
                 tab != null && !tab.isNativePage(),
                 tab,
                 url);
-        addControl(panel, R.string.brave_tv_bookmarks, tab != null, tab, url);
-        addControl(panel, R.string.brave_tv_history, tab != null && !tab.isIncognito(), tab, url);
-        addControl(panel, R.string.brave_tv_settings, true, tab, url);
-        addControl(panel, R.string.brave_tv_shields, isWebTab(tab), tab, url);
-        addControl(panel, R.string.brave_tv_close_tab, tab != null, tab, url);
-        addControl(panel, R.string.brave_tv_home, tab != null, tab, url);
+        addControl(
+                panel,
+                R.string.brave_tv_bookmarks,
+                R.drawable.ic_product_bookmarks,
+                tab != null,
+                tab,
+                url);
+        addControl(
+                panel,
+                R.string.brave_tv_history,
+                R.drawable.ic_history,
+                tab != null && !tab.isIncognito(),
+                tab,
+                url);
+        addControl(panel, R.string.brave_tv_settings, R.drawable.ic_settings, true, tab, url);
+        addControl(
+                panel,
+                R.string.brave_tv_shields,
+                R.drawable.ic_shield_done,
+                isWebTab(tab),
+                tab,
+                url);
+        addControl(
+                panel,
+                R.string.brave_tv_close_tab,
+                R.drawable.ic_window_tab_close,
+                tab != null,
+                tab,
+                url);
+        addControl(
+                panel, R.string.brave_tv_home, R.drawable.ic_browser_home, tab != null, tab, url);
         addControl(
                 panel,
                 R.string.brave_tv_playback,
+                R.drawable.ic_media_player,
                 tab != null && !tab.isNativePage() && tab.getWebContents() != null,
                 tab,
                 url);
@@ -386,8 +445,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void addControl(
-            TvBrowserPanel panel, int action, boolean enabled, @Nullable Tab tab, String url) {
-        panel.addAction(action, enabled, () -> runControl(action, tab, url));
+            TvBrowserPanel panel,
+            int action,
+            int icon,
+            boolean enabled,
+            @Nullable Tab tab,
+            String url) {
+        panel.addAction(action, enabled, () -> runControl(action, tab, url)).setIconResource(icon);
     }
 
     private void dismissDialog() {
@@ -794,38 +858,46 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 new TvBrowserPanel(
                         mActivity,
                         mActivity.getString(R.string.brave_tv_settings),
-                        "",
+                        mActivity.getString(R.string.brave_tv_settings_description),
                         mLastSettingsAction);
         panel.addItem(
-                mActivity.getString(R.string.brave_tv_search_engine),
-                R.string.brave_tv_search_engine,
-                () -> showSearchEngines(tab, url));
+                        mActivity.getString(R.string.brave_tv_search_engine),
+                        R.string.brave_tv_search_engine,
+                        () -> showSearchEngines(tab, url))
+                .setIconResource(R.drawable.ic_search);
         panel.addItem(
-                mActivity.getString(R.string.content_filters_title),
-                R.string.content_filters_title,
-                () -> {
-                    if (!tabContextValid(tab, url)) return;
-                    dismissDialog();
-                    mLastSettingsAction = R.string.content_filters_title;
-                    mFilterPanel = new TvFilterPanel(mActivity, tab, this::showSettings);
-                    mFilterPanel.show();
-                });
+                        mActivity.getString(R.string.content_filters_title),
+                        R.string.content_filters_title,
+                        () -> {
+                            if (!tabContextValid(tab, url)) return;
+                            dismissDialog();
+                            mLastSettingsAction = R.string.content_filters_title;
+                            mFilterPanel = new TvFilterPanel(mActivity, tab, this::showSettings);
+                            mFilterPanel.show();
+                        })
+                .setIconResource(R.drawable.ic_shield_done);
         if (!tab.isIncognito()) {
             panel.addItem(
-                    mActivity.getString(R.string.brave_tv_clear_data),
-                    R.string.brave_tv_clear_data,
-                    () -> showClearData(tab, url, false));
+                            mActivity.getString(R.string.brave_tv_clear_data),
+                            R.string.brave_tv_clear_data,
+                            () -> showClearData(tab, url, false))
+                    .setIconResource(R.drawable.ic_shred_data);
         }
         panel.addItem(
-                mActivity.getString(R.string.brave_tv_licenses),
-                R.string.brave_tv_licenses,
-                () -> {
-                    if (!tabContextValid(tab, url)) return;
-                    dismissDialog();
-                    mLastSettingsAction = R.string.brave_tv_licenses;
-                    tab.loadUrl(new LoadUrlParams("chrome://credits"));
-                });
-        panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
+                        mActivity.getString(R.string.brave_tv_licenses),
+                        R.string.brave_tv_licenses,
+                        () -> {
+                            if (!tabContextValid(tab, url)) return;
+                            dismissDialog();
+                            mLastSettingsAction = R.string.brave_tv_licenses;
+                            tab.loadUrl(new LoadUrlParams("chrome://credits"));
+                        })
+                .setIconResource(R.drawable.ic_code);
+        panel.addItem(
+                        mActivity.getString(R.string.brave_tv_controls),
+                        R.string.brave_tv_controls,
+                        this::returnToControls)
+                .setIconResource(R.drawable.ic_tune);
         mDialog = panel.show(this::returnToControls);
     }
 
