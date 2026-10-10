@@ -44,6 +44,7 @@ function resetInput() {
   $('editor').value = ''
 }
 function render(result) {
+  if (!result.state && !result.error) result = { error: 'revoked' }
   if (result.error) {
     connected = false
     state = null
@@ -171,6 +172,10 @@ async function poll() {
   }
 }
 function disconnected() {
+  if (!epoch) {
+    render({ error: 'revoked' })
+    return
+  }
   connected = false
   state = null
   resetInput()
@@ -246,6 +251,7 @@ async function pair(secret) {
     const result = await post('/pair', { invite: secret })
     if (!result.token) throw new Error('pairing')
     token = result.token
+    epoch = ''
     $('pair').hidden = true
     $('approval').hidden = false
     status('Waiting for approval on the TV…')
