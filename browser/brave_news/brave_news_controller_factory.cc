@@ -71,42 +71,44 @@ bool BraveNewsControllerFactory::ServiceIsCreatedWithBrowserContext() const {
 std::unique_ptr<KeyedService>
 BraveNewsControllerFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return nullptr;
-  }
-  if (!Profile::FromBrowserContext(context)->IsRegularProfile()) {
-    return nullptr;
-  }
-  auto* profile = Profile::FromBrowserContext(context);
-  if (!profile) {
-    return nullptr;
-  }
-  auto* history_service = HistoryServiceFactory::GetForProfile(
-      profile, ServiceAccessType::EXPLICIT_ACCESS);
-  auto* host_content_settings_map =
-      HostContentSettingsMapFactory::GetForProfile(profile);
+  } else {
+    if (!Profile::FromBrowserContext(context)->IsRegularProfile()) {
+      return nullptr;
+    }
+    auto* profile = Profile::FromBrowserContext(context);
+    if (!profile) {
+      return nullptr;
+    }
+    auto* history_service = HistoryServiceFactory::GetForProfile(
+        profile, ServiceAccessType::EXPLICIT_ACCESS);
+    auto* host_content_settings_map =
+        HostContentSettingsMapFactory::GetForProfile(profile);
 
-  policy::PolicyService* policy_service = nullptr;
-  if (auto* policy_connector = profile->GetProfilePolicyConnector()) {
-    policy_service = policy_connector->policy_service();
-  }
-  auto policy_initialization_waiter =
-      std::make_unique<brave_policy::PolicyInitializationWaiter>(
-          policy_service);
+    policy::PolicyService* policy_service = nullptr;
+    if (auto* policy_connector = profile->GetProfilePolicyConnector()) {
+      policy_service = policy_connector->policy_service();
+    }
+    auto policy_initialization_waiter =
+        std::make_unique<brave_policy::PolicyInitializationWaiter>(
+            policy_service);
 
-  // The settings delegate opens the New Tab Page, which only exists on desktop;
-  // a null delegate is fine, BraveNewsController::OpenSettings() no-ops then.
-  std::unique_ptr<BraveNewsController::Delegate> delegate;
+    // The settings delegate opens the New Tab Page, which only exists on
+    // desktop; a null delegate is fine, BraveNewsController::OpenSettings()
+    // no-ops then.
+    std::unique_ptr<BraveNewsController::Delegate> delegate;
 #if !BUILDFLAG(IS_ANDROID)
-  delegate = std::make_unique<BraveNewsControllerDelegateImpl>(profile);
+    delegate = std::make_unique<BraveNewsControllerDelegateImpl>(profile);
 #endif
 
-  return std::make_unique<BraveNewsController>(
-      profile->GetPrefs(), std::move(policy_initialization_waiter),
-      history_service, profile->GetURLLoaderFactory(),
-      std::make_unique<DirectFeedFetcherDelegateImpl>(
-          host_content_settings_map),
-      std::move(delegate));
+    return std::make_unique<BraveNewsController>(
+        profile->GetPrefs(), std::move(policy_initialization_waiter),
+        history_service, profile->GetURLLoaderFactory(),
+        std::make_unique<DirectFeedFetcherDelegateImpl>(
+            host_content_settings_map),
+        std::move(delegate));
+  }
 }
 
 bool BraveNewsControllerFactory::ServiceIsNULLWhileTesting() const {

@@ -13,72 +13,76 @@ namespace brave_sync::p3a {
 
 void RecordEnabledTypes(bool sync_everything_enabled,
                         const syncer::UserSelectableTypeSet& selected_types) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  using syncer::UserSelectableType;
-  using syncer::UserSelectableTypeSet;
-
-  EnabledTypesAnswer sample;
-  static const auto all_brave_supported_types = UserSelectableTypeSet(
-      {UserSelectableType::kBookmarks, UserSelectableType::kHistory,
-       UserSelectableType::kExtensions, UserSelectableType::kApps,
-       UserSelectableType::kPasswords, UserSelectableType::kPreferences,
-       UserSelectableType::kThemes, UserSelectableType::kTabs,
-       UserSelectableType::kAutofill});
-  if (sync_everything_enabled ||
-      selected_types.HasAll(all_brave_supported_types)) {
-    // Sync All
-    sample = EnabledTypesAnswer::kAllTypes;
-  } else if (selected_types.empty() ||
-             selected_types ==
-                 UserSelectableTypeSet({UserSelectableType::kBookmarks})) {
-    // Bookmarks or no types
-    sample = EnabledTypesAnswer::kEmptyOrBookmarksOnly;
-  } else if (selected_types ==
-             UserSelectableTypeSet({UserSelectableType::kBookmarks,
-                                    UserSelectableType::kHistory})) {
-    // Bookmarks & History
-    sample = EnabledTypesAnswer::kBookmarksAndHistory;
   } else {
-    // More than (Bookmarks & History) but less than (Sync All)
-    sample = EnabledTypesAnswer::kMoreThanBookmarksAndHistory;
-  }
+    using syncer::UserSelectableType;
+    using syncer::UserSelectableTypeSet;
 
-  base::UmaHistogramEnumeration(kEnabledTypesHistogramName, sample);
+    EnabledTypesAnswer sample;
+    static const auto all_brave_supported_types = UserSelectableTypeSet(
+        {UserSelectableType::kBookmarks, UserSelectableType::kHistory,
+         UserSelectableType::kExtensions, UserSelectableType::kApps,
+         UserSelectableType::kPasswords, UserSelectableType::kPreferences,
+         UserSelectableType::kThemes, UserSelectableType::kTabs,
+         UserSelectableType::kAutofill});
+    if (sync_everything_enabled ||
+        selected_types.HasAll(all_brave_supported_types)) {
+      // Sync All
+      sample = EnabledTypesAnswer::kAllTypes;
+    } else if (selected_types.empty() ||
+               selected_types ==
+                   UserSelectableTypeSet({UserSelectableType::kBookmarks})) {
+      // Bookmarks or no types
+      sample = EnabledTypesAnswer::kEmptyOrBookmarksOnly;
+    } else if (selected_types ==
+               UserSelectableTypeSet({UserSelectableType::kBookmarks,
+                                      UserSelectableType::kHistory})) {
+      // Bookmarks & History
+      sample = EnabledTypesAnswer::kBookmarksAndHistory;
+    } else {
+      // More than (Bookmarks & History) but less than (Sync All)
+      sample = EnabledTypesAnswer::kMoreThanBookmarksAndHistory;
+    }
+
+    base::UmaHistogramEnumeration(kEnabledTypesHistogramName, sample);
+  }
 }
 
 void RecordSyncedObjectsCount(int total_entities) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    // "Brave.Sync.SyncedObjectsCount.2"
+    // 0 - 0..1000
+    // 1 - 1001..10000
+    // 2 - 10001..49000
+    // 3 - >= 49001
+    p3a_utils::RecordToHistogramBucket(kSyncedObjectsCountHistogramNameV2,
+                                       {1000, 10000, 49000}, total_entities);
   }
-  // "Brave.Sync.SyncedObjectsCount.2"
-  // 0 - 0..1000
-  // 1 - 1001..10000
-  // 2 - 10001..49000
-  // 3 - >= 49001
-  p3a_utils::RecordToHistogramBucket(kSyncedObjectsCountHistogramNameV2,
-                                     {1000, 10000, 49000}, total_entities);
 }
 
 void SyncCodeMonitor::RecordCodeGenerated() {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    code_generated_ = true;
+    base::UmaHistogramEnumeration(kSyncJoinTypeHistogramName,
+                                  SyncJoinType::kChainCreated);
   }
-  code_generated_ = true;
-  base::UmaHistogramEnumeration(kSyncJoinTypeHistogramName,
-                                SyncJoinType::kChainCreated);
 }
 
 void SyncCodeMonitor::RecordCodeSet() {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    if (!code_generated_) {
+      base::UmaHistogramEnumeration(kSyncJoinTypeHistogramName,
+                                    SyncJoinType::kChainJoined);
+    }
+    code_generated_ = false;
   }
-  if (!code_generated_) {
-    base::UmaHistogramEnumeration(kSyncJoinTypeHistogramName,
-                                  SyncJoinType::kChainJoined);
-  }
-  code_generated_ = false;
 }
 
 }  // namespace brave_sync::p3a

@@ -791,6 +791,15 @@ TEST_F(BraveSyncServiceImplTest,
 #endif  // BUILDFLAG(IS_ANDROID)
 
 TEST_F(BraveSyncServiceImplTest, P3aForHistoryThroughDelegate) {
+#if BUILDFLAG(IS_ANDROID)
+  base::HistogramTester histogram_tester;
+  CreateSyncService(DataTypeSet({BOOKMARKS, HISTORY, PASSWORDS}));
+  EXPECT_CALL(*sync_service_delegate(), GetKnownToSyncHistoryCount(_)).Times(0);
+  brave_sync_service_impl()->UpdateP3AObjectsNumber();
+  EXPECT_EQ(brave_sync_service_impl()->synced_objects_context_.types_requested,
+            0u);
+  EXPECT_TRUE(histogram_tester.GetTotalCountsForPrefix("Brave.Sync.").empty());
+#else
   CreateSyncService(DataTypeSet({BOOKMARKS, HISTORY, PASSWORDS}));
   EXPECT_FALSE(engine());
   brave_sync_service_impl()->SetSyncCode(kValidSyncCode);
@@ -829,6 +838,7 @@ TEST_F(BraveSyncServiceImplTest, P3aForHistoryThroughDelegate) {
   brave_sync_service_impl()->OnGetTypeEntitiesCount(bookmarks_count);
   histogram_tester.ExpectBucketCount(
       brave_sync::p3a::kSyncedObjectsCountHistogramNameV2, 2, 1);
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 TEST_F(BraveSyncServiceImplTest, NoLeaveDetailsWhenInitializeIOS) {

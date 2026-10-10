@@ -65,12 +65,13 @@ BraveNewsTabHelper::FeedDetails& BraveNewsTabHelper::FeedDetails::operator=(
 // static
 void BraveNewsTabHelper::MaybeCreateForWebContents(
     content::WebContents* contents) {
-  if (BUILDFLAG(IS_ANDROID) ||
-      contents->GetBrowserContext()->IsOffTheRecord()) {
-    return;
-  }
+  if constexpr (!BUILDFLAG(IS_ANDROID)) {
+    if (contents->GetBrowserContext()->IsOffTheRecord()) {
+      return;
+    }
 
-  CreateForWebContents(contents);
+    CreateForWebContents(contents);
+  }
 }
 
 BraveNewsTabHelper::BraveNewsTabHelper(content::WebContents* contents)

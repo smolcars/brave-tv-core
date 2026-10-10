@@ -183,61 +183,65 @@ void ReportManualShredP3A(const PrefService& local_state) {
 
 void MaybeRecordShieldsUsageP3A(ShieldsIconUsage usage,
                                 PrefService* local_state) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    p3a::RecordValueIfGreater<ShieldsIconUsage>(
+        usage, kUsageStatusHistogramName, kUsagePrefName, local_state);
   }
-  p3a::RecordValueIfGreater<ShieldsIconUsage>(usage, kUsageStatusHistogramName,
-                                              kUsagePrefName, local_state);
 }
 
 void RecordShieldsAdsSetting(ControlType setting) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    RecordShieldsLevelSetting(kAdsSettingHistogramName, setting);
   }
-  RecordShieldsLevelSetting(kAdsSettingHistogramName, setting);
 }
 
 void RecordShieldsFingerprintSetting(ControlType setting) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    RecordShieldsLevelSetting(kFingerprintSettingHistogramName, setting);
   }
-  RecordShieldsLevelSetting(kFingerprintSettingHistogramName, setting);
 }
 
 void RecordShieldsDomainSettingCounts(PrefService* profile_prefs,
                                       bool is_fingerprint,
                                       ControlType global_setting) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  if (profile_prefs == nullptr) {
-    return;
-  }
-  const char* above_hg_name = is_fingerprint
-                                  ? kDomainFPSettingsAboveHistogramName
-                                  : kDomainAdsSettingsAboveHistogramName;
-  const char* below_hg_name = is_fingerprint
-                                  ? kDomainFPSettingsBelowHistogramName
-                                  : kDomainAdsSettingsBelowHistogramName;
-  // Retrieve a count of domains with a setting above the global setting.
-  int above_total = DomainCountRelativeToGlobalSetting(
-      profile_prefs, is_fingerprint, global_setting, true);
-  // Retrieve a count of domains with a setting below the global setting.
-  int below_total = DomainCountRelativeToGlobalSetting(
-      profile_prefs, is_fingerprint, global_setting, false);
-  VLOG(1) << "BraveShieldsP3A: Recording counts: is_fp=" << is_fingerprint
-          << " above=" << above_total << " below=" << below_total;
-  DCHECK_GE(above_total, 0)
-      << "\"domains above global setting\" count must be positive";
-  if (above_total >= 0) {
-    p3a_utils::RecordToHistogramBucket(above_hg_name, kDomainCountBuckets,
-                                       above_total);
-  }
-  DCHECK_GE(below_total, 0)
-      << "\"domains below global setting\" count must be positive";
-  if (below_total >= 0) {
-    p3a_utils::RecordToHistogramBucket(below_hg_name, kDomainCountBuckets,
-                                       below_total);
+  } else {
+    if (profile_prefs == nullptr) {
+      return;
+    }
+    const char* above_hg_name = is_fingerprint
+                                    ? kDomainFPSettingsAboveHistogramName
+                                    : kDomainAdsSettingsAboveHistogramName;
+    const char* below_hg_name = is_fingerprint
+                                    ? kDomainFPSettingsBelowHistogramName
+                                    : kDomainAdsSettingsBelowHistogramName;
+    // Retrieve a count of domains with a setting above the global setting.
+    int above_total = DomainCountRelativeToGlobalSetting(
+        profile_prefs, is_fingerprint, global_setting, true);
+    // Retrieve a count of domains with a setting below the global setting.
+    int below_total = DomainCountRelativeToGlobalSetting(
+        profile_prefs, is_fingerprint, global_setting, false);
+    VLOG(1) << "BraveShieldsP3A: Recording counts: is_fp=" << is_fingerprint
+            << " above=" << above_total << " below=" << below_total;
+    DCHECK_GE(above_total, 0)
+        << "\"domains above global setting\" count must be positive";
+    if (above_total >= 0) {
+      p3a_utils::RecordToHistogramBucket(above_hg_name, kDomainCountBuckets,
+                                         above_total);
+    }
+    DCHECK_GE(below_total, 0)
+        << "\"domains below global setting\" count must be positive";
+    if (below_total >= 0) {
+      p3a_utils::RecordToHistogramBucket(below_hg_name, kDomainCountBuckets,
+                                         below_total);
+    }
   }
 }
 
@@ -246,125 +250,132 @@ void RecordShieldsDomainSettingCountsWithChange(PrefService* profile_prefs,
                                                 ControlType global_setting,
                                                 ControlType* prev_setting,
                                                 ControlType new_setting) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  if (profile_prefs == nullptr) {
-    return;
-  }
-  if (prev_setting != nullptr) {
-    UpdateDomainSettingCount(profile_prefs, is_fingerprint, *prev_setting, -1);
-    VLOG(1) << "BraveShieldsP3A: Decreasing prev setting count: prev_setting="
-            << *prev_setting << " is_fp=" << is_fingerprint << " count="
+  } else {
+    if (profile_prefs == nullptr) {
+      return;
+    }
+    if (prev_setting != nullptr) {
+      UpdateDomainSettingCount(profile_prefs, is_fingerprint, *prev_setting,
+                               -1);
+      VLOG(1) << "BraveShieldsP3A: Decreasing prev setting count: prev_setting="
+              << *prev_setting << " is_fp=" << is_fingerprint << " count="
+              << GetDomainSettingCount(profile_prefs, is_fingerprint,
+                                       *prev_setting);
+    }
+    UpdateDomainSettingCount(profile_prefs, is_fingerprint, new_setting, 1);
+    VLOG(1) << "BraveShieldsP3A: Increasing new setting count: new_setting="
+            << new_setting << " is_fp=" << is_fingerprint << " count="
             << GetDomainSettingCount(profile_prefs, is_fingerprint,
-                                     *prev_setting);
+                                     new_setting);
+    RecordShieldsDomainSettingCounts(profile_prefs, is_fingerprint,
+                                     global_setting);
   }
-  UpdateDomainSettingCount(profile_prefs, is_fingerprint, new_setting, 1);
-  VLOG(1) << "BraveShieldsP3A: Increasing new setting count: new_setting="
-          << new_setting << " is_fp=" << is_fingerprint << " count="
-          << GetDomainSettingCount(profile_prefs, is_fingerprint, new_setting);
-  RecordShieldsDomainSettingCounts(profile_prefs, is_fingerprint,
-                                   global_setting);
 }
 
 void RecordForgetFirstPartySetting(HostContentSettingsMap* map) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  ContentSetting global_setting = map->GetContentSetting(
-      {}, {}, ContentSettingsType::BRAVE_REMEMBER_1P_STORAGE);
-  auto per_site_settings = map->GetSettingsForOneType(
-      ContentSettingsType::BRAVE_REMEMBER_1P_STORAGE);
-  bool has_per_site_exceptions = false;
-  for (const auto& source : per_site_settings) {
-    if (source.setting_value != global_setting) {
-      has_per_site_exceptions = true;
-      break;
+  } else {
+    ContentSetting global_setting = map->GetContentSetting(
+        {}, {}, ContentSettingsType::BRAVE_REMEMBER_1P_STORAGE);
+    auto per_site_settings = map->GetSettingsForOneType(
+        ContentSettingsType::BRAVE_REMEMBER_1P_STORAGE);
+    bool has_per_site_exceptions = false;
+    for (const auto& source : per_site_settings) {
+      if (source.setting_value != global_setting) {
+        has_per_site_exceptions = true;
+        break;
+      }
     }
+    bool is_enabled_globally = global_setting == CONTENT_SETTING_BLOCK;
+    int answer = 0;
+    if (is_enabled_globally && !has_per_site_exceptions) {
+      answer = 1;
+    } else if (is_enabled_globally && has_per_site_exceptions) {
+      answer = 2;
+    } else if (!is_enabled_globally && has_per_site_exceptions) {
+      answer = 3;
+    }
+    UMA_HISTOGRAM_EXACT_LINEAR(kForgetFirstPartyHistogramName, answer, 4);
   }
-  bool is_enabled_globally = global_setting == CONTENT_SETTING_BLOCK;
-  int answer = 0;
-  if (is_enabled_globally && !has_per_site_exceptions) {
-    answer = 1;
-  } else if (is_enabled_globally && has_per_site_exceptions) {
-    answer = 2;
-  } else if (!is_enabled_globally && has_per_site_exceptions) {
-    answer = 3;
-  }
-  UMA_HISTOGRAM_EXACT_LINEAR(kForgetFirstPartyHistogramName, answer, 4);
 }
 
 void RecordHTTPSUpgradeSettingP3A(HostContentSettingsMap* map) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  ContentSetting global_setting = map->GetContentSetting(
-      GURL(), GURL(), ContentSettingsType::BRAVE_HTTPS_UPGRADE);
-  constexpr int kHTTPSUpgradeStrict = 2;
-  constexpr int kHTTPSUpgradeStandard = 1;
-  constexpr int kHTTPSUpgradePerSiteNonDefault = 1;
-  int global_answer = INT_MAX - 1;
-  if (global_setting != CONTENT_SETTING_ALLOW) {
-    global_answer = global_setting == CONTENT_SETTING_BLOCK
-                        ? kHTTPSUpgradeStrict
-                        : kHTTPSUpgradeStandard;
-  }
-  UMA_HISTOGRAM_EXACT_LINEAR(kUpgradeHTTPSGlobalHistogramName, global_answer,
-                             3);
+  } else {
+    ContentSetting global_setting = map->GetContentSetting(
+        GURL(), GURL(), ContentSettingsType::BRAVE_HTTPS_UPGRADE);
+    constexpr int kHTTPSUpgradeStrict = 2;
+    constexpr int kHTTPSUpgradeStandard = 1;
+    constexpr int kHTTPSUpgradePerSiteNonDefault = 1;
+    int global_answer = INT_MAX - 1;
+    if (global_setting != CONTENT_SETTING_ALLOW) {
+      global_answer = global_setting == CONTENT_SETTING_BLOCK
+                          ? kHTTPSUpgradeStrict
+                          : kHTTPSUpgradeStandard;
+    }
+    UMA_HISTOGRAM_EXACT_LINEAR(kUpgradeHTTPSGlobalHistogramName, global_answer,
+                               3);
 
-  auto per_site_settings =
-      map->GetSettingsForOneType(ContentSettingsType::BRAVE_HTTPS_UPGRADE);
-  bool has_per_site_non_default = std::ranges::any_of(
-      per_site_settings,
-      [&global_setting](const ContentSettingPatternSource& entry) {
-        return entry.GetContentSetting() != global_setting &&
-               !entry.primary_pattern.MatchesAllHosts();
-      });
-  int per_site_answer =
-      has_per_site_non_default ? kHTTPSUpgradePerSiteNonDefault : INT_MAX - 1;
-  UMA_HISTOGRAM_EXACT_LINEAR(kUpgradeHTTPSPerSiteHistogramName, per_site_answer,
-                             2);
+    auto per_site_settings =
+        map->GetSettingsForOneType(ContentSettingsType::BRAVE_HTTPS_UPGRADE);
+    bool has_per_site_non_default = std::ranges::any_of(
+        per_site_settings,
+        [&global_setting](const ContentSettingPatternSource& entry) {
+          return entry.GetContentSetting() != global_setting &&
+                 !entry.primary_pattern.MatchesAllHosts();
+        });
+    int per_site_answer =
+        has_per_site_non_default ? kHTTPSUpgradePerSiteNonDefault : INT_MAX - 1;
+    UMA_HISTOGRAM_EXACT_LINEAR(kUpgradeHTTPSPerSiteHistogramName,
+                               per_site_answer, 2);
+  }
 }
 
 void ReportAutoShredSettingsP3A(const HostContentSettingsMap& map) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  if (!base::FeatureList::IsEnabled(features::kBraveShredFeature)) {
-    return;
-  }
-  const auto global = AutoShredSetting::FromValue(map.GetWebsiteSetting(
-      GURL(), GURL(), AutoShredSetting::kContentSettingsType));
-  const bool global_enabled = (global != mojom::AutoShredMode::NEVER);
-
-  const bool has_exception = std::ranges::any_of(
-      map.GetSettingsForOneType(AutoShredSetting::kContentSettingsType),
-      [&global](const ContentSettingPatternSource& entry) {
-        if (entry.primary_pattern.MatchesAllHosts()) {
-          return false;
-        }
-        return AutoShredSetting::FromValue(entry.setting_value) != global;
-      });
-
-  int answer;
-  if (!global_enabled && !has_exception) {
-    answer = 0;
-  } else if (!global_enabled && has_exception) {
-    answer = 1;
-  } else if (global_enabled && !has_exception) {
-    answer = 2;
   } else {
-    answer = 3;
+    if (!base::FeatureList::IsEnabled(features::kBraveShredFeature)) {
+      return;
+    }
+    const auto global = AutoShredSetting::FromValue(map.GetWebsiteSetting(
+        GURL(), GURL(), AutoShredSetting::kContentSettingsType));
+    const bool global_enabled = (global != mojom::AutoShredMode::NEVER);
+
+    const bool has_exception = std::ranges::any_of(
+        map.GetSettingsForOneType(AutoShredSetting::kContentSettingsType),
+        [&global](const ContentSettingPatternSource& entry) {
+          if (entry.primary_pattern.MatchesAllHosts()) {
+            return false;
+          }
+          return AutoShredSetting::FromValue(entry.setting_value) != global;
+        });
+
+    int answer;
+    if (!global_enabled && !has_exception) {
+      answer = 0;
+    } else if (!global_enabled && has_exception) {
+      answer = 1;
+    } else if (global_enabled && !has_exception) {
+      answer = 2;
+    } else {
+      answer = 3;
+    }
+    base::UmaHistogramExactLinear(kAutoShredSettingsHistogramName, answer, 4);
   }
-  base::UmaHistogramExactLinear(kAutoShredSettingsHistogramName, answer, 4);
 }
 
 void RecordManualShredP3A(PrefService& local_state) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    local_state.SetBoolean(kManualShredTriggeredPrefName, true);
+    ReportManualShredP3A(local_state);
   }
-  local_state.SetBoolean(kManualShredTriggeredPrefName, true);
-  ReportManualShredP3A(local_state);
 }
 
 void MaybeRecordInitialShieldsSettings(
@@ -373,66 +384,69 @@ void MaybeRecordInitialShieldsSettings(
     HostContentSettingsMap* map,
     ControlType cosmetic_filtering_control_type,
     ControlType fingerprinting_control_type) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    if (map) {
+      ReportAutoShredSettingsP3A(*map);
+    }
+    if (local_state) {
+      ReportManualShredP3A(*local_state);
+    }
+    if (profile_prefs->GetInteger(kFirstReportedRevisionPrefName) >=
+        kCurrentReportRevision) {
+      return;
+    }
+    VLOG(1) << "BraveShieldsP3A: Starting initial report for profile";
+
+    RecordShieldsAdsSetting(cosmetic_filtering_control_type);
+    RecordShieldsFingerprintSetting(fingerprinting_control_type);
+
+    // Since internal setting counts don't exist, we will
+    // count ads & fp settings for all domains by processing the content
+    // settings.
+    ShieldsSettingCounts fp_counts = GetFPSettingCount(map);
+    ShieldsSettingCounts ads_counts = GetAdsSettingCount(map);
+
+    VLOG(1) << "BraveShieldsP3A: Domain FP counts: allow=" << fp_counts.allow
+            << " standard=" << fp_counts.standard
+            << " agg=" << fp_counts.aggressive;
+    VLOG(1) << "BraveShieldsP3A: Domain Ad counts: allow=" << ads_counts.allow
+            << " standard=" << ads_counts.standard
+            << " agg=" << ads_counts.aggressive;
+
+    // Once the domain setting have been counted via content settings,
+    // update each domain setting count pref with count results.
+    //
+    // These count prefs will be used to keep track of setting counts, and will
+    // be updated via RecordShieldsDomainSettingCountsWithChange whenever a
+    // domain setting is changed. This is more efficient than processing
+    // the content settings upon every change.
+    UpdateDomainSettingCount(profile_prefs, true, ControlType::ALLOW,
+                             fp_counts.allow);
+    UpdateDomainSettingCount(profile_prefs, true, ControlType::DEFAULT,
+                             fp_counts.standard);
+    UpdateDomainSettingCount(profile_prefs, true, ControlType::BLOCK,
+                             fp_counts.aggressive);
+
+    UpdateDomainSettingCount(profile_prefs, false, ControlType::ALLOW,
+                             ads_counts.allow);
+    UpdateDomainSettingCount(profile_prefs, false,
+                             ControlType::BLOCK_THIRD_PARTY,
+                             ads_counts.standard);
+    UpdateDomainSettingCount(profile_prefs, false, ControlType::BLOCK,
+                             ads_counts.aggressive);
+
+    RecordShieldsDomainSettingCounts(profile_prefs, false,
+                                     cosmetic_filtering_control_type);
+    RecordShieldsDomainSettingCounts(profile_prefs, true,
+                                     fingerprinting_control_type);
+    RecordForgetFirstPartySetting(map);
+    RecordHTTPSUpgradeSettingP3A(map);
+
+    profile_prefs->SetInteger(kFirstReportedRevisionPrefName,
+                              kCurrentReportRevision);
   }
-  if (map) {
-    ReportAutoShredSettingsP3A(*map);
-  }
-  if (local_state) {
-    ReportManualShredP3A(*local_state);
-  }
-  if (profile_prefs->GetInteger(kFirstReportedRevisionPrefName) >=
-      kCurrentReportRevision) {
-    return;
-  }
-  VLOG(1) << "BraveShieldsP3A: Starting initial report for profile";
-
-  RecordShieldsAdsSetting(cosmetic_filtering_control_type);
-  RecordShieldsFingerprintSetting(fingerprinting_control_type);
-
-  // Since internal setting counts don't exist, we will
-  // count ads & fp settings for all domains by processing the content settings.
-  ShieldsSettingCounts fp_counts = GetFPSettingCount(map);
-  ShieldsSettingCounts ads_counts = GetAdsSettingCount(map);
-
-  VLOG(1) << "BraveShieldsP3A: Domain FP counts: allow=" << fp_counts.allow
-          << " standard=" << fp_counts.standard
-          << " agg=" << fp_counts.aggressive;
-  VLOG(1) << "BraveShieldsP3A: Domain Ad counts: allow=" << ads_counts.allow
-          << " standard=" << ads_counts.standard
-          << " agg=" << ads_counts.aggressive;
-
-  // Once the domain setting have been counted via content settings,
-  // update each domain setting count pref with count results.
-  //
-  // These count prefs will be used to keep track of setting counts, and will
-  // be updated via RecordShieldsDomainSettingCountsWithChange whenever a
-  // domain setting is changed. This is more efficient than processing
-  // the content settings upon every change.
-  UpdateDomainSettingCount(profile_prefs, true, ControlType::ALLOW,
-                           fp_counts.allow);
-  UpdateDomainSettingCount(profile_prefs, true, ControlType::DEFAULT,
-                           fp_counts.standard);
-  UpdateDomainSettingCount(profile_prefs, true, ControlType::BLOCK,
-                           fp_counts.aggressive);
-
-  UpdateDomainSettingCount(profile_prefs, false, ControlType::ALLOW,
-                           ads_counts.allow);
-  UpdateDomainSettingCount(profile_prefs, false, ControlType::BLOCK_THIRD_PARTY,
-                           ads_counts.standard);
-  UpdateDomainSettingCount(profile_prefs, false, ControlType::BLOCK,
-                           ads_counts.aggressive);
-
-  RecordShieldsDomainSettingCounts(profile_prefs, false,
-                                   cosmetic_filtering_control_type);
-  RecordShieldsDomainSettingCounts(profile_prefs, true,
-                                   fingerprinting_control_type);
-  RecordForgetFirstPartySetting(map);
-  RecordHTTPSUpgradeSettingP3A(map);
-
-  profile_prefs->SetInteger(kFirstReportedRevisionPrefName,
-                            kCurrentReportRevision);
 }
 
 void RegisterShieldsP3ALocalPrefs(PrefRegistrySimple* local_state) {

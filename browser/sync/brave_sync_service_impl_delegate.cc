@@ -94,18 +94,19 @@ void BraveSyncServiceImplDelegate::ResumeDeviceObserver() {
 }
 
 void BraveSyncServiceImplDelegate::RecordP3ASyncStatus() {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    int num_devices = device_info_tracker_->GetAllDeviceInfo().size();
+
+    // 0 - sync is disabled
+    // 1 - one device in chain
+    // 2 - two devices in chain
+    // 3 - three or more devices in chain
+    int p3a_value = std::min(num_devices, 3);
+
+    base::UmaHistogramExactLinear("Brave.Sync.Status.2", p3a_value, 3);
   }
-  int num_devices = device_info_tracker_->GetAllDeviceInfo().size();
-
-  // 0 - sync is disabled
-  // 1 - one device in chain
-  // 2 - two devices in chain
-  // 3 - three or more devices in chain
-  int p3a_value = std::min(num_devices, 3);
-
-  base::UmaHistogramExactLinear("Brave.Sync.Status.2", p3a_value, 3);
 }
 
 void BraveSyncServiceImplDelegate::SetLocalDeviceAppearedCallback(

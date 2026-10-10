@@ -322,12 +322,13 @@ void AdBlockComponentServiceManager::UpdateFilterListPrefs(
 }
 
 void AdBlockComponentServiceManager::RecordP3ACookieListEnabled() {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+    UMA_HISTOGRAM_BOOLEAN(kCookieListEnabledHistogram,
+                          IsFilterListEnabled(kCookieListUuid));
   }
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  UMA_HISTOGRAM_BOOLEAN(kCookieListEnabledHistogram,
-                        IsFilterListEnabled(kCookieListUuid));
 }
 
 bool AdBlockComponentServiceManager::IsFilterListAvailable(

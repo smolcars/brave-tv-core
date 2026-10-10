@@ -31,13 +31,14 @@ PerfPredictorTabHelper::PerfPredictorTabHelper(
       bandwidth_predictor_(std::make_unique<BandwidthSavingsPredictor>(
           NamedThirdPartyRegistryFactory::GetForBrowserContext(
               web_contents->GetBrowserContext()))) {
-  if (BUILDFLAG(IS_ANDROID) ||
-      web_contents->GetBrowserContext()->IsOffTheRecord()) {
-    return;
-  }
+  if constexpr (!BUILDFLAG(IS_ANDROID)) {
+    if (web_contents->GetBrowserContext()->IsOffTheRecord()) {
+      return;
+    }
 
-  bandwidth_tracker_ = std::make_unique<P3ABandwidthSavingsTracker>(
-      user_prefs::UserPrefs::Get(web_contents->GetBrowserContext()));
+    bandwidth_tracker_ = std::make_unique<P3ABandwidthSavingsTracker>(
+        user_prefs::UserPrefs::Get(web_contents->GetBrowserContext()));
+  }
 }
 
 PerfPredictorTabHelper::~PerfPredictorTabHelper() = default;

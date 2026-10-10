@@ -519,25 +519,27 @@ constexpr int kCyclesBeforeFirstUpdatesP3A = 10;
 void BraveSyncServiceImpl::OnSyncCycleCompleted(
     const SyncCycleSnapshot& snapshot) {
   SyncServiceImpl::OnSyncCycleCompleted(snapshot);
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    if (completed_cycles_count_ == kCyclesBeforeFirstUpdatesP3A ||
+        completed_cycles_count_ % kCyclesBeforeUpdateP3AObjects == 0) {
+      UpdateP3AObjectsNumber();
+    }
+    ++completed_cycles_count_;
   }
-  if (completed_cycles_count_ == kCyclesBeforeFirstUpdatesP3A ||
-      completed_cycles_count_ % kCyclesBeforeUpdateP3AObjects == 0) {
-    UpdateP3AObjectsNumber();
-  }
-  ++completed_cycles_count_;
 }
 
 void BraveSyncServiceImpl::UpdateP3AObjectsNumber() {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  synced_objects_context_.Reset(GetUserSettings()->GetSelectedTypes().size());
+  } else {
+    synced_objects_context_.Reset(GetUserSettings()->GetSelectedTypes().size());
 
-  data_type_manager_->GetEntityCountsForDebugging(
-      base::BindRepeating(&BraveSyncServiceImpl::OnGetTypeEntitiesCount,
-                          weak_ptr_factory_.GetWeakPtr()));
+    data_type_manager_->GetEntityCountsForDebugging(
+        base::BindRepeating(&BraveSyncServiceImpl::OnGetTypeEntitiesCount,
+                            weak_ptr_factory_.GetWeakPtr()));
+  }
 }
 
 void BraveSyncServiceImpl::OnGetTypeEntitiesCount(
@@ -565,13 +567,13 @@ void BraveSyncServiceImpl::OnGetTypeEntitiesCount(
 
 void BraveSyncServiceImpl::OnSelectedTypesChanged() {
   SyncServiceImpl::OnSelectedTypesChanged();
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
+  } else {
+    brave_sync::p3a::RecordEnabledTypes(
+        GetUserSettings()->IsSyncEverythingEnabled(),
+        GetUserSettings()->GetSelectedTypes());
   }
-
-  brave_sync::p3a::RecordEnabledTypes(
-      GetUserSettings()->IsSyncEverythingEnabled(),
-      GetUserSettings()->GetSelectedTypes());
 }
 
 void BraveSyncServiceImpl::StopAndClearWithShutdownReason() {

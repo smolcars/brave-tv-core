@@ -25,80 +25,84 @@ constexpr int kFilterListCountBuckets[] = {0, 1, 2, 5};
 
 AdBlockListP3A::AdBlockListP3A(PrefService* local_state)
     : local_state_(local_state) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  if (local_state_) {
-    pref_change_registrar_.Init(local_state_);
-    pref_change_registrar_.Add(
-        prefs::kAdBlockOnlyModeEnabled,
-        base::BindRepeating(&AdBlockListP3A::ReportAdBlockOnlyEnabled,
-                            base::Unretained(this)));
-    ReportAdBlockOnlyEnabled();
+  } else {
+    if (local_state_) {
+      pref_change_registrar_.Init(local_state_);
+      pref_change_registrar_.Add(
+          prefs::kAdBlockOnlyModeEnabled,
+          base::BindRepeating(&AdBlockListP3A::ReportAdBlockOnlyEnabled,
+                              base::Unretained(this)));
+      ReportAdBlockOnlyEnabled();
+    }
   }
 }
 
 AdBlockListP3A::~AdBlockListP3A() = default;
 
 void AdBlockListP3A::ReportFilterListUsage() {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  const auto& regional_filter_dict =
-      local_state_->GetDict(prefs::kAdBlockRegionalFilters);
+  } else {
+    const auto& regional_filter_dict =
+        local_state_->GetDict(prefs::kAdBlockRegionalFilters);
 
-  int count = 0;
-  for (const auto [uuid, dict_value] : regional_filter_dict) {
-    const auto* dict = dict_value.GetIfDict();
-    if (!dict || !dict->FindBool(kEnabledDictKey).value_or(false)) {
-      continue;
+    int count = 0;
+    for (const auto [uuid, dict_value] : regional_filter_dict) {
+      const auto* dict = dict_value.GetIfDict();
+      if (!dict || !dict->FindBool(kEnabledDictKey).value_or(false)) {
+        continue;
+      }
+      if (default_filter_list_uuids_.contains(uuid)) {
+        continue;
+      }
+      count++;
     }
-    if (default_filter_list_uuids_.contains(uuid)) {
-      continue;
-    }
-    count++;
-  }
 
-  p3a_utils::RecordToHistogramBucket(kFilterListUsageHistogramName,
-                                     kFilterListCountBuckets, count);
+    p3a_utils::RecordToHistogramBucket(kFilterListUsageHistogramName,
+                                       kFilterListCountBuckets, count);
+  }
 }
 
 void AdBlockListP3A::OnFilterListCatalogLoaded(
     const std::vector<FilterListCatalogEntry>& entries,
     const std::string& locale) {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  for (const auto& entry : entries) {
-    if (entry.default_enabled) {
-      default_filter_list_uuids_.insert(entry.uuid);
+  } else {
+    for (const auto& entry : entries) {
+      if (entry.default_enabled) {
+        default_filter_list_uuids_.insert(entry.uuid);
+      }
     }
+    for (const auto& entry : FindAdBlockFilterListsByLocale(entries, locale)) {
+      default_filter_list_uuids_.insert(entry.get().uuid);
+    }
+    ReportFilterListUsage();
   }
-  for (const auto& entry : FindAdBlockFilterListsByLocale(entries, locale)) {
-    default_filter_list_uuids_.insert(entry.get().uuid);
-  }
-  ReportFilterListUsage();
 }
 
 void AdBlockListP3A::ReportAdBlockOnlyEnabled() {
-  if (BUILDFLAG(IS_ANDROID)) {
+  if constexpr (BUILDFLAG(IS_ANDROID)) {
     return;
-  }
-  if (!base::FeatureList::IsEnabled(features::kAdblockOnlyMode)) {
-    return;
-  }
+  } else {
+    if (!base::FeatureList::IsEnabled(features::kAdblockOnlyMode)) {
+      return;
+    }
 
-  if (!local_state_ ||
-      !local_state_->GetBoolean(prefs::kAdBlockOnlyModeEnabled)) {
-    return;
+    if (!local_state_ ||
+        !local_state_->GetBoolean(prefs::kAdBlockOnlyModeEnabled)) {
+      return;
+    }
+
+    UMA_HISTOGRAM_BOOLEAN(kAdBlockOnlyModeEnabledHistogramName, true);
+
+    adblock_only_mode_report_timer_.Start(
+        FROM_HERE, base::Time::Now() + base::Hours(3),
+        base::BindOnce(&AdBlockListP3A::ReportAdBlockOnlyEnabled,
+                       base::Unretained(this)));
   }
-
-  UMA_HISTOGRAM_BOOLEAN(kAdBlockOnlyModeEnabledHistogramName, true);
-
-  adblock_only_mode_report_timer_.Start(
-      FROM_HERE, base::Time::Now() + base::Hours(3),
-      base::BindOnce(&AdBlockListP3A::ReportAdBlockOnlyEnabled,
-                     base::Unretained(this)));
 }
 
 }  // namespace brave_shields
