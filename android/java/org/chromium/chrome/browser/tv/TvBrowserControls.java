@@ -77,13 +77,28 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable TvFilterPanel mFilterPanel;
     private @Nullable TvMediaPanel mMediaPanel;
     private final @Nullable ModalDialogManager mModalDialogs;
+    private @Nullable ContentView mModalReturnPage;
     private final ModalDialogManager.ModalDialogManagerObserver mModalObserver =
             new ModalDialogManager.ModalDialogManagerObserver() {
                 @Override
                 public void onDialogShown(View dialogView) {
                     if (!isAlive()) return;
+                    mModalReturnPage = currentPage();
                     detachCursor();
                     dialogView.post(() -> focusNativeDialog(dialogView));
+                }
+
+                @Override
+                public void onLastDialogDismissed() {
+                    ContentView page = mModalReturnPage;
+                    mModalReturnPage = null;
+                    if (isAlive()
+                            && mActivity.hasWindowFocus()
+                            && page != null
+                            && page == currentPage()
+                            && page.isAttachedToWindow()) {
+                        page.requestFocus();
+                    }
                 }
             };
     private @Nullable Runnable mOnDataCleared;
@@ -272,6 +287,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     public void onPause() {
+        mModalReturnPage = null;
         dismissDialog();
         detachCursor();
     }
@@ -1089,6 +1105,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     public void destroy() {
         mDestroyed = true;
+        mModalReturnPage = null;
         if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);
         mInput.cancelPress();
         mBackCallback.remove();
