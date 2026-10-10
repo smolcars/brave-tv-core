@@ -11,11 +11,16 @@
 
 #include "base/check.h"
 #include "base/containers/span.h"
+#include "base/files/file_path.h"
+#include "base/files/file_util.h"
+#include "base/files/scoped_temp_dir.h"
 #include "base/json/json_writer.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/time/time.h"
 #include "base/types/expected.h"
 #include "base/values.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "crypto/hash.h"
 #include "crypto/keypair.h"
 #include "crypto/sign.h"
@@ -183,6 +188,87 @@ TEST_F(AdBlockSignedBundleTest, PublicationAgeAndOfflineRetention) {
   auto fractional = Verify(SignPayload());
   ASSERT_TRUE(fractional.has_value());
   EXPECT_EQ(fractional->published, now_ + base::Milliseconds(123));
+}
+
+TEST_F(AdBlockSignedBundleTest, StagePreservesActiveUntilRestart) {
+  base::ScopedTempDir directory;
+  ASSERT_TRUE(directory.CreateUniqueTempDir());
+  auto path = directory.GetPath().AppendASCII("filters.bundle");
+  auto store =
+      base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
+  EXPECT_FALSE(store->GetActive(now_));
+  EXPECT_EQ(store->Stage(SignPayload(), now_).value(),
+            AdBlockBundleStageResult::kStaged);
+  EXPECT_FALSE(store->GetActive(now_));
+  store = base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
+  const auto* active = store->GetActive(now_);
+  ASSERT_TRUE(active);
+  EXPECT_EQ(active->sequence, 12);
+  EXPECT_EQ(store->Stage(SignPayload(), now_).value(),
+            AdBlockBundleStageResult::kUnchanged);
+  payload_.Set("sequence", 13);
+  EXPECT_EQ(store->Stage(SignPayload(), now_).value(),
+            AdBlockBundleStageResult::kStaged);
+  EXPECT_EQ(store->GetActive(now_), active);
+  EXPECT_EQ(active->sequence, 12);
+  auto restarted =
+      base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
+  ASSERT_TRUE(restarted->GetActive(now_));
+  EXPECT_EQ(restarted->GetActive(now_)->sequence, 13);
+  payload_.Set("sequence", 12);
+  EXPECT_EQ(store->Stage(SignPayload(), now_).error(),
+            AdBlockBundleStageError::kRollback);
+  EXPECT_EQ(restarted->Stage(SignPayload(), now_).error(),
+            AdBlockBundleStageError::kRollback);
+}
+
+TEST_F(AdBlockSignedBundleTest, FailedUpdatesRetainLastGoodBytes) {
+  base::ScopedTempDir directory;
+  ASSERT_TRUE(directory.CreateUniqueTempDir());
+  auto path = directory.GetPath().AppendASCII("filters.bundle");
+  auto store =
+      base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
+  const auto good = SignPayload();
+  ASSERT_TRUE(store->Stage(good, now_).has_value());
+  payload_.Set("published", "2026-10-10T01:00:00.000Z");
+  EXPECT_EQ(store->Stage(SignPayload(), now_).error(),
+            AdBlockBundleStageError::kRollback);
+  auto tampered = good;
+  tampered.back() ^= 1;
+  EXPECT_EQ(store->Stage(tampered, now_).error(),
+            AdBlockBundleStageError::kInvalidBundle);
+  std::string retained;
+  ASSERT_TRUE(base::ReadFileToString(path, &retained));
+  EXPECT_EQ(retained, good);
+  auto offline =
+      base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
+  ASSERT_TRUE(offline->GetActive(now_ + base::Days(180)));
+  EXPECT_EQ(offline->GetActive(now_ + base::Days(180))->sequence, 12);
+}
+
+TEST_F(AdBlockSignedBundleTest, InvalidCacheAndWriteFailure) {
+  base::ScopedTempDir directory;
+  ASSERT_TRUE(directory.CreateUniqueTempDir());
+  auto path = directory.GetPath().AppendASCII("filters.bundle");
+  ASSERT_TRUE(base::WriteFile(path, "truncated"));
+  auto store =
+      base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
+  EXPECT_FALSE(store->GetActive(now_));
+  EXPECT_EQ(store->Stage(SignPayload(), now_).value(),
+            AdBlockBundleStageResult::kStaged);
+  EXPECT_FALSE(store->GetActive(now_));
+  auto invalid_path = path.AppendASCII("cannot-be-inside-a-file");
+  auto unwritable = base::MakeRefCounted<AdBlockBundleStore>(
+      invalid_path, public_key_, catalog_);
+  EXPECT_EQ(unwritable->Stage(SignPayload(), now_).error(),
+            AdBlockBundleStageError::kWrite);
+  EXPECT_FALSE(unwritable->GetActive(now_));
+  EXPECT_EQ(unwritable->Stage(SignPayload(), now_).error(),
+            AdBlockBundleStageError::kWrite);
+  auto retained =
+      base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
+  ASSERT_TRUE(retained->GetActive(now_));
+  EXPECT_EQ(retained->GetActive(now_)->sequence, 12);
 }
 
 }  // namespace

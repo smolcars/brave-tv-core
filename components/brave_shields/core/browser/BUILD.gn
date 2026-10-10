@@ -8,6 +8,8 @@ import("//testing/test.gni")
 source_set("signed_bundle") {
   visibility = [ ":*" ]
   sources = [
+    "ad_block_bundle_store.cc",
+    "ad_block_bundle_store.h",
     "ad_block_signed_bundle.cc",
     "ad_block_signed_bundle.h",
   ]
