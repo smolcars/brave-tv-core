@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
@@ -51,6 +52,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,10 +76,24 @@ object TvPresentation {
     private val secondary = Color(0xFFBBB9B3)
     private val accent = Color(0xFFC7D8AF)
 
+    /** UI-thread action state, owned by its native panel; never saved across sessions. */
     class Action @JvmOverloads constructor(
-        val label: String, val enabled: Boolean, val run: Runnable, val key: Int = 0,
-        val icon: Int = 0,
-    )
+        label: String, enabled: Boolean, val run: Runnable, val key: Int = 0,
+        icon: Int = 0,
+    ) {
+        var label by mutableStateOf(label)
+        var enabled by mutableStateOf(enabled)
+        var icon by mutableStateOf(icon)
+        internal var focused = false
+        internal var focusRequest by mutableStateOf(0)
+        fun hasFocus(): Boolean = focused
+        fun requestFocus() { focusRequest++ }
+    }
+
+    sealed interface PanelEntry
+    class Description(val text: String) : PanelEntry
+    class ActionRow(val actions: List<Action>) : PanelEntry
+    class NativeContent(val view: View, val heightDp: Int) : PanelEntry
 
     private class ControlsState(preferred: Int, subtitle: String, actions: List<Action>) {
         var subtitle by mutableStateOf(subtitle)
@@ -192,7 +208,7 @@ object TvPresentation {
                 }, Int.MIN_VALUE)
                 val visible = (if (state.expanded) actions.drop(7) else actions.take(7)) + toggle
                 val selected = visible.firstOrNull { it.key == state.preferredKey && it.enabled }
-                    ?: if (actions.any { it.key == state.preferredKey }) toggle
+                    ?: if (!state.expanded && actions.any { it.key == state.preferredKey }) toggle
                     else visible.firstOrNull { it.enabled }
                 Column(
                     Modifier.fillMaxWidth().background(backgroundColor)
@@ -231,6 +247,53 @@ object TvPresentation {
         state.actions = actions
     }
 
+    /** UI thread only. Entries are complete before creation; native dialog owns their lifetime.
+     * The context owns lifecycle/saved state. Only actions may update while shown. */
+    @JvmStatic
+    fun panel(
+        context: Context, title: String, subtitle: String, backHint: String,
+        entries: List<PanelEntry>, preferredKey: Int,
+    ): View = view(context).apply {
+        val actions = entries.filterIsInstance<ActionRow>().flatMap { it.actions }
+        val selected = actions.firstOrNull { it.key == preferredKey && it.enabled }
+            ?: actions.firstOrNull { it.enabled }
+        setContent {
+            Theme {
+                val initial = remember { FocusRequester() }
+                Column(Modifier.fillMaxWidth().background(backgroundColor).padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(title, fontSize = 26.sp, fontWeight = FontWeight.Medium,
+                        modifier = Modifier.semantics { heading() })
+                    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (subtitle.isNotEmpty()) Text(subtitle, color = secondary, fontSize = 16.sp)
+                        entries.forEach { entry ->
+                            when (entry) {
+                                is Description -> Text(entry.text, color = secondary, fontSize = 16.sp)
+                                is NativeContent -> AndroidView(factory = { entry.view },
+                                    modifier = Modifier.fillMaxWidth().height(entry.heightDp.dp))
+                                is ActionRow -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    entry.actions.forEach { action ->
+                                        key(action) {
+                                            ActionButton(action, Modifier.weight(1f).then(
+                                                if (action === selected) Modifier.focusRequester(initial)
+                                                else Modifier))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Text(backHint, color = secondary, fontSize = 14.sp)
+                }
+                LaunchedEffect(Unit) {
+                    withFrameNanos { }
+                    if (selected != null) initial.requestFocus()
+                }
+            }
+        }
+    }
+
     /** UI-thread disposal for a View returned by these factories. */
     @JvmStatic
     fun dispose(view: View) {
@@ -251,10 +314,20 @@ object TvPresentation {
     @Composable
     private fun ActionButton(action: Action, modifier: Modifier = Modifier) {
         var hasFocus by remember { mutableStateOf(false) }
+        val requested = remember { FocusRequester() }
+        LaunchedEffect(action.focusRequest) {
+            if (action.focusRequest > 0 && action.enabled) {
+                withFrameNanos { }
+                requested.requestFocus()
+            }
+        }
         Button(
             onClick = { action.run.run() },
             enabled = action.enabled,
-            modifier = modifier.onFocusChanged { hasFocus = it.isFocused }.clearAndSetSemantics {
+            modifier = modifier.focusRequester(requested).onFocusChanged {
+                hasFocus = it.isFocused
+                action.focused = it.isFocused
+            }.clearAndSetSemantics {
                 role = Role.Button
                 contentDescription = action.label
                 focused = hasFocus

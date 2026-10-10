@@ -8,13 +8,12 @@ package org.chromium.chrome.browser.tv;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 
-import com.google.android.material.button.MaterialButton;
-
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabHidingType;
 import org.chromium.chrome.browser.tab.TabObserver;
+import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.content_public.browser.MediaSession;
 import org.chromium.content_public.browser.MediaSessionObserver;
 import org.chromium.content_public.browser.NavigationHandle;
@@ -33,10 +32,10 @@ final class TvMediaPanel {
     private final @Nullable MediaSessionObserver mObserver;
     private final TvBrowserPanel mPanel;
     private final Runnable mOnClose;
-    private final MaterialButton mPlayPause;
-    private final MaterialButton mBackward;
-    private final MaterialButton mForward;
-    private final MaterialButton mControls;
+    private final TvPresentation.Action mPlayPause;
+    private final TvPresentation.Action mBackward;
+    private final TvPresentation.Action mForward;
+    private final TvPresentation.Action mControls;
     private @Nullable AlertDialog mDialog;
     private Set<Integer> mActions = Set.of();
     private boolean mControllable;
@@ -139,17 +138,16 @@ final class TvMediaPanel {
 
     private void updateButtons() {
         if (!isUsable()) return;
-        mPlayPause.setText(mSuspended ? R.string.brave_tv_play : R.string.brave_tv_pause);
+        mPlayPause.setLabel(
+                mActivity.getString(mSuspended ? R.string.brave_tv_play : R.string.brave_tv_pause));
         setEnabled(mPlayPause, mControllable);
         setEnabled(mBackward, canSeek(MediaSessionAction.SEEK_BACKWARD));
         setEnabled(mForward, canSeek(MediaSessionAction.SEEK_FORWARD));
     }
 
-    private void setEnabled(MaterialButton button, boolean enabled) {
+    private void setEnabled(TvPresentation.Action button, boolean enabled) {
         boolean moveFocus = button.hasFocus() && !enabled;
         button.setEnabled(enabled);
-        button.setFocusableInTouchMode(enabled);
-        button.setAlpha(enabled ? 1f : 0.4f);
         if (moveFocus) mControls.requestFocus();
     }
 

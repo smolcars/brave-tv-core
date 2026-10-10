@@ -465,7 +465,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mDialog =
                 new AlertDialog.Builder(mActivity)
                         .setView(content)
-                        .setOnCancelListener(ignored -> dispatchNativeBack())
+                        .setOnCancelListener(ignored -> returnToPage())
                         .create();
         mDialog.setOnKeyListener((dialog, key, event) -> TvPresentation.back(content, event));
         AlertDialog controlsDialog = mDialog;
@@ -567,7 +567,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             actions.add(
                     new TvPresentation.Action(
                             mActivity.getString(R.string.brave_tv_phone),
-                            true,
+                            tab != null && !tab.isIncognito(),
                             this::showPhoneRemote,
                             R.string.brave_tv_phone));
         }
@@ -641,6 +641,17 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (!isAlive()) return;
         dismissDialog();
         showControls();
+    }
+
+    private void returnToPage() {
+        if (!isAlive()) return;
+        dismissDialog();
+        Tab tab = mActivity.getActivityTab();
+        if (tab != null && tab.getNativePage() instanceof TvHomePage home) {
+            home.focusAddress();
+        } else if (currentPage() != null) {
+            performAction(R.string.brave_tv_pointer);
+        }
     }
 
     public void showTabs() {
@@ -1027,7 +1038,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         mActivity.getString(R.string.brave_tv_search_engine),
                         R.string.brave_tv_search_engine,
                         () -> showSearchEngines(context))
-                .setIconResource(R.drawable.ic_search);
+                .setIcon(R.drawable.ic_search);
         panel.addItem(
                         mActivity.getString(R.string.content_filters_title),
                         R.string.content_filters_title,
@@ -1038,13 +1049,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             mFilterPanel = new TvFilterPanel(mActivity, tab, this::showSettings);
                             mFilterPanel.show();
                         })
-                .setIconResource(R.drawable.ic_shield_done);
+                .setIcon(R.drawable.ic_shield_done);
         if (!tab.isIncognito()) {
             panel.addItem(
                             mActivity.getString(R.string.brave_tv_clear_data),
                             R.string.brave_tv_clear_data,
                             () -> showClearData(context, false))
-                    .setIconResource(R.drawable.ic_shred_data);
+                    .setIcon(R.drawable.ic_shred_data);
         }
         panel.addItem(
                         mActivity.getString(R.string.brave_tv_licenses),
@@ -1055,12 +1066,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             mLastSettingsAction = R.string.brave_tv_licenses;
                             tab.loadUrl(new LoadUrlParams("chrome://credits"));
                         })
-                .setIconResource(R.drawable.ic_code);
+                .setIcon(R.drawable.ic_code);
         panel.addItem(
                         mActivity.getString(R.string.brave_tv_controls),
                         R.string.brave_tv_controls,
                         this::returnToControls)
-                .setIconResource(R.drawable.ic_tune);
+                .setIcon(R.drawable.ic_tune);
         mDialog = panel.show(this::returnToControls);
     }
 

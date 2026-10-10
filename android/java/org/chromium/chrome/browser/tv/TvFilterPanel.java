@@ -145,7 +145,7 @@ final class TvFilterPanel {
                         mActivity.getString(R.string.brave_tv_filter_updates),
                         R.string.brave_tv_filter_updates,
                         () -> loadUpdateStatus(false))
-                .setIconResource(R.drawable.ic_refresh_24dp);
+                .setIcon(R.drawable.ic_refresh_24dp);
         panel.addAction(
                 R.string.brave_tv_previous_filters,
                 mStart > 0,
