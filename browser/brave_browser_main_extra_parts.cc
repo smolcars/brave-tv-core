@@ -26,6 +26,7 @@
 #include "brave/browser/brave_ads/analytics/p3a/brave_stats_helper.h"
 #endif
 
+#if !BUILDFLAG(IS_ANDROID)
 namespace {
 
 // Records default values for some histograms because we want these stats to be
@@ -34,14 +35,12 @@ namespace {
 //
 // For profile specific values, see browser/profiles/profile_util.cc
 void RecordInitialP3AValues() {
-#if !BUILDFLAG(IS_ANDROID)
   if (first_run::IsChromeFirstRun()) {
     RecordImporterP3A(user_data_importer::ImporterType::TYPE_UNKNOWN);
   }
 
   BraveNewTabMessageHandler::RecordInitialP3AValues(
       g_browser_process->local_state());
-#endif  // !BUILDFLAG(IS_ANDROID)
 
   brave_shields::MaybeRecordShieldsUsageP3A(brave_shields::kNeverClicked,
                                             g_browser_process->local_state());
@@ -55,6 +54,7 @@ void RecordInitialP3AValues() {
 }
 
 }  // namespace
+#endif  // !BUILDFLAG(IS_ANDROID)
 
 BraveBrowserMainExtraParts::BraveBrowserMainExtraParts() = default;
 
@@ -88,10 +88,9 @@ void BraveBrowserMainExtraParts::PreMainMessageLoopRun() {
         g_browser_process->component_updater());
   }
 
-  RecordInitialP3AValues();
-
   // The code below is not supported on android.
 #if !BUILDFLAG(IS_ANDROID)
+  RecordInitialP3AValues();
   brave::BraveWindowTracker::CreateInstance(g_browser_process->local_state());
 #endif  // !BUILDFLAG(IS_ANDROID)
   if (auto* metrics = g_brave_browser_process->process_misc_metrics()) {

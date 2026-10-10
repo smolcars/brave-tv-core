@@ -142,6 +142,7 @@ void MigrateHttpsUpgradeSettings(Profile* profile) {
   }
 }
 
+#if !BUILDFLAG(IS_ANDROID)
 void RecordInitialP3AValues(Profile* profile) {
 #if BUILDFLAG(ENABLE_BRAVE_ADS)
   // Preference is unregistered for some reason in profile_manager_unittest
@@ -161,6 +162,7 @@ void RecordInitialP3AValues(Profile* profile) {
         brave_shields::GetFingerprintingControlType(map, GURL()));
   }
 }
+#endif  // !BUILDFLAG(IS_ANDROID)
 
 }  // namespace
 
@@ -231,7 +233,9 @@ void BraveProfileManager::DoFinalInitForServices(Profile* profile,
   // Android tests
   // TODO(https://github.com/brave/brave-browser/issues/50822)
   // Move RecordInitialP3AValues from here
+#if !BUILDFLAG(IS_ANDROID)
   RecordInitialP3AValues(profile);
+#endif
   // TODO(https://github.com/brave/brave-browser/issues/50823)
   // Move MigrateHttpsUpgradeSettings from here as well
   MigrateHttpsUpgradeSettings(profile);

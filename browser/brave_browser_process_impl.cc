@@ -543,11 +543,15 @@ brave_stats::BraveStatsUpdater* BraveBrowserProcessImpl::brave_stats_updater() {
 
 #if BUILDFLAG(ENABLE_BRAVE_ADS)
 brave_ads::BraveStatsHelper* BraveBrowserProcessImpl::ads_brave_stats_helper() {
+#if BUILDFLAG(IS_ANDROID)
+  return nullptr;
+#else
   if (!brave_stats_helper_) {
     brave_stats_helper_ = std::make_unique<brave_ads::BraveStatsHelper>(
         *local_state(), profile_manager());
   }
   return brave_stats_helper_.get();
+#endif  // BUILDFLAG(IS_ANDROID)
 }
 
 brave_ads::ResourceComponent* BraveBrowserProcessImpl::resource_component() {
