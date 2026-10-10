@@ -196,6 +196,17 @@ async function command(op, extra = {}) {
     status('An action is still in progress. Try again.')
     return false
   }
+  if (op === 'click' && motion) {
+    if (!(await flushMotion())) return false
+    if (
+      !connected
+      || !state
+      || state.paused
+      || revision !== state.revision
+      || busy
+    )
+      return false
+  }
   busy = true
   if (op === 'edit' && (extra.edit === 'replace' || extra.edit === 'select')) {
     pendingEdit = {
@@ -206,17 +217,16 @@ async function command(op, extra = {}) {
     }
   }
   try {
-    render(
-      await post('/api', {
-        token,
-        op,
-        epoch,
-        seq: ++seq,
-        revision: state.revision,
-        ...extra,
-      }),
-    )
-    return true
+    const result = await post('/api', {
+      token,
+      op,
+      epoch,
+      seq: ++seq,
+      revision: state.revision,
+      ...extra,
+    })
+    render(result)
+    return result.ok === true
   } catch {
     disconnected()
     return false
@@ -312,8 +322,8 @@ pad.onpointerup = (e) => {
     const tap =
       !gesture.moved && !gesture.multi && performance.now() - gesture.time < 450
     gesture = null
-    flushMotion()
     if (tap) command('click')
+    else flushMotion()
   }
 }
 pad.onpointercancel = () => {
@@ -324,7 +334,7 @@ function flushMotion() {
   if (!motion || busy) return
   const m = motion
   motion = null
-  command(m.op, {
+  return command(m.op, {
     dx: Math.max(-1000, Math.min(1000, Math.round(m.dx))),
     dy: Math.max(-1000, Math.min(1000, Math.round(m.dy))),
   })
