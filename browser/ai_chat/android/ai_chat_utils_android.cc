@@ -12,6 +12,7 @@
 #include "brave/components/ai_chat/core/browser/ai_chat_service.h"
 #include "brave/components/ai_chat/core/browser/conversation_handler.h"
 #include "brave/components/ai_chat/core/common/ai_chat_urls.h"
+#include "brave/components/ai_chat/core/common/features.h"
 #include "brave/components/ai_chat/core/common/mojom/ai_chat.mojom.h"
 #include "brave/components/ai_chat/core/common/mojom/common.mojom.h"
 #include "brave/components/constants/webui_url_constants.h"
@@ -25,6 +26,9 @@ static void JNI_BraveLeoUtils_OpenLeoQuery(
     const base::android::JavaRef<jobject>& jweb_contents,
     const base::android::JavaRef<jstring>& conversation_uuid,
     const base::android::JavaRef<jstring>& query) {
+  if (!features::IsAIChatEnabled()) {
+    return;
+  }
   content::WebContents* web_contents =
       content::WebContents::FromJavaWebContents(jweb_contents);
   AIChatService* ai_chat_service = AIChatServiceFactory::GetForBrowserContext(
@@ -72,6 +76,9 @@ static void JNI_BraveLeoUtils_OpenLeoQuery(
 static void JNI_BraveLeoUtils_OpenLeoUrlForTab(
     JNIEnv* env,
     const base::android::JavaRef<jobject>& jweb_contents) {
+  if (!features::IsAIChatEnabled()) {
+    return;
+  }
   content::WebContents* web_contents =
       content::WebContents::FromJavaWebContents(jweb_contents);
   AIChatService* ai_chat_service = AIChatServiceFactory::GetForBrowserContext(

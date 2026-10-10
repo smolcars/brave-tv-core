@@ -13,6 +13,7 @@
 #include "brave/components/brave_vpn/common/pref_names.h"
 #include "brave/components/skus/browser/skus_utils.h"
 #include "brave/components/skus/common/features.h"
+#include "build/build_config.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/testing_pref_service.h"
 #include "components/sync_preferences/testing_pref_service_syncable.h"
@@ -250,17 +251,18 @@ TEST(BraveVPNUtilsUnitTest, IsBraveVPNEnabled) {
   scoped_feature_list.InitWithFeatures(
       {brave_vpn::features::kBraveVPN, skus::features::kSkusFeature}, {});
 
-  EXPECT_TRUE(brave_vpn::IsBraveVPNFeatureEnabled());
+  EXPECT_EQ(!BUILDFLAG(IS_ANDROID), brave_vpn::IsBraveVPNFeatureEnabled());
   profile_pref_service.SetManagedPref(
       brave_vpn::prefs::kManagedBraveVPNDisabled, base::Value(false));
-  EXPECT_TRUE(brave_vpn::IsBraveVPNEnabled(&profile_pref_service));
+  EXPECT_EQ(!BUILDFLAG(IS_ANDROID),
+            brave_vpn::IsBraveVPNEnabled(&profile_pref_service));
   profile_pref_service.SetManagedPref(
       brave_vpn::prefs::kManagedBraveVPNDisabled, base::Value(true));
   EXPECT_FALSE(brave_vpn::IsBraveVPNEnabled(&profile_pref_service));
 }
 
 TEST(BraveVPNUtilsUnitTest, FeatureTest) {
-#if !BUILDFLAG(IS_LINUX)
+#if !BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_ANDROID)
   EXPECT_TRUE(brave_vpn::IsBraveVPNFeatureEnabled());
 #else
   EXPECT_FALSE(brave_vpn::IsBraveVPNFeatureEnabled());

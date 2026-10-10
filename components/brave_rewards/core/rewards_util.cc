@@ -15,11 +15,6 @@
 #include "build/build_config.h"
 #include "components/prefs/pref_service.h"
 
-#if BUILDFLAG(IS_ANDROID)
-#include "base/feature_list.h"
-#include "brave/components/brave_rewards/core/features.h"
-#endif  // BUILDFLAG(IS_ANDROID)
-
 namespace brave_rewards {
 
 namespace {
@@ -31,12 +26,7 @@ bool IsDisabledByPolicy(PrefService* prefs) {
 }
 
 bool IsDisabledByFeature() {
-#if BUILDFLAG(IS_ANDROID)
-  if (!base::FeatureList::IsEnabled(features::kBraveRewards)) {
-    return true;
-  }
-#endif  // BUILDFLAG(IS_ANDROID)
-  return false;
+  return BUILDFLAG(IS_ANDROID);
 }
 
 bool IsOFACSanctionedRegion(const std::string& country_code) {

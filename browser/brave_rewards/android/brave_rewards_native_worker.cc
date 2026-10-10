@@ -53,12 +53,11 @@ BraveRewardsNativeWorker::BraveRewardsNativeWorker(
 
   brave_rewards_service_ = brave_rewards::RewardsServiceFactory::GetForProfile(
       profile.GetOriginalProfile());
-  // Rewards (and therefore the adaptive captcha) is not available in
-  // OTR/incognito, so always use the original profile.
-  adaptive_captcha_service_ =
-      brave_adaptive_captcha::BraveAdaptiveCaptchaServiceFactory::GetForProfile(
-          profile.GetOriginalProfile());
   if (brave_rewards_service_) {
+    // Rewards and its adaptive captcha use the original profile.
+    adaptive_captcha_service_ =
+        brave_adaptive_captcha::BraveAdaptiveCaptchaServiceFactory::GetForProfile(
+            profile.GetOriginalProfile());
     rewards_service_observation_.Observe(brave_rewards_service_);
 
     if (auto* notification_service =
