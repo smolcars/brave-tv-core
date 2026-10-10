@@ -90,15 +90,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
                 @Override
                 public void onLastDialogDismissed() {
-                    ContentView page = mModalReturnPage;
-                    mModalReturnPage = null;
-                    if (isAlive()
-                            && mActivity.hasWindowFocus()
-                            && page != null
-                            && page == currentPage()
-                            && page.isAttachedToWindow()) {
-                        page.requestFocus();
-                    }
+                    restoreModalPageFocus();
                 }
             };
     private @Nullable Runnable mOnDataCleared;
@@ -187,6 +179,16 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             if (preferred == null || control.getId() == R.id.negative_button) preferred = control;
         }
         if (preferred != null) preferred.requestFocus();
+    }
+
+    private void restoreModalPageFocus() {
+        if (!isAlive()
+                || !mActivity.hasWindowFocus()
+                || mModalDialogs == null
+                || mModalDialogs.isShowing()) return;
+        ContentView page = mModalReturnPage;
+        mModalReturnPage = null;
+        if (page != null && page == currentPage() && page.isAttachedToWindow()) page.requestFocus();
     }
 
     private boolean keyboardVisible() {
@@ -284,6 +286,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     public void onWindowFocusChanged(boolean focused) {
         if (!focused) mInput.cancelPress();
+        else restoreModalPageFocus();
     }
 
     public void onPause() {
