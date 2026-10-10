@@ -71,7 +71,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
-    private @Nullable CallbackController mClearDataCallbacks;
+    private @Nullable Runnable mOnDataCleared;
     private boolean mClearingData;
     private int mLastAction = R.string.brave_tv_address;
     private String mPressedUrl = "";
@@ -291,10 +291,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void dismissDialog() {
-        if (mClearDataCallbacks != null) {
-            mClearDataCallbacks.destroy();
-            mClearDataCallbacks = null;
-        }
+        mOnDataCleared = null;
         if (mHistoryPanel != null) {
             mHistoryPanel.destroy();
             mHistoryPanel = null;
@@ -760,6 +757,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 R.string.brave_tv_clear_cache_scope));
         panel.addAction(R.string.brave_tv_settings, true, this::showSettings);
         mDialog = panel.show(this::showSettings);
+        if (mClearingData) mOnDataCleared = () -> showClearData(tab, url, true);
     }
 
     private void confirmClearData(Tab tab, String url, int type, int title, int scope) {
@@ -779,14 +777,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     if (!canClearData(tab, url, type)) return;
                     mClearingData = true;
                     showClearData(tab, url, false);
-                    mClearDataCallbacks = new CallbackController();
-                    Runnable onComplete =
-                            mClearDataCallbacks.makeCancelable(() -> showClearData(tab, url, true));
                     BrowsingDataBridge.getForProfile(tab.getProfile())
                             .clearBrowsingData(
                                     () -> {
                                         mClearingData = false;
-                                        onComplete.run();
+                                        Runnable onComplete = mOnDataCleared;
+                                        mOnDataCleared = null;
+                                        if (onComplete != null) onComplete.run();
                                     },
                                     new int[] {type},
                                     TimePeriod.ALL_TIME);
