@@ -4,6 +4,8 @@
 
 #include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 
+#include "base/time/time.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "build/build_config.h"
 
 #if BUILDFLAG(IS_ANDROID)
@@ -59,9 +61,22 @@ bool HasBundledAdBlockFilters(std::string_view component_id) {
   return HasBundledAdBlockData() && FilterResourceId(component_id) != 0;
 }
 
-std::string_view GetBundledAdBlockVersion() {
+std::string GetBundledAdBlockVersion(scoped_refptr<AdBlockBundleStore> store) {
+  if (store) {
+    if (const auto* active = store->GetActive(base::Time::Now())) {
+      return "TV signed adblock " + active->digest + "\n";
+    }
+  }
 #if BUILDFLAG(IS_ANDROID)
   return kAdBlockBundleVersion;
+#else
+  return {};
+#endif  // BUILDFLAG(IS_ANDROID)
+}
+
+std::string_view GetBundledAdBlockCatalogHash() {
+#if BUILDFLAG(IS_ANDROID)
+  return kAdBlockBundleCatalogHash;
 #else
   return {};
 #endif  // BUILDFLAG(IS_ANDROID)
@@ -75,7 +90,13 @@ std::string LoadBundledAdBlockCatalog() {
 #endif  // BUILDFLAG(IS_ANDROID)
 }
 
-std::string LoadBundledAdBlockResources() {
+std::string LoadBundledAdBlockResources(
+    scoped_refptr<AdBlockBundleStore> store) {
+  if (store) {
+    if (const auto* active = store->GetActive(base::Time::Now())) {
+      return active->resources;
+    }
+  }
 #if BUILDFLAG(IS_ANDROID)
   return LoadResource(IDR_BRAVE_ADBLOCK_BUNDLED_RESOURCES);
 #else
@@ -83,7 +104,16 @@ std::string LoadBundledAdBlockResources() {
 #endif  // BUILDFLAG(IS_ANDROID)
 }
 
-std::string LoadBundledAdBlockFilters(std::string_view component_id) {
+std::string LoadBundledAdBlockFilters(std::string_view component_id,
+                                      scoped_refptr<AdBlockBundleStore> store) {
+  if (store) {
+    if (const auto* active = store->GetActive(base::Time::Now())) {
+      const auto found = active->filters.find(component_id);
+      if (found != active->filters.end()) {
+        return found->second;
+      }
+    }
+  }
   return LoadResource(FilterResourceId(component_id));
 }
 

@@ -13,6 +13,7 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/task/sequenced_task_runner.h"
 #include "brave/components/brave_component_updater/browser/dat_file_util.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 
 using brave_component_updater::DATFileDataBuffer;
 
@@ -22,7 +23,9 @@ namespace brave_shields {
 // on startup and writing serialized engine data to disk.
 class AdBlockDATCacheManager {
  public:
-  explicit AdBlockDATCacheManager(const base::FilePath& profile_dir);
+  explicit AdBlockDATCacheManager(
+      const base::FilePath& profile_dir,
+      scoped_refptr<AdBlockBundleStore> bundle_store = nullptr);
   ~AdBlockDATCacheManager();
   AdBlockDATCacheManager(const AdBlockDATCacheManager&) = delete;
   AdBlockDATCacheManager& operator=(const AdBlockDATCacheManager&) = delete;
@@ -40,6 +43,7 @@ class AdBlockDATCacheManager {
                               std::optional<DATFileDataBuffer>)> on_complete);
 
  private:
+  scoped_refptr<AdBlockBundleStore> bundle_store_;
   base::FilePath cache_dir_;
   scoped_refptr<base::SequencedTaskRunner> task_runner_;
 };

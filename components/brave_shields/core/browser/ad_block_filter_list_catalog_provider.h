@@ -31,7 +31,8 @@ class AdBlockFilterListCatalogProvider {
   };
 
   explicit AdBlockFilterListCatalogProvider(
-      component_updater::ComponentUpdateService* cus);
+      component_updater::ComponentUpdateService* cus,
+      bool use_bundled_catalog = false);
   ~AdBlockFilterListCatalogProvider();
   AdBlockFilterListCatalogProvider(const AdBlockFilterListCatalogProvider&) =
       delete;

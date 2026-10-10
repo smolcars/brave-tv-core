@@ -8,15 +8,24 @@
 #include <string>
 #include <string_view>
 
+#include "base/memory/scoped_refptr.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
+
 namespace brave_shields {
 
-// APK snapshots bootstrap Android profiles until signed components arrive.
+// Workers read one process snapshot, falling back to the APK if no cache is
+// valid.
 bool HasBundledAdBlockData();
 bool HasBundledAdBlockFilters(std::string_view component_id);
-std::string_view GetBundledAdBlockVersion();
+std::string GetBundledAdBlockVersion(
+    scoped_refptr<AdBlockBundleStore> store = nullptr);
+std::string_view GetBundledAdBlockCatalogHash();
 std::string LoadBundledAdBlockCatalog();
-std::string LoadBundledAdBlockResources();
-std::string LoadBundledAdBlockFilters(std::string_view component_id);
+std::string LoadBundledAdBlockResources(
+    scoped_refptr<AdBlockBundleStore> store = nullptr);
+std::string LoadBundledAdBlockFilters(
+    std::string_view component_id,
+    scoped_refptr<AdBlockBundleStore> store = nullptr);
 
 }  // namespace brave_shields
 

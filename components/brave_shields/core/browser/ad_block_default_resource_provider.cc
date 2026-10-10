@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/task/thread_pool.h"
 #include "brave/components/brave_component_updater/browser/dat_file_util.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_installer.h"
 
@@ -23,9 +24,11 @@ constexpr char kAdBlockResourcesFilename[] = "resources.json";
 namespace brave_shields {
 
 AdBlockDefaultResourceProvider::AdBlockDefaultResourceProvider(
-    component_updater::ComponentUpdateService* cus) {
+    component_updater::ComponentUpdateService* cus,
+    scoped_refptr<AdBlockBundleStore> bundle_store)
+    : bundle_store_(std::move(bundle_store)) {
   // Can be nullptr in unit tests
-  if (!cus) {
+  if (!cus || bundle_store_) {
     return;
   }
 
@@ -82,9 +85,12 @@ void AdBlockDefaultResourceProvider::LoadResources(
           FROM_HERE,
           {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
            base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
-          base::BindOnce([] {
-            return adblock::new_resource_storage(LoadBundledAdBlockResources());
-          }),
+          base::BindOnce(
+              [](scoped_refptr<AdBlockBundleStore> store) {
+                return adblock::new_resource_storage(
+                    LoadBundledAdBlockResources(store));
+              },
+              bundle_store_),
           base::BindOnce(
               &AdBlockDefaultResourceProvider::OnBundledResourcesLoaded,
               weak_factory_.GetWeakPtr(), std::move(cb)));

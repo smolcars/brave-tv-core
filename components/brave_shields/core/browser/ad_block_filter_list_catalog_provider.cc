@@ -19,11 +19,12 @@ constexpr char kListCatalogFile[] = "list_catalog.json";
 namespace brave_shields {
 
 AdBlockFilterListCatalogProvider::AdBlockFilterListCatalogProvider(
-    component_updater::ComponentUpdateService* cus) {
+    component_updater::ComponentUpdateService* cus,
+    bool use_bundled_catalog) {
   TRACE_EVENT("brave.adblock", "RegisterAdBlockFilterListCatalogComponent",
               perfetto::Flow::FromPointer(this));
   // Can be nullptr in unit tests
-  if (cus) {
+  if (cus && !use_bundled_catalog) {
     RegisterAdBlockFilterListCatalogComponent(
         cus,
         base::BindRepeating(&AdBlockFilterListCatalogProvider::OnComponentReady,

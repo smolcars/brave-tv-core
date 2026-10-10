@@ -14,6 +14,7 @@
 #include "base/rand_util.h"
 #include "base/task/thread_pool.h"
 #include "base/trace_event/trace_event.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_installer.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider.h"
@@ -61,18 +62,22 @@ AdBlockComponentFiltersProvider::AdBlockComponentFiltersProvider(
     std::string base64_public_key,
     std::string title,
     uint8_t permission_mask,
-    bool is_default_engine)
+    bool is_default_engine,
+    scoped_refptr<AdBlockBundleStore> bundle_store)
     : AdBlockFiltersProvider(is_default_engine, manager),
+      bundle_store_(std::move(bundle_store)),
       component_id_(component_id),
       permission_mask_(permission_mask),
-      component_updater_service_(cus) {
+      component_updater_service_(
+          bundle_store_ && HasBundledAdBlockFilters(component_id_) ? nullptr
+                                                                   : cus) {
   // Can be nullptr in unit tests
-  if (cus) {
+  if (component_updater_service_) {
     TRACE_EVENT("brave.adblock", "AdBlockComponentFiltersProvider::Register",
                 perfetto::Flow::FromPointer(this), "component_id",
                 component_id_);
     RegisterAdBlockFiltersComponent(
-        cus, base64_public_key, component_id_, title,
+        component_updater_service_, base64_public_key, component_id_, title,
         base::BindRepeating(&AdBlockComponentFiltersProvider::OnComponentReady,
                             weak_factory_.GetWeakPtr()));
   }
@@ -86,14 +91,16 @@ AdBlockComponentFiltersProvider::AdBlockComponentFiltersProvider(
     component_updater::ComponentUpdateService* cus,
     AdBlockFiltersProviderManager* manager,
     const FilterListCatalogEntry& catalog_entry,
-    bool is_default_engine)
+    bool is_default_engine,
+    scoped_refptr<AdBlockBundleStore> bundle_store)
     : AdBlockComponentFiltersProvider(cus,
                                       manager,
                                       catalog_entry.component_id,
                                       catalog_entry.base64_public_key,
                                       catalog_entry.title,
                                       catalog_entry.permission_mask,
-                                      is_default_engine) {}
+                                      is_default_engine,
+                                      std::move(bundle_store)) {}
 
 AdBlockComponentFiltersProvider::~AdBlockComponentFiltersProvider() {}
 
@@ -150,11 +157,13 @@ void AdBlockComponentFiltersProvider::LoadFilterSet(
           {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
            base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
           base::BindOnce(
-              [](const std::string& component_id) {
-                const auto data = LoadBundledAdBlockFilters(component_id);
+              [](const std::string& component_id,
+                 scoped_refptr<AdBlockBundleStore> store) {
+                const auto data =
+                    LoadBundledAdBlockFilters(component_id, store);
                 return DATFileDataBuffer(data.begin(), data.end());
               },
-              component_id_),
+              component_id_, bundle_store_),
           base::BindOnce(
               &AdBlockComponentFiltersProvider::OnBundledFiltersLoaded,
               weak_factory_.GetWeakPtr(), std::move(cb)));

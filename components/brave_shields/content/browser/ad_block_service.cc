@@ -26,6 +26,9 @@
 #include "brave/components/brave_shields/content/browser/ad_block_engine_wrapper.h"
 #include "brave/components/brave_shields/content/browser/ad_block_localhost_filters_provider.h"
 #include "brave/components/brave_shields/content/browser/ad_block_subscription_service_manager.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_public_key.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_service_manager.h"
 #include "brave/components/brave_shields/core/browser/ad_block_custom_resource_provider.h"
@@ -207,9 +210,17 @@ AdBlockService::AdBlockService(
     SetupDiscardPolicy(policy);
   }
 
+  if (HasBundledAdBlockData() &&
+      base::FeatureList::IsEnabled(features::kIndependentAdBlockUpdates)) {
+    bundle_store_ = base::MakeRefCounted<AdBlockBundleStore>(
+        profile_dir_.AppendASCII("adblock_snapshot")
+            .AppendASCII("filters.bundle"),
+        kAdBlockBundlePublicKey, std::string(GetBundledAdBlockCatalogHash()));
+  }
+
   auto default_resource_provider =
       std::make_unique<AdBlockDefaultResourceProvider>(
-          component_update_service_);
+          component_update_service_, bundle_store_);
   default_resource_provider_ = default_resource_provider.get();
 
   custom_resource_provider_ = new AdBlockCustomResourceProvider(
@@ -217,9 +228,10 @@ AdBlockService::AdBlockService(
   resource_provider_.reset(custom_resource_provider_.get());
   filter_list_catalog_provider_ =
       std::make_unique<AdBlockFilterListCatalogProvider>(
-          component_update_service_);
+          component_update_service_, bundle_store_ != nullptr);
 
-  dat_cache_manager_ = std::make_unique<AdBlockDATCacheManager>(profile_dir_);
+  dat_cache_manager_ =
+      std::make_unique<AdBlockDATCacheManager>(profile_dir_, bundle_store_);
   // Start reading cached DAT files from disk as early as possible so the
   // engine can be populated before components arrive from the network.
   if (base::FeatureList::IsEnabled(features::kAdblockDATCache)) {
@@ -232,7 +244,7 @@ AdBlockService::AdBlockService(
   component_service_manager_ = std::make_unique<AdBlockComponentServiceManager>(
       local_state_, filters_provider_manager_.get(), locale_,
       component_update_service_, filter_list_catalog_provider_.get(),
-      &list_p3a_);
+      &list_p3a_, bundle_store_);
   subscription_service_manager_ =
       std::make_unique<AdBlockSubscriptionServiceManager>(
           local_state_, filters_provider_manager_.get(),

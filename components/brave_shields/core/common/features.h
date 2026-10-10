@@ -15,6 +15,7 @@
 
 namespace brave_shields {
 namespace features {
+BASE_DECLARE_FEATURE(kIndependentAdBlockUpdates);
 BASE_DECLARE_FEATURE(kAdBlockDefaultResourceUpdateInterval);
 BASE_DECLARE_FEATURE(kBraveAdblockCnameUncloaking);
 BASE_DECLARE_FEATURE(kBraveAdblockCollapseBlockedElements);

@@ -94,6 +94,7 @@ await writeFile(new URL('version.h', destination),
   `#define BRAVE_COMPONENTS_BRAVE_SHIELDS_RESOURCES_BUNDLED_VERSION_H_\n` +
   `namespace brave_shields {\n` +
   `inline constexpr char kAdBlockBundleVersion[] = "Brave-TV adblock ${provenance.version}\\n";\n` +
+  `inline constexpr char kAdBlockBundleCatalogHash[] = "${provenance.files['catalog.json']}";\n` +
   `}\n#endif\n`);
 await writeFile(new URL('provenance.json', destination), JSON.stringify(provenance, null, 2) + '\n');
 console.log(`Saved ${catalog.length} default filter groups to ${fileURLToPath(destination)}`);

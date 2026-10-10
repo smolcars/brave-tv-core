@@ -10,7 +10,9 @@
 
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/scoped_refptr.h"
 #include "brave/components/brave_component_updater/browser/dat_file_util.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider_manager.h"
 
@@ -42,13 +44,15 @@ class AdBlockComponentFiltersProvider : public AdBlockFiltersProvider {
       std::string base64_public_key,
       std::string title,
       uint8_t permission_mask,
-      bool is_default_engine = true);
+      bool is_default_engine = true,
+      scoped_refptr<AdBlockBundleStore> bundle_store = nullptr);
   // Helper to build a particular adblock component from a catalog entry
   AdBlockComponentFiltersProvider(
       component_updater::ComponentUpdateService* cus,
       AdBlockFiltersProviderManager* manager,
       const FilterListCatalogEntry& catalog_entry,
-      bool is_default_engine = true);
+      bool is_default_engine = true,
+      scoped_refptr<AdBlockBundleStore> bundle_store = nullptr);
   ~AdBlockComponentFiltersProvider() override;
   AdBlockComponentFiltersProvider(const AdBlockComponentFiltersProvider&) =
       delete;
@@ -84,6 +88,7 @@ class AdBlockComponentFiltersProvider : public AdBlockFiltersProvider {
           base::OnceCallback<void(rust::Box<adblock::FilterSet>*)>)> callback,
       DATFileDataBuffer data);
 
+  scoped_refptr<AdBlockBundleStore> bundle_store_;
   base::FilePath component_path_;
   std::string component_id_;
   uint8_t permission_mask_;

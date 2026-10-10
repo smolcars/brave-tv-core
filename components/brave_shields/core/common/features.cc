@@ -9,6 +9,9 @@
 
 namespace brave_shields::features {
 
+// Android APK snapshots can receive authenticated data from the fork publisher.
+BASE_FEATURE(kIndependentAdBlockUpdates, base::FEATURE_ENABLED_BY_DEFAULT);
+
 BASE_FEATURE(kAdBlockDefaultResourceUpdateInterval,
              base::FEATURE_ENABLED_BY_DEFAULT);
 // When enabled, Brave will block first-party requests that appear in a filter

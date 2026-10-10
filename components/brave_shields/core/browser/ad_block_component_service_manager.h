@@ -12,10 +12,12 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/sequence_checker.h"
 #include "base/thread_annotations.h"
 #include "base/timer/timer.h"
 #include "base/values.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filter_list_catalog_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider.h"
@@ -43,7 +45,8 @@ class AdBlockComponentServiceManager
       std::string locale,
       component_updater::ComponentUpdateService* cus,
       AdBlockFilterListCatalogProvider* catalog_provider,
-      AdBlockListP3A* list_p3a);
+      AdBlockListP3A* list_p3a,
+      scoped_refptr<AdBlockBundleStore> bundle_store = nullptr);
   AdBlockComponentServiceManager(const AdBlockComponentServiceManager&) =
       delete;
   AdBlockComponentServiceManager& operator=(
@@ -95,6 +98,7 @@ class AdBlockComponentServiceManager
   std::unique_ptr<ComponentProvidersGate> additional_gate_
       GUARDED_BY_CONTEXT(sequence_checker_);
 
+  scoped_refptr<AdBlockBundleStore> bundle_store_;
   raw_ptr<PrefService> local_state_ GUARDED_BY_CONTEXT(sequence_checker_);
   std::string locale_ GUARDED_BY_CONTEXT(sequence_checker_);
   std::map<std::string, std::unique_ptr<AdBlockComponentFiltersProvider>>

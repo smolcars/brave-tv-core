@@ -52,6 +52,7 @@ struct RegexManagerDiscardPolicy;
 }  // namespace adblock
 namespace brave_shields {
 
+class AdBlockBundleStore;
 class AdBlockComponentFiltersProvider;
 class AdBlockDefaultResourceProvider;
 class AdBlockComponentServiceManager;
@@ -245,6 +246,7 @@ class AdBlockService {
   scoped_refptr<base::SequencedTaskRunner> task_runner_;
 
   AdBlockListP3A list_p3a_;
+  scoped_refptr<AdBlockBundleStore> bundle_store_;
 
   // The AdBlockEngineWrapper should be deleted last to ensure that any code
   // that posts to the task runner will run before the deletion.

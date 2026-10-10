@@ -26,6 +26,7 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "brave/components/brave_component_updater/browser/brave_on_demand_updater.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/browser/ad_block_component_filters_provider.h"
 #include "brave/components/brave_shields/core/browser/ad_block_filters_provider.h"
@@ -144,8 +145,10 @@ AdBlockComponentServiceManager::AdBlockComponentServiceManager(
     std::string locale,
     component_updater::ComponentUpdateService* cus,
     AdBlockFilterListCatalogProvider* catalog_provider,
-    AdBlockListP3A* list_p3a)
-    : local_state_(local_state),
+    AdBlockListP3A* list_p3a,
+    scoped_refptr<AdBlockBundleStore> bundle_store)
+    : bundle_store_(std::move(bundle_store)),
+      local_state_(local_state),
       locale_(locale),
       component_update_service_(cus),
       catalog_provider_(catalog_provider),
@@ -281,7 +284,8 @@ void AdBlockComponentServiceManager::StartRegionalServices() {
         auto regional_filters_provider =
             std::make_unique<AdBlockComponentFiltersProvider>(
                 component_update_service_, filters_provider_manager_,
-                catalog_entry, catalog_entry.first_party_protections);
+                catalog_entry, catalog_entry.first_party_protections,
+                bundle_store_);
         component_filters_providers_.insert(
             {catalog_entry.uuid, std::move(regional_filters_provider)});
       }
@@ -430,7 +434,8 @@ void AdBlockComponentServiceManager::EnableFilterList(const std::string& uuid,
     auto regional_filters_provider =
         std::make_unique<AdBlockComponentFiltersProvider>(
             component_update_service_, filters_provider_manager_,
-            *catalog_entry, catalog_entry->first_party_protections);
+            *catalog_entry, catalog_entry->first_party_protections,
+            bundle_store_);
     component_filters_providers_.insert(
         {uuid, std::move(regional_filters_provider)});
   } else {
@@ -461,13 +466,21 @@ void AdBlockComponentServiceManager::UpdateFilterLists(
     return;
   }
 
-  std::vector<std::string> component_ids = {
-      kAdBlockResourceComponentId,
-      kAdBlockFilterListCatalogComponentId,
-  };
+  std::vector<std::string> component_ids;
+  if (!bundle_store_) {
+    component_ids = {kAdBlockResourceComponentId,
+                     kAdBlockFilterListCatalogComponentId};
+  }
 
   for (const auto& [key, provider] : component_filters_providers_) {
-    component_ids.push_back(provider->component_id());
+    if (!bundle_store_ || !HasBundledAdBlockFilters(provider->component_id())) {
+      component_ids.push_back(provider->component_id());
+    }
+  }
+
+  if (component_ids.empty()) {
+    std::move(callback).Run(true);
+    return;
   }
 
   auto on_updated = [](decltype(callback) cb, update_client::Error error) {

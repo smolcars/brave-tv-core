@@ -22,6 +22,7 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "brave/components/brave_shields/core/common/features.h"
 #include "components/prefs/pref_registry_simple.h"
@@ -35,9 +36,9 @@ constexpr char kAdblockCacheDir[] = "adblock_cache";
 constexpr char kAdBlockEngine0DATCache[] = "engine0.dat";
 constexpr char kAdBlockEngine1DATCache[] = "engine1.dat";
 
-std::optional<DATFileDataBuffer> ReadCachedDATFile(const base::FilePath& path) {
+std::optional<DATFileDataBuffer> ReadCachedDATFile(const base::FilePath& path,
+                                                   std::string_view version) {
   auto data = base::ReadFileToBytes(path);
-  const auto version = brave_shields::GetBundledAdBlockVersion();
   if (!data || version.empty()) {
     return data;
   }
@@ -49,21 +50,25 @@ std::optional<DATFileDataBuffer> ReadCachedDATFile(const base::FilePath& path) {
 }
 
 std::pair<std::optional<DATFileDataBuffer>, std::optional<DATFileDataBuffer>>
-ReadCachedDATFilesFromDisk(base::FilePath cache_dir) {
+ReadCachedDATFilesFromDisk(base::FilePath cache_dir,
+                           scoped_refptr<AdBlockBundleStore> store) {
+  const auto version = GetBundledAdBlockVersion(store);
   base::FilePath default_engine_dat_file =
       cache_dir.AppendASCII(kAdBlockEngine0DATCache);
   base::FilePath additional_engine_dat_file =
       cache_dir.AppendASCII(kAdBlockEngine1DATCache);
 
-  return std::make_pair(ReadCachedDATFile(default_engine_dat_file),
-                        ReadCachedDATFile(additional_engine_dat_file));
+  return std::make_pair(ReadCachedDATFile(default_engine_dat_file, version),
+                        ReadCachedDATFile(additional_engine_dat_file, version));
 }
 
 }  // namespace
 
 AdBlockDATCacheManager::AdBlockDATCacheManager(
-    const base::FilePath& profile_dir)
-    : cache_dir_(profile_dir.AppendASCII(kAdblockCacheDir)),
+    const base::FilePath& profile_dir,
+    scoped_refptr<AdBlockBundleStore> bundle_store)
+    : bundle_store_(std::move(bundle_store)),
+      cache_dir_(profile_dir.AppendASCII(kAdblockCacheDir)),
       task_runner_(base::ThreadPool::CreateSequencedTaskRunner(
           {base::MayBlock(), base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN})) {}
 
@@ -75,18 +80,20 @@ void AdBlockDATCacheManager::WriteDATFile(bool is_default_engine,
   task_runner_->PostTask(
       FROM_HERE,
       base::BindOnce(
-          [](DATFileDataBuffer dat, base::FilePath cache_path) {
+          [](DATFileDataBuffer dat, base::FilePath cache_path,
+             scoped_refptr<AdBlockBundleStore> store) {
             if (!base::CreateDirectory(cache_path.DirName())) {
               return;
             }
-            const auto version = brave_shields::GetBundledAdBlockVersion();
+            const auto version = brave_shields::GetBundledAdBlockVersion(store);
             dat.insert(dat.begin(), version.begin(), version.end());
             base::ImportantFileWriter::WriteFileAtomically(
                 cache_path, base::as_string_view(dat));
           },
           std::move(dat),
           cache_dir_.AppendASCII(is_default_engine ? kAdBlockEngine0DATCache
-                                                   : kAdBlockEngine1DATCache)));
+                                                   : kAdBlockEngine1DATCache),
+          bundle_store_));
 }
 
 void AdBlockDATCacheManager::DropDATCache() {
@@ -103,7 +110,8 @@ void AdBlockDATCacheManager::MaybeReadCachedDATFiles(
                             std::optional<DATFileDataBuffer>)> on_complete) {
   CHECK(base::FeatureList::IsEnabled(features::kAdblockDATCache));
   task_runner_->PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&ReadCachedDATFilesFromDisk, cache_dir_),
+      FROM_HERE,
+      base::BindOnce(&ReadCachedDATFilesFromDisk, cache_dir_, bundle_store_),
       base::BindOnce(
           [](base::OnceCallback<void(std::optional<DATFileDataBuffer>,
                                      std::optional<DATFileDataBuffer>)>

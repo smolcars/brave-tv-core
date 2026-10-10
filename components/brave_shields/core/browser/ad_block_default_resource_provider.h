@@ -7,6 +7,8 @@
 #define BRAVE_COMPONENTS_BRAVE_SHIELDS_CORE_BROWSER_AD_BLOCK_DEFAULT_RESOURCE_PROVIDER_H_
 
 #include "base/functional/callback.h"
+#include "base/memory/scoped_refptr.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
 #include "brave/components/brave_shields/core/browser/ad_block_resource_provider.h"
 
 namespace component_updater {
@@ -24,7 +26,8 @@ namespace brave_shields {
 class AdBlockDefaultResourceProvider : public AdBlockResourceProvider {
  public:
   explicit AdBlockDefaultResourceProvider(
-      component_updater::ComponentUpdateService* cus);
+      component_updater::ComponentUpdateService* cus,
+      scoped_refptr<AdBlockBundleStore> bundle_store = nullptr);
   ~AdBlockDefaultResourceProvider() override;
   AdBlockDefaultResourceProvider(const AdBlockDefaultResourceProvider&) =
       delete;
@@ -45,6 +48,7 @@ class AdBlockDefaultResourceProvider : public AdBlockResourceProvider {
       base::OnceCallback<void(AdblockResourceStorageBox)> callback,
       AdblockResourceStorageBox storage);
 
+  scoped_refptr<AdBlockBundleStore> bundle_store_;
   base::FilePath component_path_;
 
   base::WeakPtrFactory<AdBlockDefaultResourceProvider> weak_factory_{this};

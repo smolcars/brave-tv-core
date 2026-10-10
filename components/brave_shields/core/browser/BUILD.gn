@@ -10,6 +10,8 @@ source_set("signed_bundle") {
   sources = [
     "ad_block_bundle_store.cc",
     "ad_block_bundle_store.h",
+    "ad_block_bundled_data.cc",
+    "ad_block_bundled_data.h",
     "ad_block_signed_bundle.cc",
     "ad_block_signed_bundle.h",
   ]
@@ -18,6 +20,12 @@ source_set("signed_bundle") {
     "//third_party/abseil-cpp:absl",
   ]
   public_deps = [ "//base" ]
+  if (is_android) {
+    deps += [
+      "//brave/components/resources:static_resources",
+      "//ui/base",
+    ]
+  }
 }
 
 group("ad_block_signed_bundle_host_tests") {
@@ -40,8 +48,7 @@ if (current_toolchain == host_toolchain) {
 
 static_library("browser") {
   sources = [
-    "ad_block_bundled_data.cc",
-    "ad_block_bundled_data.h",
+    "ad_block_bundle_public_key.h",
     "ad_block_component_filters_provider.cc",
     "ad_block_component_filters_provider.h",
     "ad_block_component_installer.cc",
@@ -100,15 +107,10 @@ static_library("browser") {
     "//url",
   ]
   public_deps = [
+    ":signed_bundle",
     "//base",
     "//brave/components/brave_shields/core/common/adblock",
   ]
-  if (is_android) {
-    deps += [
-      "//brave/components/resources:static_resources",
-      "//ui/base",
-    ]
-  }
 }
 
 source_set("unit_tests") {

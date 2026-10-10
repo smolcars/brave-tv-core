@@ -21,6 +21,7 @@
 #include "base/types/expected.h"
 #include "base/values.h"
 #include "brave/components/brave_shields/core/browser/ad_block_bundle_store.h"
+#include "brave/components/brave_shields/core/browser/ad_block_bundled_data.h"
 #include "crypto/hash.h"
 #include "crypto/keypair.h"
 #include "crypto/sign.h"
@@ -204,17 +205,25 @@ TEST_F(AdBlockSignedBundleTest, StagePreservesActiveUntilRestart) {
   const auto* active = store->GetActive(now_);
   ASSERT_TRUE(active);
   EXPECT_EQ(active->sequence, 12);
+  const auto version = GetBundledAdBlockVersion(store);
+  EXPECT_EQ(version, "TV signed adblock " + active->digest + "\n");
+  EXPECT_EQ(LoadBundledAdBlockResources(store), "[]");
+  EXPECT_EQ(
+      LoadBundledAdBlockFilters("iodkpdagapdfkphljnddpjlldadblomo", store),
+      "||example.test^");
   EXPECT_EQ(store->Stage(SignPayload(), now_).value(),
             AdBlockBundleStageResult::kUnchanged);
   payload_.Set("sequence", 13);
   EXPECT_EQ(store->Stage(SignPayload(), now_).value(),
             AdBlockBundleStageResult::kStaged);
   EXPECT_EQ(store->GetActive(now_), active);
+  EXPECT_EQ(GetBundledAdBlockVersion(store), version);
   EXPECT_EQ(active->sequence, 12);
   auto restarted =
       base::MakeRefCounted<AdBlockBundleStore>(path, public_key_, catalog_);
   ASSERT_TRUE(restarted->GetActive(now_));
   EXPECT_EQ(restarted->GetActive(now_)->sequence, 13);
+  EXPECT_NE(GetBundledAdBlockVersion(restarted), version);
   payload_.Set("sequence", 12);
   EXPECT_EQ(store->Stage(SignPayload(), now_).error(),
             AdBlockBundleStageError::kRollback);

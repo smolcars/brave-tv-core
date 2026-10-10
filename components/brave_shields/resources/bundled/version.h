@@ -3,5 +3,6 @@
 #define BRAVE_COMPONENTS_BRAVE_SHIELDS_RESOURCES_BUNDLED_VERSION_H_
 namespace brave_shields {
 inline constexpr char kAdBlockBundleVersion[] = "Brave-TV adblock 22dd05b7534f9631ed0b001d6573d24d6f858f52f363e9cc5119ed88b014b70e\n";
+inline constexpr char kAdBlockBundleCatalogHash[] = "c7e0133ba514c629868bfc3f295faa5b0a4c141bdf7f483f099ab1fced5821b6";
 }
 #endif
