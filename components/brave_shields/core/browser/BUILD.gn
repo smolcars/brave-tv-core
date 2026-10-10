@@ -34,11 +34,13 @@ source_set("bundle_updater") {
     "ad_block_bundle_updater.cc",
     "ad_block_bundle_updater.h",
   ]
-  public_deps = [ ":signed_bundle" ]
+  public_deps = [
+    ":signed_bundle",
+    "//services/network/public/cpp",
+  ]
   deps = [
     "//components/prefs",
     "//net",
-    "//services/network/public/cpp",
     "//url",
   ]
 }
@@ -50,7 +52,14 @@ group("ad_block_signed_bundle_host_tests") {
 
 if (current_toolchain == host_toolchain) {
   test("ad_block_signed_bundle_unittests") {
-    sources = [ "ad_block_signed_bundle_unittest.cc" ]
+    # Only the mock loader helpers are needed, not the whole network service.
+    sources = [
+      "//services/network/test/test_url_loader_factory.cc",
+      "//services/network/test/test_url_loader_factory.h",
+      "//services/network/test/test_utils.cc",
+      "//services/network/test/test_utils.h",
+      "ad_block_signed_bundle_unittest.cc",
+    ]
     deps = [
       ":bundle_updater",
       ":signed_bundle",
@@ -58,7 +67,9 @@ if (current_toolchain == host_toolchain) {
       "//components/prefs:test_support",
       "//crypto",
       "//mojo/core/test:run_all_unittests",
-      "//services/network:test_support",
+      "//net",
+      "//services/network/public/cpp",
+      "//services/network/public/mojom",
       "//testing/gtest",
     ]
   }

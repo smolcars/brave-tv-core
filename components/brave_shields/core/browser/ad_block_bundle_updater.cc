@@ -54,7 +54,7 @@ void AdBlockBundleUpdater::RegisterPrefs(PrefRegistrySimple* registry) {
 AdBlockBundleUpdater::AdBlockBundleUpdater(
     scoped_refptr<AdBlockBundleStore> store,
     scoped_refptr<network::SharedURLLoaderFactory> factory,
-    PrefService* prefs)
+    PrefService& prefs)
     : store_(std::move(store)),
       factory_(std::move(factory)),
       prefs_(prefs),
@@ -63,7 +63,6 @@ AdBlockBundleUpdater::AdBlockBundleUpdater(
            base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN})) {
   CHECK(store_);
   CHECK(factory_);
-  CHECK(prefs_);
   ScheduleAutomaticCheck();
 }
 
@@ -102,10 +101,7 @@ void AdBlockBundleUpdater::CheckForUpdate(base::OnceClosure callback) {
   loader_->SetTimeoutDuration(base::Seconds(60));
   loader_->SetOnRedirectCallback(base::BindRepeating(
       &AdBlockBundleUpdater::OnRedirect, weak_factory_.GetWeakPtr()));
-  loader_->DownloadToString(factory_.get(),
-                            base::BindOnce(&AdBlockBundleUpdater::OnDownloaded,
-                                           weak_factory_.GetWeakPtr()),
-                            kMaxSignedAdBlockBundleBytes);
+  loader_->DownloadAsStream(factory_.get(), this);
 }
 
 void AdBlockBundleUpdater::OnRedirect(
@@ -119,10 +115,27 @@ void AdBlockBundleUpdater::OnRedirect(
   }
 }
 
-void AdBlockBundleUpdater::OnDownloaded(std::optional<std::string> body) {
+void AdBlockBundleUpdater::OnDataReceived(std::string_view data,
+                                          base::OnceClosure resume) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  if (data.size() > kMaxSignedAdBlockBundleBytes - body_.size()) {
+    Finish(AdBlockUpdateResult::kDownloadFailed);
+    return;
+  }
+  body_.append(data);
+  std::move(resume).Run();
+}
+
+void AdBlockBundleUpdater::OnRetry(base::OnceClosure start_retry) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  body_.clear();
+  std::move(start_retry).Run();
+}
+
+void AdBlockBundleUpdater::OnComplete(bool success) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   loader_.reset();
-  if (!body) {
+  if (!success) {
     Finish(AdBlockUpdateResult::kDownloadFailed);
     return;
   }
@@ -132,7 +145,7 @@ void AdBlockBundleUpdater::OnDownloaded(std::optional<std::string> body) {
           [](scoped_refptr<AdBlockBundleStore> store, std::string bytes) {
             return store->Stage(bytes, base::Time::Now());
           },
-          store_, std::move(*body)),
+          store_, std::move(body_)),
       base::BindOnce(&AdBlockBundleUpdater::OnStaged,
                      weak_factory_.GetWeakPtr()));
 }
@@ -157,6 +170,7 @@ void AdBlockBundleUpdater::OnStaged(
 void AdBlockBundleUpdater::Finish(AdBlockUpdateResult result) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   loader_.reset();
+  body_ = std::string();
   result_ = result;
   auto callbacks = std::exchange(callbacks_, {});
   for (auto& callback : callbacks) {
@@ -173,8 +187,8 @@ void AdBlockBundleUpdater::GetStatus(
           [](scoped_refptr<AdBlockBundleStore> store) {
             AdBlockUpdateStatus status;
             if (const auto* active = store->GetActive(base::Time::Now())) {
-              status.active_sequence = active->sequence;
-              status.active_published = active->published;
+              status.active =
+                  AdBlockSnapshotInfo{active->sequence, active->published};
             }
             return status;
           },

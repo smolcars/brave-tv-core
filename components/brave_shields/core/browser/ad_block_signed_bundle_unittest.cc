@@ -321,7 +321,7 @@ class AdBlockBundleUpdateTest : public AdBlockSignedBundleTest {
 
   void RestartUpdater() {
     updater_ = std::make_unique<AdBlockBundleUpdater>(
-        store_, factory_.GetSafeWeakWrapper(), &prefs_);
+        store_, factory_.GetSafeWeakWrapper(), prefs_);
   }
 
   AdBlockUpdateStatus Status() {
@@ -350,7 +350,7 @@ class AdBlockBundleUpdateTest : public AdBlockSignedBundleTest {
 };
 
 TEST_F(AdBlockBundleUpdateTest, CoalescesAndStagesWithoutReplacingActiveData) {
-  EXPECT_EQ(Status().active_sequence, 0);
+  EXPECT_FALSE(Status().active);
   base::test::TestFuture<void> first;
   base::test::TestFuture<void> second;
   updater_->CheckForUpdate(first.GetCallback());
@@ -371,7 +371,7 @@ TEST_F(AdBlockBundleUpdateTest, CoalescesAndStagesWithoutReplacingActiveData) {
   auto status = Status();
   EXPECT_EQ(status.result, AdBlockUpdateResult::kStaged);
   EXPECT_TRUE(status.restart_required);
-  EXPECT_EQ(status.active_sequence, 0);
+  EXPECT_FALSE(status.active);
   EXPECT_FALSE(status.last_attempt.is_null());
   auto restart =
       base::MakeRefCounted<AdBlockBundleStore>(path_, public_key_, catalog_);
@@ -388,8 +388,9 @@ TEST_F(AdBlockBundleUpdateTest,
   ASSERT_TRUE(base::WriteFile(path_, original));
   auto status = Fetch(original);
   EXPECT_EQ(status.result, AdBlockUpdateResult::kCurrent);
-  EXPECT_EQ(status.active_sequence, 12);
-  EXPECT_FALSE(status.active_published.is_null());
+  ASSERT_TRUE(status.active);
+  EXPECT_EQ(status.active->sequence, 12);
+  EXPECT_FALSE(status.active->published.is_null());
   EXPECT_FALSE(status.restart_required);
   auto tampered = original;
   tampered.back() ^= 1;
@@ -399,7 +400,17 @@ TEST_F(AdBlockBundleUpdateTest,
   std::string retained;
   ASSERT_TRUE(base::ReadFileToString(path_, &retained));
   EXPECT_EQ(retained, original);
-  EXPECT_EQ(Status().active_sequence, 12);
+  ASSERT_TRUE(Status().active);
+  EXPECT_EQ(Status().active->sequence, 12);
+}
+
+TEST_F(AdBlockBundleUpdateTest, AcceptsValidSnapshotsLargerThanFiveMiB) {
+  const std::string resources = "[]" + std::string(6 * 1024 * 1024, ' ');
+  payload_.Set("resources", resources);
+  payload_.FindDict("provenance")
+      ->FindDict("files")
+      ->Set("resources.json", Hash(resources));
+  EXPECT_EQ(Fetch(SignPayload()).result, AdBlockUpdateResult::kStaged);
 }
 
 TEST_F(AdBlockBundleUpdateTest, FailedAndOversizedDownloadsDoNotCreateACache) {
