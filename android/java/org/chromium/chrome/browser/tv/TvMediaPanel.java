@@ -12,11 +12,12 @@ import com.google.android.material.button.MaterialButton;
 
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
-import org.chromium.chrome.browser.tab.EmptyTabObserver;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabHidingType;
+import org.chromium.chrome.browser.tab.TabObserver;
 import org.chromium.content_public.browser.MediaSession;
 import org.chromium.content_public.browser.MediaSessionObserver;
+import org.chromium.content_public.browser.NavigationHandle;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.media_session.mojom.MediaSession.SuspendType;
 import org.chromium.media_session.mojom.MediaSessionAction;
@@ -41,8 +42,8 @@ final class TvMediaPanel {
     private boolean mControllable;
     private boolean mSuspended;
     private boolean mDestroyed;
-    private final EmptyTabObserver mTabObserver =
-            new EmptyTabObserver() {
+    private final TabObserver mTabObserver =
+            new TabObserver() {
                 @Override
                 public void onHidden(Tab tab, @TabHidingType int type) {
                     destroy();
@@ -56,6 +57,12 @@ final class TvMediaPanel {
                 @Override
                 public void onContentChanged(Tab tab) {
                     destroy();
+                }
+
+                @Override
+                public void onDidFinishNavigationInPrimaryMainFrame(
+                        Tab tab, NavigationHandle navigation) {
+                    if (navigation.hasCommitted() && !navigation.isSameDocument()) destroy();
                 }
             };
 
@@ -90,11 +97,6 @@ final class TvMediaPanel {
                     public void mediaSessionActionsChanged(Set<Integer> actions) {
                         mActions = Set.copyOf(actions);
                         updateButtons();
-                    }
-
-                    @Override
-                    public void mediaSessionDocumentChanged() {
-                        destroy();
                     }
 
                     @Override

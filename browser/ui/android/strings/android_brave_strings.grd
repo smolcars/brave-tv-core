@@ -4017,8 +4017,8 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_PLAYBACK_DESCRIPTION" desc="Explains the scope and prerequisite for TV media controls.">Control audio or video on this tab. Start playback on the page first.</message>
     <message name="IDS_BRAVE_TV_PLAY" desc="TV action to resume media in the current tab.">Play</message>
     <message name="IDS_BRAVE_TV_PAUSE" desc="TV action to pause media in the current tab.">Pause</message>
-    <message name="IDS_BRAVE_TV_SEEK_BACKWARD" desc="TV action to seek backward ten seconds.">Back 10 seconds</message>
-    <message name="IDS_BRAVE_TV_SEEK_FORWARD" desc="TV action to seek forward ten seconds.">Forward 10 seconds</message>
+    <message name="IDS_BRAVE_TV_SEEK_BACKWARD" desc="TV action to seek backward; the distance can depend on the site.">Seek backward</message>
+    <message name="IDS_BRAVE_TV_SEEK_FORWARD" desc="TV action to seek forward; the distance can depend on the site.">Seek forward</message>
     <message name="IDS_BRAVE_TV_POINTER_HINT" desc="Remote button hints for pointer mode.">D-pad: move · OK: click · Back: controls</message>
     <message name="IDS_BRAVE_TV_SCROLL_HINT" desc="Remote button hints for scroll mode.">D-pad: scroll · OK: cursor · Back: controls</message>
   </messages>
