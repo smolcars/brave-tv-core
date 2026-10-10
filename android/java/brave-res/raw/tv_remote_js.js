@@ -73,6 +73,8 @@ function render(result) {
     if (
       editable.revision === pendingEdit.field
       && editable.text === pendingEdit.text
+      && editable.start === pendingEdit.start
+      && editable.end === pendingEdit.end
     ) {
       if (dirty) dirtyVersion = editable.version
     } else dirty = composing = false
@@ -199,6 +201,8 @@ async function command(op, extra = {}) {
     pendingEdit = {
       field: extra.editable,
       text: extra.edit === 'replace' ? extra.text : state.editable.text,
+      start: extra.composing ? extra.text.length : extra.start,
+      end: extra.composing ? extra.text.length : extra.end,
     }
   }
   try {
