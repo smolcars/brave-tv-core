@@ -244,8 +244,9 @@ public class BraveShieldsContentSettings {
                             profile);
             BraveShieldsContentSettingsJni.get()
                     .setAdControlType(
-                            BLOCK_THIRDPARTY_RESOURCE.equals(settingOption)
-                                    ? DEFAULT
+                            DEFAULT.equals(settingOption)
+                                            || BLOCK_THIRDPARTY_RESOURCE.equals(settingOption)
+                                    ? BLOCK_RESOURCE
                                     : settingOption,
                             host,
                             profile);
