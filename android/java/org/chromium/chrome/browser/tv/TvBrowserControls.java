@@ -71,9 +71,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
+    private @Nullable TvFilterPanel mFilterPanel;
     private @Nullable Runnable mOnDataCleared;
     private boolean mClearingData;
     private int mLastAction = R.string.brave_tv_address;
+    private int mLastSettingsAction = R.string.brave_tv_search_engine;
     private String mPressedUrl = "";
     private boolean mDestroyed;
     private final View.OnAttachStateChangeListener mPageAttachmentListener =
@@ -246,7 +248,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     @Override
     public void showControls() {
         if (!isAlive()) return;
-        if (mHistoryPanel != null) dismissDialog();
+        if (mHistoryPanel != null || mFilterPanel != null) dismissDialog();
         detachCursor();
         if (mDialog != null && mDialog.isShowing()) return;
         Tab tab = mActivity.getActivityTab();
@@ -292,6 +294,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void dismissDialog() {
         mOnDataCleared = null;
+        if (mFilterPanel != null) {
+            mFilterPanel.destroy();
+            mFilterPanel = null;
+        }
         if (mHistoryPanel != null) {
             mHistoryPanel.destroy();
             mHistoryPanel = null;
@@ -687,11 +693,21 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         mActivity,
                         mActivity.getString(R.string.brave_tv_settings),
                         "",
-                        R.string.brave_tv_search_engine);
+                        mLastSettingsAction);
         panel.addItem(
                 mActivity.getString(R.string.brave_tv_search_engine),
                 R.string.brave_tv_search_engine,
                 () -> showSearchEngines(tab, url));
+        panel.addItem(
+                mActivity.getString(R.string.content_filters_title),
+                R.string.content_filters_title,
+                () -> {
+                    if (!tabContextValid(tab, url)) return;
+                    dismissDialog();
+                    mLastSettingsAction = R.string.content_filters_title;
+                    mFilterPanel = new TvFilterPanel(mActivity, tab, this::showSettings);
+                    mFilterPanel.show();
+                });
         if (!tab.isIncognito()) {
             panel.addItem(
                     mActivity.getString(R.string.brave_tv_clear_data),
@@ -704,6 +720,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 () -> {
                     if (!tabContextValid(tab, url)) return;
                     dismissDialog();
+                    mLastSettingsAction = R.string.brave_tv_licenses;
                     tab.loadUrl(new LoadUrlParams("chrome://credits"));
                 });
         panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
@@ -721,6 +738,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void showClearData(Tab tab, String url, boolean completed) {
         if (!tabContextValid(tab, url) || tab.isIncognito()) return;
+        mLastSettingsAction = R.string.brave_tv_clear_data;
         dismissDialog();
         TvBrowserPanel panel =
                 new TvBrowserPanel(
@@ -801,6 +819,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void showSearchEngines(Tab tab, String url) {
         if (!tabContextValid(tab, url)) return;
+        mLastSettingsAction = R.string.brave_tv_search_engine;
         dismissDialog();
         TemplateUrlService service = TemplateUrlServiceFactory.getForProfile(tab.getProfile());
         if (service == null) {

@@ -3977,6 +3977,14 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_CLEAR_COOKIES_SCOPE" desc="Confirmation scope and sign-out warning for deleting site storage.">Delete cookies and site data for all time. This signs you out of most sites.</message>
     <message name="IDS_BRAVE_TV_CLEAR_CACHE_SCOPE" desc="Confirmation scope for deleting cached resources.">Delete cached files for all time. Sites may load more slowly next time.</message>
     <message name="IDS_BRAVE_TV_CLEAR_CONFIRM" desc="Explicit destructive confirmation for the selected data type.">Clear now</message>
+    <message name="IDS_BRAVE_TV_FILTERS_FAILED" desc="TV optional filter-list connection failure.">Could not load filter lists. Try opening this screen again.</message>
+    <message name="IDS_BRAVE_TV_LOADING_FILTERS" desc="TV optional filter-list loading state.">Loading filter lists…</message>
+    <message name="IDS_BRAVE_TV_NO_FILTERS" desc="TV optional filter-list empty state.">No optional filter lists available.</message>
+    <message name="IDS_BRAVE_TV_FILTERS_SCOPE" desc="TV optional filter-list shared scope.">Optional lists apply to all tabs. Reload a page after changing a list.</message>
+    <message name="IDS_BRAVE_TV_FILTER_ON" desc="TV enabled optional filter-list button."><ph name="TITLE">%s<ex>Cookie notices</ex></ph>: On</message>
+    <message name="IDS_BRAVE_TV_FILTER_OFF" desc="TV disabled optional filter-list button."><ph name="TITLE">%s<ex>Cookie notices</ex></ph>: Off</message>
+    <message name="IDS_BRAVE_TV_PREVIOUS_FILTERS" desc="TV previous optional filter-list page.">Previous lists</message>
+    <message name="IDS_BRAVE_TV_MORE_FILTERS" desc="TV next optional filter-list page.">More lists</message>
     <message name="IDS_BRAVE_TV_SETTINGS" desc="TV button to open browser settings.">Settings</message>
     <message name="IDS_BRAVE_TV_SHIELDS" desc="TV button and panel title for current-site protection settings.">Site protection</message>
     <message name="IDS_BRAVE_TV_SHIELDS_UP" desc="TV button showing site protection enabled; activation disables it.">Protection on · Turn off for this site</message>
