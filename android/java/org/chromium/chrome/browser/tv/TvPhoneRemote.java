@@ -232,7 +232,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         }
         try {
             JSONObject request = new JSONObject(body);
-            if (request.getInt("v") != 1) return error("version");
+            if (TvRemoteSession.parseInteger(request.opt("v")) != 1) return error("version");
             long now = SystemClock.elapsedRealtime();
             if (path.equals("/pair")) {
                 String credential = mSession.pair(request.getString("invite"), now);
@@ -251,7 +251,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
             if (!op.equals("state")) {
                 ok =
                         mSession.epoch.equals(request.getString("epoch"))
-                                && mSession.acceptSequence(request.getLong("seq"))
+                                && mSession.acceptSequence(TvRemoteSession.parseInteger(request.opt("seq")))
                                 && mBrowser.command(request);
             }
             return new JSONObject()

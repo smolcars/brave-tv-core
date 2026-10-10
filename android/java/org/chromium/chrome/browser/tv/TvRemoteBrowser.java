@@ -176,7 +176,7 @@ final class TvRemoteBrowser {
 
     boolean command(JSONObject command) throws JSONException {
         refresh();
-        if (mPaused || mTab == null || command.getLong("revision") != mRevision) return false;
+        if (mPaused || mTab == null || TvRemoteSession.parseInteger(command.opt("revision")) != mRevision) return false;
         String op = command.getString("op");
         switch (op) {
             case "navigate":
@@ -254,9 +254,9 @@ final class TvRemoteBrowser {
             case "edit":
                 return webPage()
                         && mText != null
-                        && command.getLong("version") == mText.version()
+                        && TvRemoteSession.parseInteger(command.opt("version")) == mText.version()
                         && mText.edit(
-                                command.getLong("editable"),
+                                TvRemoteSession.parseInteger(command.opt("editable")),
                                 command.getString("edit"),
                                 command.optString("text", ""),
                                 bounded(command, "start", 2048),

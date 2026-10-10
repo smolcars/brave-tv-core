@@ -11,6 +11,7 @@ import java.util.Base64;
 
 /** UI-thread session policy. No credentials survive this instance. */
 final class TvRemoteSession {
+    private static final long MAX_SAFE_INTEGER = 9007199254740991L;
     private static final SecureRandom RANDOM = new SecureRandom();
     final String invitation = randomToken();
     final String code = String.format(java.util.Locale.ROOT, "%08d", RANDOM.nextInt(100000000));
@@ -71,8 +72,19 @@ final class TvRemoteSession {
         mController = "";
     }
 
+    // Protocol identities must survive a JavaScript round trip without coercion.
+    static long parseInteger(Object value) {
+        if (!(value instanceof Number number)) return -1;
+        double parsed = number.doubleValue();
+        if (!Double.isFinite(parsed)
+                || parsed < 0
+                || parsed > MAX_SAFE_INTEGER
+                || parsed != Math.rint(parsed)) return -1;
+        return (long) parsed;
+    }
+
     boolean acceptSequence(long sequence) {
-        if (!approved() || sequence <= mSequence || sequence > 9007199254740991L) return false;
+        if (!approved() || sequence <= mSequence || sequence > MAX_SAFE_INTEGER) return false;
         mSequence = sequence;
         return true;
     }

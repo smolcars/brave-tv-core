@@ -2,6 +2,13 @@ package org.chromium.chrome.browser.tv;
 
 public class TvRemoteSessionTest {
     public static void main(String[] args) {
+        assert TvRemoteSession.parseInteger(1) == 1;
+        assert TvRemoteSession.parseInteger(1.0) == 1;
+        assert TvRemoteSession.parseInteger(9007199254740991L) == 9007199254740991L;
+        for (Object invalid : new Object[] {
+                null, "1", 1.5, -1, Double.NaN, Double.POSITIVE_INFINITY, 9007199254740992L}) {
+            assert TvRemoteSession.parseInteger(invalid) == -1;
+        }
         TvRemoteSession session = new TvRemoteSession(0);
         assert session.invitation.length() == 43;
         assert !session.authenticate("", 0);
