@@ -70,7 +70,7 @@ final class TvRemoteBrowser {
     }
 
     void destroy() {
-        if (mObserver != null) mObserver.destroy();
+        if (mObserver != null) mObserver.observe(null);
         if (mText != null) mText.destroy();
         if (mTab != null) mTab.removeObserver(mTabObserver);
         mIds.clear();

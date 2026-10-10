@@ -100,7 +100,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                     dismiss();
                     start();
                 });
-        panel.addAction(R.string.brave_tv_cancel, true, this::dismiss);
+        panel.addAction(R.string.cancel, true, this::dismiss);
         mDialog = panel.show(this::dismiss);
     }
 
@@ -113,7 +113,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                             text(R.string.brave_tv_phone),
                             text(R.string.brave_tv_phone_network),
                             0);
-            panel.addAction(R.string.brave_tv_cancel, true, this::dismiss);
+            panel.addAction(R.string.cancel, true, this::dismiss);
             mDialog = panel.show(this::dismiss);
             return;
         }
