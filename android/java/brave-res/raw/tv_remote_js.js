@@ -17,7 +17,8 @@ let gesture = null,
   motion = null,
   polling = null,
   waiting = false,
-  dirtyVersion = 0
+  dirtyVersion = 0,
+  pendingEdit = null
 function status(text) {
   $('status').textContent = text
 }
@@ -37,6 +38,7 @@ function resetInput() {
   pointers.clear()
   gesture = motion = null
   dirty = false
+  pendingEdit = null
   composing = false
   field = 0
   $('editor').value = ''
@@ -61,6 +63,21 @@ function render(result) {
   connected = !!state
   if (!state) return
   if (previous && previous.revision !== state.revision) resetInput()
+  if (result.ok === false && pendingEdit) {
+    pendingEdit = null
+    dirty = composing = false
+  }
+  if (pendingEdit && state.editable?.ready) {
+    const editable = state.editable
+    // Only our confirmed same-field result can advance locally coalesced typing.
+    if (
+      editable.revision === pendingEdit.field
+      && editable.text === pendingEdit.text
+    ) {
+      if (dirty) dirtyVersion = editable.version
+    } else dirty = composing = false
+    pendingEdit = null
+  }
   $('pair').hidden = true
   $('remote').hidden = false
   $('disconnect').hidden = false
@@ -69,7 +86,9 @@ function render(result) {
       ? 'Paused — use the TV remote for private or native screens.'
       : result.ok === false
         ? 'TV changed. Action discarded; try again.'
-        : 'Connected to your TV',
+        : state.error
+          ? 'The TV page could not be loaded.'
+          : 'Connected to your TV',
   )
   disable(state.paused)
   if (state.paused) {
@@ -107,6 +126,8 @@ function render(result) {
   }
   const editable = state.editable
   if (!editable) {
+    pendingEdit = null
+    dirty = composing = false
     $('editor').disabled = true
     $('fieldHint').textContent =
       'Select an eligible text field on the TV. Passwords are excluded.'
@@ -174,6 +195,12 @@ async function command(op, extra = {}) {
     return false
   }
   busy = true
+  if (op === 'edit' && (extra.edit === 'replace' || extra.edit === 'select')) {
+    pendingEdit = {
+      field: extra.editable,
+      text: extra.edit === 'replace' ? extra.text : state.editable.text,
+    }
+  }
   try {
     render(
       await post('/api', {
@@ -281,6 +308,7 @@ pad.onpointerup = (e) => {
     const tap =
       !gesture.moved && !gesture.multi && performance.now() - gesture.time < 450
     gesture = null
+    flushMotion()
     motion = null
     if (tap) command('click')
   }
@@ -289,7 +317,7 @@ pad.onpointercancel = () => {
   pointers.clear()
   gesture = motion = null
 }
-setInterval(() => {
+function flushMotion() {
   if (!motion || busy) return
   const m = motion
   motion = null
@@ -297,7 +325,8 @@ setInterval(() => {
     dx: Math.max(-1000, Math.min(1000, Math.round(m.dx))),
     dy: Math.max(-1000, Math.min(1000, Math.round(m.dy))),
   })
-}, 60)
+}
+setInterval(flushMotion, 60)
 // Coalesce current-field edits only. A failed request or target change discards them.
 $('editor').oncompositionstart = () => {
   composing = true
@@ -315,6 +344,7 @@ setInterval(async () => {
   if (
     !dirty
     || busy
+    || pendingEdit
     || !connected
     || !state?.editable?.ready
     || field !== state.editable.revision
@@ -341,7 +371,7 @@ $('editor').onselect = () => {
     && $('editor').selectionEnd === state.editable.end
   )
     return
-  if (!dirty && !busy && !composing && state?.editable)
+  if (!dirty && !busy && !pendingEdit && !composing && state?.editable)
     command('edit', {
       editable: field,
       edit: 'select',

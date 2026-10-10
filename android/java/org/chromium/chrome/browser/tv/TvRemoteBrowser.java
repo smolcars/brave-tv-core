@@ -140,6 +140,7 @@ final class TvRemoteBrowser {
                 .put("back", mTab.canGoBack())
                 .put("forward", mTab.canGoForward())
                 .put("loading", mTab.isLoading())
+                .put("error", mTab.isShowingErrorPage())
                 .put("page", webPage())
                 .put("width", mWidth)
                 .put("height", mHeight)
