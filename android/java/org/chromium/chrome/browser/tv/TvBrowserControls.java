@@ -99,6 +99,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private int mLastSettingsAction = R.string.brave_tv_search_engine;
     private String mPressedUrl = "";
     private boolean mDestroyed;
+    private final Runnable mHideCursor = this::hideCursor;
     private final View.OnAttachStateChangeListener mPageAttachmentListener =
             new View.OnAttachStateChangeListener() {
                 @Override
@@ -273,15 +274,28 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             return false;
         }
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        if (key == TvRemoteInput.Key.SELECT && down) {
+            boolean hidden = mCursorView.getVisibility() != View.VISIBLE;
+            mCursorView.setVisibility(View.VISIBLE);
+            mCursorView.removeCallbacks(mHideCursor);
+            if (hidden) {
+                mInput.cancelPress();
+                return true;
+            }
+        }
         if (key == TvRemoteInput.Key.SELECT && down && event.getRepeatCount() == 0) {
             mPressedUrl = currentUrl();
         }
-        return mInput.onKey(
-                key,
-                down,
-                event.getRepeatCount(),
-                event.isCanceled()
-                        || (!mPressedUrl.equals(currentUrl()) && key == TvRemoteInput.Key.SELECT));
+        boolean handled =
+                mInput.onKey(
+                        key,
+                        down,
+                        event.getRepeatCount(),
+                        event.isCanceled()
+                                || (!mPressedUrl.equals(currentUrl())
+                                        && key == TvRemoteInput.Key.SELECT));
+        if (handled && key == TvRemoteInput.Key.SELECT && !down && mPage != null) showCursor();
+        return handled;
     }
 
     public void onWindowFocusChanged(boolean focused) {
@@ -1029,6 +1043,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     @Override
     public void showPointer(int x, int y, TvRemoteInput.Mode mode) {
+        showCursor();
         mCursor.x = x;
         mCursor.y = y;
         mCursor.hintTop = mActivity.getBrowserControlsManager().getContentOffset();
@@ -1052,7 +1067,18 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     @Override
     public void scroll(int x, int y, int dx, int dy) {
+        showCursor();
         sendPointerEvent(MotionEvent.ACTION_SCROLL, x, y, dx, -dy, SystemClock.uptimeMillis());
+    }
+
+    private void showCursor() {
+        mCursorView.setVisibility(View.VISIBLE);
+        mCursorView.removeCallbacks(mHideCursor);
+        mCursorView.postDelayed(mHideCursor, 3000);
+    }
+
+    private void hideCursor() {
+        mCursorView.setVisibility(View.INVISIBLE);
     }
 
     private void sendPointerEvent(int action, int x, int y, int dx, int dy, long downTime) {
@@ -1100,6 +1126,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void detachCursor() {
+        mCursorView.removeCallbacks(mHideCursor);
         mInput.cancelPress();
         if (mPage != null) mPage.removeOnAttachStateChangeListener(mPageAttachmentListener);
         if (mCursorView.getParent() instanceof ViewGroup parent) parent.removeView(mCursorView);
