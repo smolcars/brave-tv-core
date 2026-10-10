@@ -518,7 +518,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         mActivity.getString(action),
                         enabled,
                         () -> runControl(action, tab, url),
-                        action));
+                        action,
+                        action == R.string.brave_tv_cursor ? R.drawable.ic_cursor : 0));
     }
 
     private void dismissDialog() {

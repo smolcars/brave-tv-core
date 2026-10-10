@@ -8,12 +8,16 @@ package org.chromium.chrome.browser.tv.presentation
 import android.content.Context
 import android.view.View
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -25,6 +29,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +43,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
 
@@ -50,6 +57,7 @@ object TvPresentation {
 
     class Action @JvmOverloads constructor(
         val label: String, val enabled: Boolean, val run: Runnable, val key: Int = 0,
+        val icon: Int = 0,
     )
 
     private fun view(context: Context): ComposeView = ComposeView(context).apply {
@@ -172,6 +180,12 @@ object TvPresentation {
                 focusedContainerColor = accent, focusedContentColor = backgroundColor,
             ),
         ) {
+            if (action.icon != 0) {
+                Image(painterResource(action.icon), contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    colorFilter = ColorFilter.tint(LocalContentColor.current))
+                Spacer(Modifier.width(10.dp))
+            }
             Text(action.label, fontSize = 18.sp, maxLines = 2,
                 modifier = Modifier.padding(vertical = 8.dp))
         }
