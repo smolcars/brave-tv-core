@@ -486,12 +486,14 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                         : R.string.brave_tv_controls),
                         tab == null || tab.isNativePage() ? "" : url,
                         actions,
-                        mLastAction);
+                        mLastAction,
+                        mActivity.getString(R.string.brave_tv_more_controls));
         mDialog =
                 new AlertDialog.Builder(mActivity)
                         .setView(content)
                         .setOnCancelListener(ignored -> dispatchNativeBack())
                         .create();
+        mDialog.setOnKeyListener((dialog, key, event) -> TvPresentation.back(content, event));
         mDialog.setCanceledOnTouchOutside(false);
         mDialog.show();
         Window window = mDialog.getWindow();

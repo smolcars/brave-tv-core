@@ -6,7 +6,9 @@
 package org.chromium.chrome.browser.tv.presentation
 
 import android.content.Context
+import android.view.KeyEvent
 import android.view.View
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -18,11 +20,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -31,6 +38,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +53,7 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.tv.material3.Button
+import androidx.tv.material3.Border
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.LocalContentColor
@@ -59,6 +72,23 @@ object TvPresentation {
         val label: String, val enabled: Boolean, val run: Runnable, val key: Int = 0,
         val icon: Int = 0,
     )
+
+    private class ControlsState(preferred: Int) {
+        var expanded by mutableStateOf(false)
+        var preferredKey by mutableStateOf(preferred)
+    }
+
+    /** Called only by this panel's dialog window, after the IME/native window owner. */
+    @JvmStatic
+    fun back(view: View, event: KeyEvent): Boolean {
+        val state = view.tag as? ControlsState ?: return false
+        if (event.keyCode != KeyEvent.KEYCODE_BACK || !state.expanded) return false
+        if (event.action == KeyEvent.ACTION_UP) {
+            state.expanded = false
+            state.preferredKey = Int.MIN_VALUE
+        }
+        return true
+    }
 
     private fun view(context: Context): ComposeView = ComposeView(context).apply {
         setViewTreeLifecycleOwner(context as LifecycleOwner)
@@ -88,7 +118,8 @@ object TvPresentation {
                         .padding(horizontal = 48.dp, vertical = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    Text(title, fontSize = 36.sp, fontWeight = FontWeight.Medium)
+                    Text(title, fontSize = 36.sp, fontWeight = FontWeight.Medium,
+                        modifier = Modifier.semantics { heading() })
                     Text(subtitle, color = secondary, fontSize = 18.sp)
                     actions.firstOrNull()?.let {
                         ActionButton(it, Modifier.fillMaxWidth().focusRequester(initial))
@@ -119,21 +150,32 @@ object TvPresentation {
         subtitle: String,
         actions: List<Action>,
         preferredKey: Int,
+        moreLabel: String,
     ): View = view(context).apply {
+        val state = ControlsState(preferredKey)
+        tag = state
         setContent {
             Theme {
                 val initial = remember { FocusRequester() }
-                val selected = actions.firstOrNull { it.key == preferredKey && it.enabled }
-                    ?: actions.firstOrNull { it.enabled }
+                val toggle = Action(if (state.expanded) title else moreLabel, true, Runnable {
+                    state.expanded = !state.expanded
+                    state.preferredKey = if (state.expanded) actions.getOrNull(7)?.key ?: 0
+                        else Int.MIN_VALUE
+                }, Int.MIN_VALUE)
+                val visible = (if (state.expanded) actions.drop(7) else actions.take(7)) + toggle
+                val selected = visible.firstOrNull { it.key == state.preferredKey && it.enabled }
+                    ?: if (actions.any { it.key == state.preferredKey }) toggle
+                    else visible.firstOrNull { it.enabled }
                 Column(
                     Modifier.fillMaxWidth().background(backgroundColor)
                         .verticalScroll(rememberScrollState()).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Text(title, fontSize = 24.sp, fontWeight = FontWeight.Medium)
+                    Text(title, fontSize = 24.sp, fontWeight = FontWeight.Medium,
+                        modifier = Modifier.semantics { heading() })
                     if (subtitle.isNotEmpty()) Text(subtitle, color = secondary,
                         fontSize = 16.sp, maxLines = 2)
-                    actions.chunked(4).forEach { row ->
+                    visible.chunked(4).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             row.forEach { action ->
                                 ActionButton(action, Modifier.weight(1f).then(
@@ -143,7 +185,7 @@ object TvPresentation {
                         }
                     }
                 }
-                LaunchedEffect(Unit) {
+                LaunchedEffect(state.expanded) {
                     withFrameNanos { }
                     if (selected != null) initial.requestFocus()
                 }
@@ -164,7 +206,7 @@ object TvPresentation {
                 primary = accent, onPrimary = backgroundColor, background = backgroundColor,
                 onBackground = text, surface = surface, onSurface = text,
             ),
-            content = content,
+            content = { CompositionLocalProvider(LocalContentColor provides text, content = content) },
         )
     }
 
@@ -173,7 +215,12 @@ object TvPresentation {
         Button(
             onClick = { action.run.run() },
             enabled = action.enabled,
-            modifier = modifier,
+            modifier = modifier.semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = action.label
+            },
+            shape = ButtonDefaults.shape(shape = RoundedCornerShape(12.dp)),
+            border = ButtonDefaults.border(focusedBorder = Border(BorderStroke(2.dp, text))),
             scale = ButtonDefaults.scale(focusedScale = 1.02f),
             colors = ButtonDefaults.colors(
                 containerColor = surface, contentColor = text,
