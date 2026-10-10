@@ -101,10 +101,17 @@ object TvPresentation {
     fun back(view: View, event: KeyEvent): Boolean {
         val state = view.tag as? ControlsState ?: return false
         if (event.keyCode != KeyEvent.KEYCODE_BACK || !state.expanded) return false
-        if (event.action == KeyEvent.ACTION_UP) {
-            state.expanded = false
-            state.preferredKey = Int.MIN_VALUE
-        }
+        if (event.action == KeyEvent.ACTION_UP) collapseControls(view)
+        return true
+    }
+
+    /** UI thread only. Dialog Back first collapses More and restores its invoker focus. */
+    @JvmStatic
+    fun collapseControls(view: View): Boolean {
+        val state = view.tag as? ControlsState ?: return false
+        if (!state.expanded) return false
+        state.expanded = false
+        state.preferredKey = Int.MIN_VALUE
         return true
     }
 

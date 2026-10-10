@@ -360,12 +360,15 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 || (!mSession.isCurrent(mPressedContext)
                                         && key == TvRemoteInput.Key.SELECT));
         if (handled && key == TvRemoteInput.Key.SELECT && !down && mPage != null) showCursor();
+        if (key == TvRemoteInput.Key.SELECT && !down) mPressedContext = null;
         return handled;
     }
 
     public void onWindowFocusChanged(boolean focused) {
-        if (!focused) mInput.cancelPress();
-        else {
+        if (!focused) {
+            mInput.cancelPress();
+            mPressedContext = null;
+        } else {
             restoreModalPageFocus();
             restoreEmptyHome();
         }
@@ -466,6 +469,16 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         .create();
         mDialog.setOnKeyListener((dialog, key, event) -> TvPresentation.back(content, event));
         AlertDialog controlsDialog = mDialog;
+        controlsDialog
+                .getOnBackPressedDispatcher()
+                .addCallback(
+                        new OnBackPressedCallback(true) {
+                            @Override
+                            public void handleOnBackPressed() {
+                                if (!TvPresentation.collapseControls(content))
+                                    controlsDialog.cancel();
+                            }
+                        });
         mDialog.setOnDismissListener(
                 ignored -> {
                     if (mDialog == controlsDialog) mDialog = null;
@@ -495,6 +508,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void browserStateChanged() {
         mInput.cancelPress();
+        mPressedContext = null;
         mPhoneRemote.invalidate();
         if (mControlsUpdatePosted || !isAlive()) return;
         mControlsUpdatePosted = true;
@@ -1377,6 +1391,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private void detachCursor() {
         mCursorView.removeCallbacks(mHideCursor);
         mInput.cancelPress();
+        mPressedContext = null;
         if (mPage != null) mPage.removeOnAttachStateChangeListener(mPageAttachmentListener);
         if (mCursorView.getParent() instanceof ViewGroup parent) parent.removeView(mCursorView);
         mPage = null;
