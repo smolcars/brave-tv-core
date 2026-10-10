@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <optional>
 #include <utility>
 
 #include "base/json/json_reader.h"
@@ -48,16 +49,20 @@ bool IsDigest(const std::string* text) {
          });
 }
 
-bool ParsePublicationTime(const std::string& text, base::Time* time) {
-  if (text.size() != 24 || !base::Time::FromUTCString(text.c_str(), time)) {
-    return false;
+std::optional<base::Time> ParsePublicationTime(const std::string& text) {
+  base::Time time;
+  if (text.size() != 24 || !base::Time::FromUTCString(text.c_str(), &time)) {
+    return std::nullopt;
   }
   base::Time::Exploded exploded;
-  time->UTCExplode(&exploded);
-  return text == absl::StrFormat(
-                     "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", exploded.year,
-                     exploded.month, exploded.day_of_month, exploded.hour,
-                     exploded.minute, exploded.second, exploded.millisecond);
+  time.UTCExplode(&exploded);
+  if (text !=
+      absl::StrFormat("%04d-%02d-%02dT%02d:%02d:%02d.%03dZ", exploded.year,
+                      exploded.month, exploded.day_of_month, exploded.hour,
+                      exploded.minute, exploded.second, exploded.millisecond)) {
+    return std::nullopt;
+  }
+  return time;
 }
 
 bool MatchesHash(const base::DictValue& files,
@@ -112,11 +117,10 @@ base::expected<AdBlockSignedBundle, AdBlockBundleError> VerifyAdBlockBundle(
       *catalog != catalog_sha256) {
     return base::unexpected(AdBlockBundleError::kCompatibility);
   }
-  AdBlockSignedBundle bundle;
-  if (!ParsePublicationTime(*published, &bundle.published) ||
-      bundle.published > now + base::Days(1) ||
+  const auto publication_time = ParsePublicationTime(*published);
+  if (!publication_time || *publication_time > now + base::Days(1) ||
       (!earliest_publication.is_null() &&
-       bundle.published < earliest_publication)) {
+       *publication_time < earliest_publication)) {
     return base::unexpected(AdBlockBundleError::kPublicationTime);
   }
   const auto* version = provenance->FindString(kVersion);
@@ -131,6 +135,8 @@ base::expected<AdBlockSignedBundle, AdBlockBundleError> VerifyAdBlockBundle(
   if (!base::JSONReader::ReadList(*resources, base::JSON_PARSE_RFC)) {
     return base::unexpected(AdBlockBundleError::kSchema);
   }
+  AdBlockSignedBundle bundle;
+  bundle.published = *publication_time;
   for (auto id : kFilterIds) {
     auto* filter = filters->FindString(id);
     if (!filter || filter->empty()) {
