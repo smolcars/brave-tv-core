@@ -29,6 +29,10 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.SavedStateRegistryOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
@@ -43,8 +47,17 @@ object TvPresentation {
     private val secondary = Color(0xFFBBB9B3)
     private val accent = Color(0xFFC7D8AF)
 
-    class Action(val label: String, val enabled: Boolean, val run: Runnable)
+    class Action @JvmOverloads constructor(
+        val label: String, val enabled: Boolean, val run: Runnable, val key: Int = 0,
+    )
 
+    private fun view(context: Context): ComposeView = ComposeView(context).apply {
+        setViewTreeLifecycleOwner(context as LifecycleOwner)
+        setViewTreeSavedStateRegistryOwner(context as SavedStateRegistryOwner)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool)
+    }
+
+    /** Call on the UI thread with an enabled first action; dispose when the native page dies. */
     @JvmStatic
     fun home(
         context: Context,
@@ -53,8 +66,8 @@ object TvPresentation {
         attribution: String,
         actions: List<Action>,
         links: List<Action>,
-    ): ComposeView = ComposeView(context).apply {
-        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool)
+    ): ComposeView = view(context).apply {
+        require(actions.isNotEmpty() && actions.first().enabled)
         setContent {
             Theme {
                 val initial = remember { FocusRequester() }
@@ -82,6 +95,46 @@ object TvPresentation {
                 LaunchedEffect(Unit) {
                     withFrameNanos { }
                     initial.requestFocus()
+                }
+            }
+        }
+    }
+
+    /** A modal sibling to Chromium content; the native dialog owns Back and dismissal. */
+    @JvmStatic
+    fun controls(
+        context: Context,
+        title: String,
+        subtitle: String,
+        actions: List<Action>,
+        preferredKey: Int,
+    ): ComposeView = view(context).apply {
+        setContent {
+            Theme {
+                val initial = remember { FocusRequester() }
+                val selected = actions.firstOrNull { it.key == preferredKey && it.enabled }
+                    ?: actions.firstOrNull { it.enabled }
+                Column(
+                    Modifier.fillMaxWidth().background(background)
+                        .verticalScroll(rememberScrollState()).padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Text(title, fontSize = 24.sp, fontWeight = FontWeight.Medium)
+                    if (subtitle.isNotEmpty()) Text(subtitle, color = secondary,
+                        fontSize = 16.sp, maxLines = 2)
+                    actions.chunked(4).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            row.forEach { action ->
+                                ActionButton(action, Modifier.weight(1f).then(
+                                    if (action === selected) Modifier.focusRequester(initial)
+                                    else Modifier))
+                            }
+                        }
+                    }
+                }
+                LaunchedEffect(Unit) {
+                    withFrameNanos { }
+                    if (selected != null) initial.requestFocus()
                 }
             }
         }

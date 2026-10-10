@@ -18,7 +18,15 @@ index 72c9c992e8b542bf24390b15c9a48f9d8340e830..0abde5d60a75dd33b01b67dc2a216cc3
  
        # Specifically avoid passing in invoker.base_module_target as one of the
        # possible_config_deps.
-@@ -4279,6 +4281,7 @@ if (enable_java_templates) {
+@@ -4020,6 +4022,7 @@ if (enable_java_templates) {
+           "//chrome/browser/ui/android/bricks/internal/*",
+           "//android_webview/javatests/*",
+         ]
++        _kt_allowlist += [ "//brave/android/java/org/chromium/chrome/browser/tv/presentation/*" ]
+         _found_kt = filter_exclude(_abs_kt_files, _kt_allowlist)
+         assert(
+             _found_kt == [],
+@@ -4279,6 +4282,7 @@ if (enable_java_templates) {
        } else {
          not_needed(invoker, [ "missing_classes_allowlist" ])
        }

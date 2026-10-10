@@ -20,6 +20,7 @@ import org.chromium.chrome.browser.ui.native_page.NativePage;
 import org.chromium.chrome.browser.ui.native_page.NativePageHost;
 import org.chromium.content_public.browser.LoadUrlParams;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /** A native home with no feed, promotions, analytics, or web renderer. */
@@ -44,6 +45,15 @@ public final class TvHomePage extends BasicNativePage {
         super(host);
         mActivity = activity;
         mTab = tab;
+        List<TvPresentation.Action> links = new ArrayList<>();
+        if (!tab.isIncognito() && TvPhoneRemote.available()) {
+            links.add(action(R.string.brave_tv_phone, activity::showTvPhoneRemote));
+        }
+        links.add(
+                action(
+                        R.string.brave_tv_source,
+                        () -> open("https://github.com/smolcars/brave-tv")));
+        links.add(action(R.string.brave_tv_licenses, () -> open("chrome://credits")));
         mContent =
                 TvPresentation.home(
                         activity,
@@ -64,24 +74,7 @@ public final class TvHomePage extends BasicNativePage {
                                                         R.id.focus_url_bar, false)),
                                 action(R.string.brave_tv_controls, activity::showTvBrowserControls),
                                 action(R.string.brave_tv_bookmarks, activity::showTvBookmarks)),
-                        !tab.isIncognito() && TvPhoneRemote.available()
-                                ? List.of(
-                                        action(
-                                                R.string.brave_tv_phone,
-                                                activity::showTvPhoneRemote),
-                                        action(
-                                                R.string.brave_tv_source,
-                                                () -> open("https://github.com/smolcars/brave-tv")),
-                                        action(
-                                                R.string.brave_tv_licenses,
-                                                () -> open("chrome://credits")))
-                                : List.of(
-                                        action(
-                                                R.string.brave_tv_source,
-                                                () -> open("https://github.com/smolcars/brave-tv")),
-                                        action(
-                                                R.string.brave_tv_licenses,
-                                                () -> open("chrome://credits"))));
+                        links);
         initWithView(mContent);
     }
 

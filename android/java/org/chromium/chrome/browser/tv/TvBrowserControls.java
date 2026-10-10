@@ -14,11 +14,13 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.SystemClock;
+import android.view.Gravity;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
@@ -48,6 +50,7 @@ import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelSelectorTabModelObserver;
 import org.chromium.chrome.browser.tabmodel.TabModelUtils;
+import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.bookmarks.BookmarkItem;
 import org.chromium.components.browser_ui.widget.gesture.BackPressHandler;
@@ -437,118 +440,85 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         Tab tab = mActivity.getActivityTab();
         if (!canAccessTabs(tab != null && tab.isIncognito())) return;
         String url = currentUrl();
-        TvBrowserPanel panel =
-                new TvBrowserPanel(
+        List<TvPresentation.Action> actions = new ArrayList<>();
+        addComposeControl(actions, R.string.brave_tv_address, true, tab, url);
+        addComposeControl(actions, R.string.brave_tv_pointer, currentPage() != null, tab, url);
+        addComposeControl(
+                actions, R.string.brave_tv_back, tab != null && tab.canGoBack(), tab, url);
+        addComposeControl(
+                actions, R.string.brave_tv_forward, tab != null && tab.canGoForward(), tab, url);
+        addComposeControl(
+                actions,
+                tab != null && tab.isLoading() ? R.string.brave_tv_stop : R.string.brave_tv_reload,
+                tab != null && !tab.isNativePage(),
+                tab,
+                url);
+        addComposeControl(
+                actions, R.string.brave_tv_tabs, mActivity.areTabModelsInitialized(), tab, url);
+        addComposeControl(actions, R.string.brave_tv_bookmarks, tab != null, tab, url);
+        addComposeControl(
+                actions, R.string.brave_tv_history, tab != null && !tab.isIncognito(), tab, url);
+        addComposeControl(actions, R.string.brave_tv_shields, isWebTab(tab), tab, url);
+        addComposeControl(actions, R.string.brave_tv_settings, true, tab, url);
+        addComposeControl(actions, R.string.brave_tv_scroll, currentPage() != null, tab, url);
+        addComposeControl(
+                actions,
+                R.string.brave_tv_playback,
+                tab != null && !tab.isNativePage() && tab.getWebContents() != null,
+                tab,
+                url);
+        addComposeControl(actions, R.string.brave_tv_home, tab != null, tab, url);
+        addComposeControl(actions, R.string.brave_tv_close_tab, tab != null, tab, url);
+        if (TvPhoneRemote.available()) {
+            actions.add(
+                    new TvPresentation.Action(
+                            mActivity.getString(R.string.brave_tv_phone),
+                            true,
+                            this::showPhoneRemote,
+                            R.string.brave_tv_phone));
+        }
+        View content =
+                TvPresentation.controls(
                         mActivity,
                         mActivity.getString(
                                 tab != null && tab.isIncognito()
                                         ? R.string.brave_tv_private_controls
                                         : R.string.brave_tv_controls),
                         tab == null || tab.isNativePage() ? "" : url,
+                        actions,
                         mLastAction);
-        panel.useWideLayout();
-        if (TvPhoneRemote.available()) {
-            panel.addItem(
-                    mActivity.getString(R.string.brave_tv_phone),
-                    R.string.brave_tv_phone,
-                    this::showPhoneRemote);
+        mDialog =
+                new AlertDialog.Builder(mActivity)
+                        .setView(content)
+                        .setOnCancelListener(ignored -> dispatchNativeBack())
+                        .create();
+        mDialog.setCanceledOnTouchOutside(false);
+        mDialog.show();
+        Window window = mDialog.getWindow();
+        if (window != null) {
+            if (tab != null && tab.isIncognito()) {
+                window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+            }
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setGravity(Gravity.BOTTOM);
+            var metrics = mActivity.getResources().getDisplayMetrics();
+            window.setLayout(
+                    Math.round(metrics.widthPixels * 0.92f), ViewGroup.LayoutParams.WRAP_CONTENT);
         }
-        panel.addItem(
-                        mActivity.getString(R.string.brave_tv_address),
-                        R.string.brave_tv_address,
-                        () -> runControl(R.string.brave_tv_address, tab, url))
-                .setIconResource(R.drawable.ic_search);
-        addControl(
-                panel,
-                R.string.brave_tv_pointer,
-                R.drawable.ic_cursor,
-                currentPage() != null,
-                tab,
-                url);
-        addControl(
-                panel,
-                R.string.brave_tv_scroll,
-                R.drawable.ic_arrow_up_and_down,
-                currentPage() != null,
-                tab,
-                url);
-        addControl(
-                panel,
-                R.string.brave_tv_tabs,
-                R.drawable.ic_windows_open,
-                mActivity.areTabModelsInitialized(),
-                tab,
-                url);
-        addControl(
-                panel,
-                R.string.brave_tv_back,
-                R.drawable.ic_arrow_left,
-                tab != null && tab.canGoBack(),
-                tab,
-                url);
-        addControl(
-                panel,
-                R.string.brave_tv_forward,
-                R.drawable.arrow_forward_24px,
-                tab != null && tab.canGoForward(),
-                tab,
-                url);
-        addControl(
-                panel,
-                tab != null && tab.isLoading() ? R.string.brave_tv_stop : R.string.brave_tv_reload,
-                tab != null && tab.isLoading() ? R.drawable.ic_close : R.drawable.ic_refresh_24dp,
-                tab != null && !tab.isNativePage(),
-                tab,
-                url);
-        addControl(
-                panel,
-                R.string.brave_tv_bookmarks,
-                R.drawable.ic_product_bookmarks,
-                tab != null,
-                tab,
-                url);
-        addControl(
-                panel,
-                R.string.brave_tv_history,
-                R.drawable.ic_history,
-                tab != null && !tab.isIncognito(),
-                tab,
-                url);
-        addControl(panel, R.string.brave_tv_settings, R.drawable.ic_settings, true, tab, url);
-        addControl(
-                panel,
-                R.string.brave_tv_shields,
-                R.drawable.ic_shield_done,
-                isWebTab(tab),
-                tab,
-                url);
-        addControl(
-                panel,
-                R.string.brave_tv_close_tab,
-                R.drawable.ic_window_tab_close,
-                tab != null,
-                tab,
-                url);
-        addControl(
-                panel, R.string.brave_tv_home, R.drawable.ic_browser_home, tab != null, tab, url);
-        addControl(
-                panel,
-                R.string.brave_tv_playback,
-                R.drawable.ic_media_player,
-                tab != null && !tab.isNativePage() && tab.getWebContents() != null,
-                tab,
-                url);
-        mDialog = panel.show(this::dispatchNativeBack);
     }
 
-    private void addControl(
-            TvBrowserPanel panel,
+    private void addComposeControl(
+            List<TvPresentation.Action> actions,
             int action,
-            int icon,
             boolean enabled,
             @Nullable Tab tab,
             String url) {
-        panel.addAction(action, enabled, () -> runControl(action, tab, url)).setIconResource(icon);
+        actions.add(
+                new TvPresentation.Action(
+                        mActivity.getString(action),
+                        enabled,
+                        () -> runControl(action, tab, url),
+                        action));
     }
 
     private void dismissDialog() {
