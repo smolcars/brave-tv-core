@@ -48,6 +48,9 @@ function render(result) {
     connected = false
     state = null
     resetInput()
+    $('pair').hidden = result.error === 'approval'
+    $('approval').hidden = result.error !== 'approval'
+    $('remote').hidden = true
     status(
       result.error === 'approval'
         ? 'Waiting for approval on the TV…'
@@ -81,6 +84,7 @@ function render(result) {
     pendingEdit = null
   }
   $('pair').hidden = true
+  $('approval').hidden = true
   $('remote').hidden = false
   $('disconnect').hidden = false
   status(
@@ -242,8 +246,12 @@ async function pair(secret) {
     const result = await post('/pair', { invite: secret })
     if (!result.token) throw new Error('pairing')
     token = result.token
+    $('pair').hidden = true
+    $('approval').hidden = false
     status('Waiting for approval on the TV…')
   } catch {
+    $('pair').hidden = false
+    $('approval').hidden = true
     status('Pairing failed or expired. Start a new invitation on the TV.')
   } finally {
     busy = false
