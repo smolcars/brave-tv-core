@@ -1309,6 +1309,12 @@ public class BytecodeTest {
         Assert.assertTrue(
                 methodExists(
                         "org/chromium/chrome/browser/ChromeTabbedActivity",
+                        "initiateArchivedTabsAutoDeletePromoManager",
+                        MethodModifier.REGULAR,
+                        void.class));
+        Assert.assertTrue(
+                methodExists(
+                        "org/chromium/chrome/browser/ChromeTabbedActivity",
                         "hideOverview",
                         MethodModifier.REGULAR,
                         void.class,
