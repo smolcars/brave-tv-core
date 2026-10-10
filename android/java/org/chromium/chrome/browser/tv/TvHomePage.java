@@ -79,6 +79,7 @@ public final class TvHomePage extends BasicNativePage {
                 true);
 
         LinearLayout actions = new LinearLayout(activity);
+        actions.setBaselineAligned(false);
         actions.setPadding(0, dp(24), 0, dp(8));
         mContent.addView(actions);
         MaterialButton address =
