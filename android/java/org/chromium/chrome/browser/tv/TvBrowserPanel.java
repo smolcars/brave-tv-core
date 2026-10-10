@@ -104,7 +104,7 @@ final class TvBrowserPanel {
     private MaterialButton makeButton(String label, int key, boolean enabled, Runnable action) {
         MaterialButton button = createButton(mActivity, label, enabled, action);
         if (enabled && mFirstAction == null) mFirstAction = button;
-        if (enabled && key == mPreferredAction) mPreferredView = button;
+        if (enabled && mPreferredAction != 0 && key == mPreferredAction) mPreferredView = button;
         return button;
     }
 
