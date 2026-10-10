@@ -5,7 +5,15 @@
 
 package org.brave.bytecode;
 
+import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.F_SAME;
+import static org.objectweb.asm.Opcodes.IFEQ;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.RETURN;
+
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 
 public class BraveTabbedActivityClassAdapter extends BraveClassVisitor {
     static String sChromeTabbedActivityClassName =
@@ -24,6 +32,8 @@ public class BraveTabbedActivityClassAdapter extends BraveClassVisitor {
             "org/chromium/chrome/browser/tabmodel/RedirectTabCreator";
     static String sBraveTabCreatorClassName =
             "org/chromium/chrome/browser/tabmodel/BraveTabCreator";
+
+    private boolean mFoundTabPromoMethod;
 
     public BraveTabbedActivityClassAdapter(ClassVisitor visitor) {
         super(visitor);
@@ -47,5 +57,38 @@ public class BraveTabbedActivityClassAdapter extends BraveClassVisitor {
                 sChromeTabbedActivityClassName, "maybeHandleUrlIntent", sBraveActivityClassName);
         makeProtectedField(sChromeTabbedActivityClassName, "mLayoutManager");
         makeProtectedField(sChromeTabbedActivityClassName, "mMultiInstanceManager");
+    }
+
+    @Override
+    protected MethodVisitor visitMethodImpl(Method method) {
+        MethodVisitor visitor = super.visitMethodImpl(method);
+        if (!sChromeTabbedActivityClassName.equals(mName)
+                || !"initiateArchivedTabsAutoDeletePromoManager".equals(method.name)
+                || !"()V".equals(method.desc)) {
+            return visitor;
+        }
+        mFoundTabPromoMethod = true;
+        return new MethodVisitor(ASM7, visitor) {
+            @Override
+            public void visitCode() {
+                super.visitCode();
+                // Suppress the phone promotion without recording a retention decision.
+                super.visitMethodInsn(
+                        INVOKESTATIC, "org/chromium/base/DeviceInfo", "isTV", "()Z", false);
+                Label phone = new Label();
+                super.visitJumpInsn(IFEQ, phone);
+                super.visitInsn(RETURN);
+                super.visitLabel(phone);
+                super.visitFrame(F_SAME, 0, null, 0, null);
+            }
+        };
+    }
+
+    @Override
+    public void visitEnd() {
+        if (sChromeTabbedActivityClassName.equals(mName) && !mFoundTabPromoMethod) {
+            throw new IllegalStateException("TV tab-promotion method missing");
+        }
+        super.visitEnd();
     }
 }
