@@ -69,7 +69,7 @@ final class TvBrowserPanel {
         mContent.addView(view);
     }
 
-    void addAction(int label, boolean enabled, Runnable action) {
+    MaterialButton addAction(int label, boolean enabled, Runnable action) {
         MaterialButton button = makeButton(mActivity.getString(label), label, enabled, action);
         if (mRow == null || mRow.getChildCount() == 3) {
             mRow = new LinearLayout(mActivity);
@@ -83,6 +83,7 @@ final class TvBrowserPanel {
             mPrimaryAction.setNextFocusDownId(button.getId());
             mPrimaryDownSet = true;
         }
+        return button;
     }
 
     void addItem(String label, int key, Runnable action) {

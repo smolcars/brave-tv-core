@@ -51,6 +51,7 @@ import org.chromium.components.search_engines.TemplateUrl;
 import org.chromium.components.search_engines.TemplateUrlService;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
+import org.chromium.content_public.browser.WebContents;
 import org.chromium.ui.base.PageTransition;
 
 import java.util.List;
@@ -72,6 +73,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
     private @Nullable TvFilterPanel mFilterPanel;
+    private @Nullable TvMediaPanel mMediaPanel;
     private @Nullable Runnable mOnDataCleared;
     private boolean mClearingData;
     private int mLastAction = R.string.brave_tv_address;
@@ -248,7 +250,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     @Override
     public void showControls() {
         if (!isAlive()) return;
-        if (mHistoryPanel != null || mFilterPanel != null) dismissDialog();
+        if (mHistoryPanel != null || mFilterPanel != null || mMediaPanel != null) dismissDialog();
         detachCursor();
         if (mDialog != null && mDialog.isShowing()) return;
         Tab tab = mActivity.getActivityTab();
@@ -284,6 +286,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         addControl(panel, R.string.brave_tv_shields, isWebTab(tab), tab, url);
         addControl(panel, R.string.brave_tv_close_tab, tab != null, tab, url);
         addControl(panel, R.string.brave_tv_home, tab != null, tab, url);
+        addControl(
+                panel,
+                R.string.brave_tv_playback,
+                tab != null && !tab.isNativePage() && tab.getWebContents() != null,
+                tab,
+                url);
         mDialog = panel.show(this::dispatchNativeBack);
     }
 
@@ -294,6 +302,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void dismissDialog() {
         mOnDataCleared = null;
+        if (mMediaPanel != null) {
+            mMediaPanel.destroy();
+            mMediaPanel = null;
+        }
         if (mFilterPanel != null) {
             mFilterPanel.destroy();
             mFilterPanel = null;
@@ -930,6 +942,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             mHistoryPanel.show();
         } else if (action == R.string.brave_tv_settings) {
             showSettings();
+        } else if (action == R.string.brave_tv_playback) {
+            Tab tab = mActivity.getActivityTab();
+            WebContents contents = tab == null ? null : tab.getWebContents();
+            if (tab == null || contents == null || tab.isNativePage()) return;
+            mMediaPanel = new TvMediaPanel(mActivity, tab, contents, this::returnToControls);
+            mMediaPanel.show();
         } else if (action == R.string.brave_tv_close_tab) {
             mActivity.onMenuOrKeyboardAction(R.id.close_tab, false);
         } else {
