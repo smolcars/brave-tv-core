@@ -53,7 +53,9 @@ import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.ui.base.PageTransition;
+import org.chromium.ui.modaldialog.ModalDialogManager;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
@@ -74,6 +76,16 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable TvHistoryPanel mHistoryPanel;
     private @Nullable TvFilterPanel mFilterPanel;
     private @Nullable TvMediaPanel mMediaPanel;
+    private final @Nullable ModalDialogManager mModalDialogs;
+    private final ModalDialogManager.ModalDialogManagerObserver mModalObserver =
+            new ModalDialogManager.ModalDialogManagerObserver() {
+                @Override
+                public void onDialogShown(View dialogView) {
+                    if (!isAlive()) return;
+                    detachCursor();
+                    dialogView.post(() -> focusNativeDialog(dialogView));
+                }
+            };
     private @Nullable Runnable mOnDataCleared;
     private boolean mClearingData;
     private int mLastAction = R.string.brave_tv_address;
@@ -106,6 +118,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mCursorView = new View(activity);
         mCursorView.setBackground(mCursor);
         mCursorView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        mModalDialogs = activity.getModalDialogManager();
+        if (mModalDialogs != null) mModalDialogs.addObserver(mModalObserver);
         mBackCallback =
                 new OnBackPressedCallback(true) {
                     @Override
@@ -133,6 +147,31 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private boolean isAlive() {
         return !mDestroyed && !mActivity.isFinishing() && !mActivity.isDestroyed();
+    }
+
+    private void focusNativeDialog(View dialog) {
+        if (!isAlive() || !dialog.isAttachedToWindow() || !dialog.isShown()) return;
+        View focused = dialog.findFocus();
+        if (focused != null
+                && focused != dialog
+                && focused.isEnabled()
+                && (focused.isClickable() || focused.onCheckIsTextEditor())) return;
+        List<View> controls = new ArrayList<>();
+        dialog.addFocusables(controls, View.FOCUS_FORWARD, View.FOCUSABLES_ALL);
+        View preferred = null;
+        for (View control : controls) {
+            if (control == dialog
+                    || !control.isEnabled()
+                    || !control.isShown()
+                    || (!control.isClickable() && !control.onCheckIsTextEditor())) continue;
+            control.setFocusableInTouchMode(true);
+            if (control.onCheckIsTextEditor()) {
+                preferred = control;
+                break;
+            }
+            if (preferred == null || control.getId() == R.id.negative_button) preferred = control;
+        }
+        if (preferred != null) preferred.requestFocus();
     }
 
     private boolean keyboardVisible() {
@@ -1050,6 +1089,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     public void destroy() {
         mDestroyed = true;
+        if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);
         mInput.cancelPress();
         mBackCallback.remove();
         detachCursor();
