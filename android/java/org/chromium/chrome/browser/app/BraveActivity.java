@@ -206,7 +206,6 @@ import org.chromium.chrome.browser.toolbar.BraveToolbarManager;
 import org.chromium.chrome.browser.toolbar.bottom.BottomToolbarConfiguration;
 import org.chromium.chrome.browser.toolbar.top.BraveToolbarLayoutImpl;
 import org.chromium.chrome.browser.tv.TvBrowserControls;
-import org.chromium.chrome.browser.tv.TvHomePage;
 import org.chromium.chrome.browser.ui.RootUiCoordinator;
 import org.chromium.chrome.browser.ui.appmenu.AppMenuPropertiesDelegate;
 import org.chromium.chrome.browser.ui.messages.snackbar.Snackbar;
@@ -425,7 +424,8 @@ public abstract class BraveActivity extends ChromeActivity
                                                     || mIncognitoReauthController
                                                             .isIncognitoReauthPending()));
             Tab tab = getActivityTab();
-            if (tab != null && !(tab.getNativePage() instanceof TvHomePage)) {
+            // A restored home tab may not have created its native view yet.
+            if (tab != null && !UrlUtilities.isNtpUrl(tab.getUrl().getSpec())) {
                 mTvBrowserControls.showControls();
             }
         }
