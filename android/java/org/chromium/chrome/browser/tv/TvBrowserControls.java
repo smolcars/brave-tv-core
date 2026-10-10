@@ -11,6 +11,8 @@ import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -23,6 +25,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.google.android.material.color.MaterialColors;
 
 import org.chromium.base.BravePreferenceKeys;
 import org.chromium.base.CallbackController;
@@ -160,10 +164,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private void focusNativeDialog(View dialog) {
         if (!isAlive() || !dialog.isAttachedToWindow() || !dialog.isShown()) return;
         View focused = dialog.findFocus();
-        if (focused != null
-                && focused != dialog
-                && focused.isEnabled()
-                && (focused.isClickable() || focused.onCheckIsTextEditor())) return;
         ArrayList<View> controls = new ArrayList<>();
         dialog.addFocusables(controls, View.FOCUS_FORWARD, View.FOCUSABLES_ALL);
         View preferred = null;
@@ -173,12 +173,30 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     || !control.isShown()
                     || (!control.isClickable() && !control.onCheckIsTextEditor())) continue;
             control.setFocusableInTouchMode(true);
-            if (control.onCheckIsTextEditor()) {
-                preferred = control;
-                break;
+            if (control.getForeground() == null) {
+                float density = control.getResources().getDisplayMetrics().density;
+                GradientDrawable outline = new GradientDrawable();
+                outline.setCornerRadius(8 * density);
+                outline.setStroke(
+                        Math.round(3 * density),
+                        MaterialColors.getColor(control, R.attr.colorOnSurface));
+                StateListDrawable foreground = new StateListDrawable();
+                foreground.addState(
+                        new int[] {android.R.attr.state_enabled, android.R.attr.state_focused},
+                        outline);
+                control.setForeground(foreground);
             }
-            if (preferred == null || control.getId() == R.id.negative_button) preferred = control;
+            if (preferred == null
+                    || (!preferred.onCheckIsTextEditor()
+                            && (control.onCheckIsTextEditor()
+                                    || control.getId() == R.id.negative_button))) {
+                preferred = control;
+            }
         }
+        if (focused != null
+                && focused != dialog
+                && focused.isEnabled()
+                && (focused.isClickable() || focused.onCheckIsTextEditor())) return;
         if (preferred != null) preferred.requestFocus();
     }
 
