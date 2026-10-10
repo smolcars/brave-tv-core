@@ -298,11 +298,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         return tab == null || tab.isNativePage() ? null : tab.getContentView();
     }
 
-    private String currentUrl() {
-        Tab tab = mActivity.getActivityTab();
-        return tab == null ? "" : tab.getUrl().getSpec();
-    }
-
     public boolean dispatchKeyEvent(KeyEvent event) {
         mPhoneRemote.invalidate();
         if (!isAlive()) return false;
