@@ -45,6 +45,7 @@ template("brave_androidx_tv_targets") {
     enable_compose = true
     deps = [
       ":brave_tv_material_java",
+      "//third_party/android_deps:org_jetbrains_kotlinx_kotlinx_coroutines_core_jvm_java",
       "//third_party/androidx:androidx_compose_foundation_foundation_java",
       "//third_party/androidx:androidx_compose_foundation_foundation_layout_java",
       "//third_party/androidx:androidx_compose_runtime_runtime_java",
