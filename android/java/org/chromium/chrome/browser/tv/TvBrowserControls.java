@@ -156,7 +156,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 && focused != dialog
                 && focused.isEnabled()
                 && (focused.isClickable() || focused.onCheckIsTextEditor())) return;
-        List<View> controls = new ArrayList<>();
+        ArrayList<View> controls = new ArrayList<>();
         dialog.addFocusables(controls, View.FOCUS_FORWARD, View.FOCUSABLES_ALL);
         View preferred = null;
         for (View control : controls) {
