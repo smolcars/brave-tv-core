@@ -255,11 +255,9 @@ object TvPresentation {
         entries: List<PanelEntry>, preferredKey: Int,
     ): View = view(context).apply {
         val actions = entries.filterIsInstance<ActionRow>().flatMap { it.actions }
-        val selected = actions.firstOrNull { it.key == preferredKey && it.enabled }
-            ?: actions.firstOrNull { it.enabled }
         setContent {
             Theme {
-                val initial = remember { FocusRequester() }
+                val initialTargets = remember { actions.associateWith { FocusRequester() } }
                 Column(Modifier.fillMaxWidth().background(backgroundColor).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(title, fontSize = 26.sp, fontWeight = FontWeight.Medium,
@@ -275,9 +273,8 @@ object TvPresentation {
                                 is ActionRow -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                     entry.actions.forEach { action ->
                                         key(action) {
-                                            ActionButton(action, Modifier.weight(1f).then(
-                                                if (action === selected) Modifier.focusRequester(initial)
-                                                else Modifier))
+                                            ActionButton(action, Modifier.weight(1f)
+                                                .focusRequester(initialTargets.getValue(action)))
                                         }
                                     }
                                 }
@@ -288,7 +285,10 @@ object TvPresentation {
                 }
                 LaunchedEffect(Unit) {
                     withFrameNanos { }
-                    if (selected != null) initial.requestFocus()
+                    // Native media state can disable an action before the first frame.
+                    val selected = actions.firstOrNull { it.key == preferredKey && it.enabled }
+                        ?: actions.firstOrNull { it.enabled }
+                    selected?.let { initialTargets.getValue(it).requestFocus() }
                 }
             }
         }
