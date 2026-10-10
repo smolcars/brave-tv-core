@@ -4,7 +4,6 @@
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 package org.chromium.chrome.browser.tv;
 
-import android.content.pm.ApplicationInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
@@ -28,6 +27,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import org.chromium.base.CommandLine;
+import org.chromium.base.version_info.VersionInfo;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 
@@ -72,8 +72,9 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         mConnectivity = activity.getSystemService(ConnectivityManager.class);
     }
 
-    static boolean available(BraveActivity activity) {
-        return (activity.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    static boolean available() {
+        return !VersionInfo.isOfficialBuild()
+                && VersionInfo.isLocalBuild()
                 && CommandLine.getInstance().hasSwitch("tv-local-remote-experiment");
     }
 
@@ -82,7 +83,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     }
 
     void show() {
-        if (!available(mActivity) || mActivity.isFinishing() || mActivity.isDestroyed()) return;
+        if (!available() || mActivity.isFinishing() || mActivity.isDestroyed()) return;
         if (mSession != null) {
             showPairing();
             return;

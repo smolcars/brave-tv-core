@@ -403,7 +403,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         tab == null || tab.isNativePage() ? "" : url,
                         mLastAction);
         panel.useWideLayout();
-        if (TvPhoneRemote.available(mActivity)) {
+        if (TvPhoneRemote.available()) {
             panel.addItem(
                     mActivity.getString(R.string.brave_tv_phone),
                     R.string.brave_tv_phone,

@@ -107,7 +107,7 @@ public final class TvHomePage extends BasicNativePage {
                         1,
                         activity::showTvBookmarks);
         MaterialButton phoneButton = null;
-        if (!tab.isIncognito() && TvPhoneRemote.available(activity)) {
+        if (!tab.isIncognito() && TvPhoneRemote.available()) {
             LinearLayout phone = new LinearLayout(activity);
             phone.setPadding(0, dp(8), 0, 0);
             mContent.addView(phone);
