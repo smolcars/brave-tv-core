@@ -313,7 +313,6 @@ pad.onpointerup = (e) => {
       !gesture.moved && !gesture.multi && performance.now() - gesture.time < 450
     gesture = null
     flushMotion()
-    motion = null
     if (tap) command('click')
   }
 }
