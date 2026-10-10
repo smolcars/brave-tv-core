@@ -178,9 +178,10 @@ void BraveSyncServiceImpl::Initialize(
     DataTypeController::TypeVector controllers) {
   base::AutoReset<bool> is_initializing_resetter(&is_initializing_, true);
   SyncServiceImpl::Initialize(std::move(controllers));
-  if (!BUILDFLAG(IS_ANDROID) &&
-      !user_settings_->IsInitialSyncFeatureSetupComplete()) {
-    base::UmaHistogramExactLinear("Brave.Sync.Status.2", 0, 3);
+  if constexpr (!BUILDFLAG(IS_ANDROID)) {
+    if (!user_settings_->IsInitialSyncFeatureSetupComplete()) {
+      base::UmaHistogramExactLinear("Brave.Sync.Status.2", 0, 3);
+    }
   }
 }
 
@@ -333,7 +334,7 @@ void BraveSyncServiceImpl::OnBraveSyncPrefsChanged(const std::string& path) {
       // Send updated status here, because OnDeviceInfoChange is not triggered
       // when device leaves the chain by `Leave Sync Chain` button
       // 0 means disabled or 1 device
-      if (!BUILDFLAG(IS_ANDROID)) {
+      if constexpr (!BUILDFLAG(IS_ANDROID)) {
         base::UmaHistogramExactLinear("Brave.Sync.Status.2", 0, 3);
       }
     }
