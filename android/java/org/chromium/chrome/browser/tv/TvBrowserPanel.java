@@ -34,6 +34,7 @@ final class TvBrowserPanel {
     private final Activity mActivity;
     private final LinearLayout mRoot;
     private final LinearLayout mContent;
+    private final TextView mTitle;
     private final ScrollView mScroll;
     private final int mPreferredAction;
     private @Nullable LinearLayout mRow;
@@ -49,7 +50,7 @@ final class TvBrowserPanel {
         mRoot = new LinearLayout(activity);
         mRoot.setOrientation(LinearLayout.VERTICAL);
         mRoot.setPadding(dp(24), dp(24), dp(24), dp(16));
-        addText(title, 30, true);
+        mTitle = addText(title, 30, true);
         if (!subtitle.isEmpty()) addText(subtitle, 15, false);
         mContent = new LinearLayout(activity);
         mContent.setOrientation(LinearLayout.VERTICAL);
@@ -65,6 +66,9 @@ final class TvBrowserPanel {
 
     void useWideLayout() {
         mWide = true;
+        mTitle.setTextSize(26);
+        mRoot.setPadding(dp(24), dp(20), dp(24), dp(12));
+        mContent.setPadding(0, dp(8), 0, dp(4));
     }
 
     private int dp(int value) {
@@ -92,6 +96,7 @@ final class TvBrowserPanel {
 
     MaterialButton addAction(int label, boolean enabled, Runnable action) {
         MaterialButton button = makeButton(mActivity.getString(label), label, enabled, action);
+        if (mWide) button.setMinHeight(dp(48));
         if (mRow == null || mRow.getChildCount() == (mWide ? 3 : 2)) {
             mRow = new LinearLayout(mActivity);
             mContent.addView(mRow);
