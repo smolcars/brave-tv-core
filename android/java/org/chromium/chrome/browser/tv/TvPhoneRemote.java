@@ -47,6 +47,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     private TvRemoteBrowser mBrowser;
     private AlertDialog mDialog;
     private TextView mBadge;
+    private android.net.Network mNetwork;
     private String mAddress;
     private String mOrigin;
     private String mHtml;
@@ -57,8 +58,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 @Override
                 public void run() {
                     if (mSession == null) return;
-                    if (mSession.expired(SystemClock.elapsedRealtime())
-                            || !mAddress.equals(lanAddress())) {
+                    if (mSession.expired(SystemClock.elapsedRealtime()) || !sameNetwork()) {
                         stop();
                         return;
                     }
@@ -125,6 +125,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
             stop();
             return;
         }
+        mNetwork = mConnectivity.getActiveNetwork();
         mSession = new TvRemoteSession(SystemClock.elapsedRealtime());
         mBrowser = new TvRemoteBrowser(mActivity, mControls);
         mServer = new TvRemoteServer(mAddress, this);
@@ -225,7 +226,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         if (path.equals("/")) return mHtml;
         if (path.equals("/remote.css")) return mCss;
         if (path.equals("/remote.js")) return mJs;
-        if (!mAddress.equals(lanAddress())) {
+        if (!sameNetwork()) {
             mUi.post(this::stop);
             return error("revoked");
         }
@@ -293,8 +294,16 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
 
     private String read(int resource) throws IOException {
         try (InputStream stream = mActivity.getResources().openRawResource(resource)) {
-            return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            return new String(
+                    org.chromium.base.FileUtils.readStream(stream), StandardCharsets.UTF_8);
         }
+    }
+
+    private boolean sameNetwork() {
+        return mNetwork != null
+                && mConnectivity != null
+                && mNetwork.equals(mConnectivity.getActiveNetwork())
+                && mAddress.equals(lanAddress());
     }
 
     private String lanAddress() {

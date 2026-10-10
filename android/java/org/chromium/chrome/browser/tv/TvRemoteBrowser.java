@@ -38,6 +38,7 @@ final class TvRemoteBrowser {
     private long mRevision = 1;
     private int mWidth;
     private int mHeight;
+    private int mContentOffset;
     private int mX;
     private int mY;
     private boolean mPaused = true;
@@ -118,8 +119,10 @@ final class TvRemoteBrowser {
         int height =
                 tab == null || tab.getContentView() == null ? 0 : tab.getContentView().getHeight();
         boolean paused = mControls.remotePaused();
-        if (width != mWidth || height != mHeight || paused != mPaused) {
+        int offset = mActivity.getBrowserControlsManager().getContentOffset();
+        if (width != mWidth || height != mHeight || paused != mPaused || offset != mContentOffset) {
             mRevision++;
+            mContentOffset = offset;
             mWidth = width;
             mHeight = height;
             mPaused = paused;
