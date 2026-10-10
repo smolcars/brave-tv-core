@@ -23,15 +23,17 @@ group("ad_block_signed_bundle_host_tests") {
   deps = [ ":ad_block_signed_bundle_unittests($host_toolchain)" ]
 }
 
-test("ad_block_signed_bundle_unittests") {
-  sources = [ "ad_block_signed_bundle_unittest.cc" ]
-  deps = [
-    ":signed_bundle",
-    "//base/test:run_all_unittests",
-    "//base/test:test_support",
-    "//crypto",
-    "//testing/gtest",
-  ]
+if (current_toolchain == host_toolchain) {
+  test("ad_block_signed_bundle_unittests") {
+    sources = [ "ad_block_signed_bundle_unittest.cc" ]
+    deps = [
+      ":signed_bundle",
+      "//base/test:run_all_unittests",
+      "//base/test:test_support",
+      "//crypto",
+      "//testing/gtest",
+    ]
+  }
 }
 
 static_library("browser") {
