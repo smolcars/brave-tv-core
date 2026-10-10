@@ -106,6 +106,15 @@ public final class TvHomePage extends BasicNativePage {
                         false,
                         1,
                         activity::showTvBookmarks);
+        if (!tab.isIncognito() && TvPhoneRemote.available(activity)) {
+            addButton(
+                    actions,
+                    R.string.brave_tv_phone,
+                    R.drawable.ic_windows_open,
+                    false,
+                    1,
+                    activity::showTvPhoneRemote);
+        }
         View space = new View(activity);
         space.setMinimumHeight(dp(24));
         mContent.addView(space, new LinearLayout.LayoutParams(1, 0, 1));

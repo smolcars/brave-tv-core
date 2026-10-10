@@ -454,6 +454,12 @@ brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvHistoryPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvMediaPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteInput.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteBrowser.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvPhoneRemote.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteServer.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteSession.java",
+  "../../brave/android/java/org/chromium/content/browser/input/TvTextInput.java",
+
   "../../brave/android/java/org/chromium/chrome/browser/ui/BraveAdaptiveToolbarUiCoordinator.java",
   "../../brave/android/java/org/chromium/chrome/browser/ui/system/BraveStatusBarColorController.java",
   "../../brave/android/java/org/chromium/chrome/browser/undo_tab_close_snackbar/BraveUndoBarControllerBase.java",

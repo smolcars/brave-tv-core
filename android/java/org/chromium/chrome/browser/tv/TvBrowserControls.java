@@ -70,6 +70,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final NonNullObservableSupplier<Boolean> mScrimVisible;
     private final BooleanSupplier mPrivateTabsLocked;
     private final TvRemoteInput mInput;
+    private final TvPhoneRemote mPhoneRemote;
     private final Cursor mCursor;
     private final View mCursorView;
     private final OnBackPressedCallback mBackCallback;
@@ -121,6 +122,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             NonNullObservableSupplier<Boolean> scrimVisible,
             BooleanSupplier privateTabsLocked) {
         mActivity = activity;
+        mPhoneRemote = new TvPhoneRemote(activity, this);
         mBackPressManager = backPressManager;
         mScrimVisible = scrimVisible;
         mPrivateTabsLocked = privateTabsLocked;
@@ -253,6 +255,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {
+        mPhoneRemote.invalidate();
         if (!isAlive()) return false;
         InputDevice device = event.getDevice();
         if (!event.hasNoModifiers()
@@ -322,9 +325,53 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     public void onPause() {
+        mPhoneRemote.stop();
         mModalReturnPage = null;
         dismissDialog();
         detachCursor();
+    }
+
+    public void showPhoneRemote() {
+        if (!isAlive()) return;
+        Tab tab = mActivity.getActivityTab();
+        if (tab == null || tab.isIncognito()) return;
+        dismissDialog();
+        mPhoneRemote.show();
+    }
+
+    boolean remotePaused() {
+        Tab tab = mActivity.getActivityTab();
+        return !isAlive()
+                || !mActivity.hasWindowFocus()
+                || tab == null
+                || tab.isIncognito()
+                || !mActivity.areTabModelsInitialized()
+                || mActivity.getTabModelSelector().isIncognitoSelected()
+                || (mDialog != null && mDialog.isShowing())
+                || nativeUiOwnsInput(true)
+                || (tab.isNativePage() && !UrlUtilities.isNtpUrl(tab.getUrl()));
+    }
+
+    void remotePointer(int x, int y, String operation, int dx, int dy) {
+        if (remotePaused()) return;
+        mInput.cancelPress();
+        ContentView page = currentPage();
+        if (page == null) return;
+        if (mPage != page) {
+            detachCursor();
+            mPage = page;
+            page.addOnAttachStateChangeListener(mPageAttachmentListener);
+            if (page.getParent() instanceof ViewGroup parent) {
+                parent.addView(
+                        mCursorView,
+                        new ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT));
+            }
+        }
+        showPointer(x, y, TvRemoteInput.Mode.POINTER);
+        if (operation.equals("click")) click(x, y);
+        if (operation.equals("scroll")) scroll(x, y, dx, dy);
     }
 
     private boolean canAccessTabs(boolean incognito) {
@@ -356,6 +403,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         tab == null || tab.isNativePage() ? "" : url,
                         mLastAction);
         panel.useWideLayout();
+        if (TvPhoneRemote.available(mActivity)) {
+            panel.addItem(
+                    mActivity.getString(R.string.brave_tv_phone),
+                    R.string.brave_tv_phone,
+                    this::showPhoneRemote);
+        }
         panel.addItem(
                         mActivity.getString(R.string.brave_tv_address),
                         R.string.brave_tv_address,
@@ -1225,6 +1278,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     public void destroy() {
+        mPhoneRemote.stop();
         mDestroyed = true;
         mModalReturnPage = null;
         if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);

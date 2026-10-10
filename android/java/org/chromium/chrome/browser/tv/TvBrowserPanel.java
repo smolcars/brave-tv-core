@@ -188,6 +188,12 @@ final class TvBrowserPanel {
         return button;
     }
 
+    void addContent(View view, int heightDp) {
+        mContent.addView(
+                view,
+                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(heightDp)));
+    }
+
     AlertDialog show(Runnable onCancel) {
         int surface = MaterialColors.getColor(mRoot, R.attr.colorSurface);
         int primary = MaterialColors.getColor(mRoot, R.attr.colorPrimary);

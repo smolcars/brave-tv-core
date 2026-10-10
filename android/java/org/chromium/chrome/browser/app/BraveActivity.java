@@ -374,6 +374,10 @@ public abstract class BraveActivity extends ChromeActivity
                 == Configuration.UI_MODE_TYPE_TELEVISION;
     }
 
+    public void showTvPhoneRemote() {
+        if (mTvBrowserControls != null) mTvBrowserControls.showPhoneRemote();
+    }
+
     public void showTvBrowserControls() {
         if (mTvBrowserControls != null) mTvBrowserControls.showControls();
     }
