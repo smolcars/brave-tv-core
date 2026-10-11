@@ -52,6 +52,7 @@ import org.chromium.components.offline_items_collection.UpdateDelta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Native dialog/focus tests with a provider fixture; real download storage is tested separately.
@@ -216,30 +217,26 @@ public class TvDownloadsPanelTest {
         mDevice.pressDPadCenter();
     }
 
-    private boolean hasPaneTitle(AccessibilityNodeInfo node, String title) {
+    private boolean hasNode(AccessibilityNodeInfo node, Predicate<AccessibilityNodeInfo> matches) {
         if (node == null) return false;
-        if (title.equals(String.valueOf(node.getPaneTitle()))) return true;
+        if (matches.test(node)) return true;
         for (int i = 0; i < node.getChildCount(); i++) {
-            if (hasPaneTitle(node.getChild(i), title)) return true;
+            if (hasNode(node.getChild(i), matches)) return true;
         }
         return false;
     }
 
-    private void announcedText(String text) {
+    private void politeText(String text) {
         CriteriaHelper.pollInstrumentationThread(
-                () -> {
-                    AccessibilityNodeInfo root =
-                            InstrumentationRegistry.getInstrumentation()
-                                    .getUiAutomation()
-                                    .getRootInActiveWindow();
-                    return root != null
-                            && root.findAccessibilityNodeInfosByText(text).stream()
-                                    .anyMatch(
-                                            node ->
-                                                    node.getLiveRegion()
-                                                            == View
-                                                                    .ACCESSIBILITY_LIVE_REGION_POLITE);
-                });
+                () ->
+                        hasNode(
+                                InstrumentationRegistry.getInstrumentation()
+                                        .getUiAutomation()
+                                        .getRootInActiveWindow(),
+                                node ->
+                                        text.equals(String.valueOf(node.getText()))
+                                                && node.getLiveRegion()
+                                                        == View.ACCESSIBILITY_LIVE_REGION_POLITE));
     }
 
     @Test
@@ -254,15 +251,18 @@ public class TvDownloadsPanelTest {
         focus(label(R.string.brave_tv_controls));
         CriteriaHelper.pollInstrumentationThread(
                 () ->
-                        hasPaneTitle(
+                        hasNode(
                                 InstrumentationRegistry.getInstrumentation()
                                         .getUiAutomation()
                                         .getRootInActiveWindow(),
-                                mActivity.getString(R.string.brave_tv_downloads)));
-        announcedText(mActivity.getString(R.string.brave_tv_loading_downloads));
+                                node ->
+                                        mActivity
+                                                .getString(R.string.brave_tv_downloads)
+                                                .equals(String.valueOf(node.getPaneTitle()))));
+        politeText(mActivity.getString(R.string.brave_tv_loading_downloads));
         ThreadUtils.runOnUiThreadBlocking(() -> mPendingQuery.onResult(new ArrayList<>()));
         focus(label(R.string.brave_tv_refresh_downloads));
-        announcedText(mActivity.getString(R.string.brave_tv_empty_downloads));
+        politeText(mActivity.getString(R.string.brave_tv_empty_downloads));
         mDevice.pressDPadUp();
         focus(label(R.string.brave_tv_previous_downloads));
         assertFalse(mDevice.findObject(label(R.string.brave_tv_previous_downloads)).isEnabled());
@@ -274,7 +274,7 @@ public class TvDownloadsPanelTest {
     @MediumTest
     public void detailStatusIsAnnouncedAndDisabledActionRestoresSafeFocus() {
         showOne();
-        announcedText(mActivity.getString(R.string.brave_tv_download_complete));
+        politeText(mActivity.getString(R.string.brave_tv_download_complete));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     mItems.get(0).receivedBytes = 987;
@@ -282,22 +282,20 @@ public class TvDownloadsPanelTest {
                     mItems.get(0).isResumable = true;
                     mPanel.onItemUpdated(mItems.get(0), new UpdateDelta());
                 });
-        announcedText(mActivity.getString(R.string.brave_tv_download_paused));
+        politeText(mActivity.getString(R.string.brave_tv_download_paused));
         focus(label(R.string.brave_tv_downloads));
         assertTrue(mDevice.findObject(label(R.string.brave_tv_resume_download)).isEnabled());
-        List<AccessibilityNodeInfo> progress =
-                InstrumentationRegistry.getInstrumentation()
-                        .getUiAutomation()
-                        .getRootInActiveWindow()
-                        .findAccessibilityNodeInfosByText(
-                                Formatter.formatShortFileSize(mActivity, 987));
-        assertFalse(progress.isEmpty());
-        assertTrue(
-                progress.stream()
-                        .allMatch(
+        String progress = Formatter.formatShortFileSize(mActivity, 987);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        hasNode(
+                                InstrumentationRegistry.getInstrumentation()
+                                        .getUiAutomation()
+                                        .getRootInActiveWindow(),
                                 node ->
-                                        node.getLiveRegion()
-                                                == View.ACCESSIBILITY_LIVE_REGION_NONE));
+                                        progress.equals(String.valueOf(node.getText()))
+                                                && node.getLiveRegion()
+                                                        == View.ACCESSIBILITY_LIVE_REGION_NONE));
     }
 
     @Test
