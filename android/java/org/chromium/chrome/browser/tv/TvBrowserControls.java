@@ -53,8 +53,10 @@ import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
 import org.chromium.chrome.browser.search_engines.settings.BraveSearchEngineAdapter;
+import org.chromium.chrome.browser.tab.EmptyTabObserver;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabModel;
+import org.chromium.chrome.browser.tabmodel.TabModelObserver;
 import org.chromium.chrome.browser.tabmodel.TabModelSelectorTabModelObserver;
 import org.chromium.chrome.browser.tabmodel.TabModelUtils;
 import org.chromium.chrome.browser.tv.presentation.TvAddressEditor;
@@ -80,6 +82,7 @@ import java.util.function.BooleanSupplier;
 /** TV-only adapter around the existing browser UI and the active Chromium content view. */
 public final class TvBrowserControls implements TvRemoteInput.Target {
     static final int BOOKMARK_PAGE_SIZE = 8;
+    static final int TAB_PAGE_SIZE = 8;
     static final String PROJECT_SOURCE_URL = "https://github.com/smolcars/brave-tv";
     static final String LICENSES_URL = "chrome://credits";
 
@@ -102,7 +105,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable ContentView mPage;
     private @Nullable AlertDialog mDialog;
     private @Nullable CallbackController mBookmarkCallbacks;
-    private @Nullable Runnable mBookmarkCleanup;
+    private @Nullable Runnable mDialogCleanup;
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
     private @Nullable TvDownloadsPanel mDownloadsPanel;
@@ -696,9 +699,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             mSearchCallbacks.destroy();
             mSearchCallbacks = null;
         }
-        if (mBookmarkCleanup != null) {
-            mBookmarkCleanup.run();
-            mBookmarkCleanup = null;
+        if (mDialogCleanup != null) {
+            mDialogCleanup.run();
+            mDialogCleanup = null;
         }
         if (mBookmarkCallbacks != null) {
             mBookmarkCallbacks.destroy();
@@ -706,6 +709,16 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         }
         if (mDialog != null) mDialog.dismiss();
         mDialog = null;
+    }
+
+    private void setDialogCleanup(TvBrowserPanel panel, AlertDialog dialog, Runnable cleanup) {
+        mDialogCleanup = cleanup;
+        panel.setOnDismiss(
+                () -> {
+                    cleanup.run();
+                    if (mDialogCleanup == cleanup) mDialogCleanup = null;
+                    if (mDialog == dialog) mDialog = null;
+                });
     }
 
     private void runControl(int action, TvBrowserSession.Context context) {
@@ -909,10 +922,28 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void showTabs(boolean incognito, int start) {
+        showTabs(incognito, start, Tab.INVALID_TAB_ID, 0);
+    }
+
+    private void showTabs(boolean incognito, int start, int focusedTabId, int focusedAction) {
         if (!isAlive() || !mActivity.areTabModelsInitialized()) return;
         dismissDialog();
         if (!canAccessTabs(incognito)) return;
         TabModel model = mActivity.getTabModelSelector().getModel(incognito);
+        int selected =
+                focusedTabId == Tab.INVALID_TAB_ID
+                        ? TabModel.INVALID_TAB_INDEX
+                        : TabModelUtils.getTabIndexById(model, focusedTabId);
+        if (focusedTabId != Tab.INVALID_TAB_ID && selected == TabModel.INVALID_TAB_INDEX)
+            selected = Math.min(start, model.getCount() - 1);
+        int first = Math.max(0, Math.min(selected < 0 ? start : selected, model.getCount() - 1));
+        first -= first % TAB_PAGE_SIZE;
+        int end = Math.min(first + TAB_PAGE_SIZE, model.getCount());
+        Tab selectedTab = selected < 0 ? null : model.getTabAt(selected);
+        int preferred =
+                selectedTab != null
+                        ? selectedTab.getId()
+                        : focusedAction == 0 ? R.string.brave_tv_new_tab : focusedAction;
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
@@ -921,63 +952,167 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                         ? R.string.brave_tv_private_tabs
                                         : R.string.brave_tv_tabs),
                         "",
-                        R.string.brave_tv_new_tab);
-        panel.addAction(
-                R.string.brave_tv_new_tab,
-                true,
-                () -> {
-                    if (!isAlive() || !canAccessTabs(incognito)) return;
-                    dismissDialog();
-                    mActivity.onMenuOrKeyboardAction(
-                            incognito ? R.id.new_incognito_tab_menu_id : R.id.new_tab_menu_id,
-                            false);
-                    mLastAction = R.string.brave_tv_address;
-                });
-        panel.addAction(
-                incognito ? R.string.brave_tv_normal_tabs : R.string.brave_tv_private_tabs,
-                true,
-                () -> showTabs(!incognito, 0));
-        panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
-        int first = Math.max(0, Math.min(start, Math.max(0, model.getCount() - 1)));
-        int end = Math.min(first + 8, model.getCount());
+                        preferred);
+        if (incognito) panel.protectPrivateContent();
+        if (focusedTabId != Tab.INVALID_TAB_ID || focusedAction != 0) panel.restorePreferredFocus();
+        List<TvPresentation.Action> actions = new ArrayList<>();
+        List<Tab> visibleTabs = new ArrayList<>();
+        actions.add(
+                panel.addAction(
+                        R.string.brave_tv_new_tab,
+                        true,
+                        () -> {
+                            if (!isAlive() || !canAccessTabs(incognito)) return;
+                            dismissDialog();
+                            mActivity.onMenuOrKeyboardAction(
+                                    incognito
+                                            ? R.id.new_incognito_tab_menu_id
+                                            : R.id.new_tab_menu_id,
+                                    false);
+                            mLastAction = R.string.brave_tv_address;
+                        }));
+        actions.add(
+                panel.addAction(
+                        incognito ? R.string.brave_tv_normal_tabs : R.string.brave_tv_private_tabs,
+                        true,
+                        () -> showTabs(!incognito, 0)));
+        actions.add(panel.addAction(R.string.brave_tv_controls, true, this::returnToControls));
         for (int i = first; i < end; i++) {
             Tab tab = model.getTabAt(i);
             if (tab == null) continue;
+            visibleTabs.add(tab);
             int tabId = tab.getId();
             String title = tab.getTitle();
             if (title.isEmpty()) title = mActivity.getString(R.string.brave_tv_new_tab);
             if (tab == mActivity.getActivityTab())
                 title = mActivity.getString(R.string.brave_tv_current_tab, title);
-            panel.addItem(
-                    title,
-                    tabId,
-                    () -> {
-                        if (!isAlive() || !mActivity.areTabModelsInitialized()) return;
-                        if (!canAccessTabs(incognito)) return;
-                        TabModel currentModel = mActivity.getTabModelSelector().getModel(incognito);
-                        int index = TabModelUtils.getTabIndexById(currentModel, tabId);
-                        if (index == TabModel.INVALID_TAB_INDEX) {
-                            showTabs(incognito, first);
+            int pageStart = first;
+            actions.add(
+                    panel.addItem(
+                            title,
+                            tabId,
+                            () -> {
+                                if (!isAlive() || !mActivity.areTabModelsInitialized()) return;
+                                if (!canAccessTabs(incognito)) return;
+                                TabModel currentModel =
+                                        mActivity.getTabModelSelector().getModel(incognito);
+                                int index = TabModelUtils.getTabIndexById(currentModel, tabId);
+                                if (index == TabModel.INVALID_TAB_INDEX) {
+                                    showTabs(incognito, pageStart, tabId, 0);
+                                    return;
+                                }
+                                dismissDialog();
+                                mActivity.getTabModelSelector().selectModel(incognito);
+                                TabModelUtils.setIndex(currentModel, index);
+                                if (tab.getNativePage() instanceof TvHomePage home) {
+                                    // Re-selecting the active tab does not run Chromium's
+                                    // attachment focus.
+                                    home.focusAddress();
+                                } else if (!UrlUtilities.isNtpUrl(tab.getUrl())) {
+                                    showControls();
+                                }
+                            }));
+        }
+        int pageStart = first;
+        actions.add(
+                panel.addAction(
+                        R.string.brave_tv_previous,
+                        first > 0,
+                        () -> showTabs(incognito, Math.max(0, pageStart - TAB_PAGE_SIZE))));
+        actions.add(
+                panel.addAction(
+                        R.string.brave_tv_next,
+                        end < model.getCount(),
+                        () -> showTabs(incognito, end)));
+        AlertDialog dialog = panel.show(this::returnToControls);
+        mDialog = dialog;
+        View owner = mActivity.getWindow().getDecorView();
+        Runnable refresh =
+                () -> {
+                    if (mDialog != dialog || !isAlive() || !mActivity.areTabModelsInitialized())
+                        return;
+                    if (incognito && mPrivateTabsLocked.getAsBoolean()) {
+                        dismissDialog();
+                        return;
+                    }
+                    for (TvPresentation.Action action : actions) {
+                        if (!action.hasFocus()) continue;
+                        int key = action.getKey();
+                        for (int i = 0; i < visibleTabs.size(); i++) {
+                            if (visibleTabs.get(i).getId() != key) continue;
+                            showTabs(incognito, pageStart + i, key, 0);
                             return;
                         }
-                        dismissDialog();
-                        mActivity.getTabModelSelector().selectModel(incognito);
-                        TabModelUtils.setIndex(currentModel, index);
-                        if (tab.getNativePage() instanceof TvHomePage home) {
-                            // Re-selecting the active tab does not run Chromium's attachment focus.
-                            home.focusAddress();
-                        } else if (!UrlUtilities.isNtpUrl(tab.getUrl())) {
-                            showControls();
-                        }
-                    });
-        }
-        panel.addAction(
-                R.string.brave_tv_previous,
-                first > 0,
-                () -> showTabs(incognito, Math.max(0, first - 8)));
-        panel.addAction(
-                R.string.brave_tv_next, end < model.getCount(), () -> showTabs(incognito, end));
-        mDialog = panel.show(this::returnToControls);
+                        showTabs(incognito, pageStart, Tab.INVALID_TAB_ID, key);
+                        return;
+                    }
+                    showTabs(incognito, pageStart, focusedTabId, focusedAction);
+                };
+        Runnable changed =
+                () -> {
+                    owner.removeCallbacks(refresh);
+                    owner.post(refresh);
+                };
+        TabModelObserver modelObserver =
+                new TabModelObserver() {
+                    @Override
+                    public void didAddTab(
+                            Tab tab, int type, int creationState, boolean markedForSelection) {
+                        changed.run();
+                    }
+
+                    @Override
+                    public void didSelectTab(Tab tab, int type, int lastId) {
+                        changed.run();
+                    }
+
+                    @Override
+                    public void didMoveTab(Tab tab, int newIndex, int curIndex) {
+                        changed.run();
+                    }
+
+                    @Override
+                    public void didRemoveTabForClosure(Tab tab) {
+                        changed.run();
+                    }
+
+                    @Override
+                    public void tabRemoved(Tab tab) {
+                        changed.run();
+                    }
+
+                    @Override
+                    public void tabClosureUndone(Tab tab) {
+                        changed.run();
+                    }
+                };
+        EmptyTabObserver tabObserver =
+                new EmptyTabObserver() {
+                    @Override
+                    public void onTitleUpdated(Tab tab) {
+                        changed.run();
+                    }
+
+                    @Override
+                    public void onUrlUpdated(Tab tab) {
+                        changed.run();
+                    }
+
+                    @Override
+                    public void onDestroyed(Tab tab) {
+                        changed.run();
+                    }
+                };
+        model.addObserver(modelObserver);
+        for (Tab tab : visibleTabs) tab.addObserver(tabObserver);
+        setDialogCleanup(
+                panel,
+                dialog,
+                () -> {
+                    model.removeObserver(modelObserver);
+                    for (Tab tab : visibleTabs) tab.removeObserver(tabObserver);
+                    owner.removeCallbacks(refresh);
+                });
     }
 
     private boolean tabContextValid(TvBrowserSession.Context context) {
@@ -1151,13 +1286,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     model.removeObserver(observer);
                     owner.removeCallbacks(refresh);
                 };
-        mBookmarkCleanup = cleanup;
-        panel.setOnDismiss(
-                () -> {
-                    cleanup.run();
-                    if (mBookmarkCleanup == cleanup) mBookmarkCleanup = null;
-                    if (mDialog == dialog) mDialog = null;
-                });
+        setDialogCleanup(panel, dialog, cleanup);
     }
 
     private void saveBookmark(TvBrowserSession.Context context, BookmarkModel model) {

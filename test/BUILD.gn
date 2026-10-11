@@ -1700,13 +1700,14 @@ if (is_android) {
       "//brave/android/javatests/org/chromium/chrome/browser/tv/TvHistoryPanelTest.java",
       "//brave/android/javatests/org/chromium/chrome/browser/tv/TvHomePageTest.java",
       "//brave/android/javatests/org/chromium/chrome/browser/tv/TvPresentationTest.java",
+      "//brave/android/javatests/org/chromium/chrome/browser/tv/TvTabsPanelTest.java",
     ]
 
     deps = [
-      "//brave/android/java/org/chromium/chrome/browser/tv/presentation:java",
       "//base:base_java",
       "//base:base_java_test_support",
       "//base:base_shared_preferences_java",
+      "//brave/android/java/org/chromium/chrome/browser/tv/presentation:java",
       "//brave/android/javatests:brave_test_java_org.chromium.chrome.browser.download",
       "//brave/android/javatests:brave_test_java_org.chromium.chrome.browser.password_manager",
       "//brave/android/javatests:brave_test_java_org.chromium.chrome.browser.set_default_browser",

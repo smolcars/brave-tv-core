@@ -30,6 +30,7 @@ final class TvBrowserPanel {
     private final List<TvPresentation.PanelEntry> mEntries = new ArrayList<>();
     private @Nullable List<TvPresentation.Action> mRow;
     private boolean mWide;
+    private boolean mPrivateContent;
     private boolean mRestorePreferredFocus;
     private @Nullable Runnable mOnDismiss;
 
@@ -38,6 +39,10 @@ final class TvBrowserPanel {
         mTitle = title;
         mSubtitle = subtitle;
         mPreferredAction = preferredAction;
+    }
+
+    void protectPrivateContent() {
+        mPrivateContent = true;
     }
 
     void setOnDismiss(Runnable onDismiss) {
@@ -114,7 +119,7 @@ final class TvBrowserPanel {
         Window window = dialog.getWindow();
         if (window != null) {
             Tab tab = mActivity.getActivityTab();
-            if (tab != null && tab.isIncognito())
+            if (mPrivateContent || (tab != null && tab.isIncognito()))
                 window.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
             window.setBackgroundDrawableResource(android.R.color.transparent);
             window.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
