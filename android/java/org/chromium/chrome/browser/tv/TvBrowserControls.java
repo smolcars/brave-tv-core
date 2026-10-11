@@ -1447,7 +1447,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             true);
                     dismissDialog();
                     tab.reload();
-                    showShields();
+                    returnToControls();
                 });
         addShieldMode(
                 panel,
@@ -1489,7 +1489,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             true);
                     dismissDialog();
                     tab.reload();
-                    showShields();
+                    returnToControls();
                 });
     }
 
