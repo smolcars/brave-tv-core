@@ -619,7 +619,48 @@ public class TvHomePageTest {
                             mBookmarks.deleteBookmark(
                                     items.get(TvBrowserControls.BOOKMARK_PAGE_SIZE)));
             String survivor = "TV library fixture " + (TvBrowserControls.BOOKMARK_PAGE_SIZE - 2);
-            waitForFocus(By.desc(survivor));
+            try {
+                waitForFocus(By.desc(survivor));
+            } catch (CriteriaHelper.TimeoutException failure) {
+                List<String> focused = new ArrayList<>();
+                for (UiObject2 control :
+                        mDevice.findObjects(By.clazz("android.widget.Button").focused(true))) {
+                    if (focused.size() == 8) break;
+                    String label = control.getContentDescription();
+                    boolean known =
+                            label != null
+                                    && (label.startsWith("TV library fixture ")
+                                            || label.equals(
+                                                    mActivity.getString(
+                                                            R.string.brave_tv_parent_folder))
+                                            || label.equals(
+                                                    mActivity.getString(
+                                                            R.string.brave_tv_controls)));
+                    focused.add(known ? label : "other button");
+                }
+                String modelState =
+                        ThreadUtils.runOnUiThreadBlocking(
+                                () -> {
+                                    BookmarkId survivorId =
+                                            items.get(TvBrowserControls.BOOKMARK_PAGE_SIZE - 2);
+                                    BookmarkItem survivorItem =
+                                            mBookmarks.getBookmarkById(survivorId);
+                                    assertNotNull(survivorItem);
+                                    List<BookmarkId> children =
+                                            mBookmarks.getChildIds(survivorItem.getParentId());
+                                    return "rows="
+                                            + children.size()
+                                            + ", survivorIndex="
+                                            + children.indexOf(survivorId)
+                                            + ", removedExists="
+                                            + mBookmarks.doesBookmarkExist(
+                                                    items.get(
+                                                            TvBrowserControls.BOOKMARK_PAGE_SIZE));
+                                });
+                throw new AssertionError(
+                        "Nearest owned bookmark focus failed: " + focused + "; " + modelState,
+                        failure);
+            }
             String renamed = "TV library fixture renamed";
             ThreadUtils.runOnUiThreadBlocking(
                     () ->
