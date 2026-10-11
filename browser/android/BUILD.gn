@@ -10,7 +10,6 @@ assert(is_android)
 
 source_set("android_browser_process") {
   sources = [
-    "tv_remote_server.cc",
     "brave_feature_util.cc",
     "brave_local_state_android.cc",
     "brave_relaunch_utils.cc",
@@ -18,11 +17,12 @@ source_set("android_browser_process") {
     "brave_shields_content_settings.h",
     "brave_sync_worker.cc",
     "brave_sync_worker.h",
+    "tv_remote_server.cc",
+    "tv_text_input.cc",
   ]
 
   deps = [
     "//base",
-    "//net",
     "//brave/brave_domains/android:jni_headers",
     "//brave/browser/android/browsing_data",
     "//brave/browser/android/preferences",
@@ -57,6 +57,8 @@ source_set("android_browser_process") {
     "//components/translate/core/browser",
     "//components/unified_consent",
     "//components/webui/flags",
+    "//content/public/browser",
+    "//net",
     "//url",
   ]
 

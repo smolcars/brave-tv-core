@@ -8,6 +8,7 @@ brave_content_browser_sources =
 
 if (is_android) {
   brave_content_browser_sources += [
+    "//brave/content/browser/android/tv_text_input.cc",
     "//brave/content/browser/screen_orientation/brave_screen_orientation_delegate_android.cc",
     "//brave/content/browser/screen_orientation/brave_screen_orientation_delegate_android.h",
   ]

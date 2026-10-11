@@ -315,8 +315,7 @@ public class BytecodeTest {
                         int.class,
                         String.class,
                         int.class,
-                        int.class,
-                        boolean.class));
+                        int.class));
     }
 
     @Test
