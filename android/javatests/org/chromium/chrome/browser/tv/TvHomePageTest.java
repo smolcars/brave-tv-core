@@ -222,6 +222,7 @@ public class TvHomePageTest {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         focusFirstFavorite();
         mDevice.pressDPadDown();
+        waitForFocus(By.descStartsWith(TITLE + "3\n"));
         mDevice.pressDPadDown();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_source)));
         CriteriaHelper.pollInstrumentationThread(
@@ -237,6 +238,8 @@ public class TvHomePageTest {
                     assertFalse(model.isClosurePending(recent.getId()));
                     assertTrue(mActivity.getActivityTab().getNativePage() == home);
                 });
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.descStartsWith("TV recent fixture\n")));
         mDevice.pressDPadUp();
         waitForFocus(By.descStartsWith("TV recent fixture\n"));
     }
