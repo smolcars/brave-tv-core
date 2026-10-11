@@ -221,7 +221,10 @@ public class TvHomePageTest {
                 () -> {
                     Criteria.checkThat(
                             "Final private closure must return to browsing, not cover normal Home",
-                            mActivity.getLayoutManager().getActiveLayoutType(),
+                            mActivityTestRule
+                                    .getActivity()
+                                    .getLayoutManager()
+                                    .getActiveLayoutType(),
                             is(LayoutType.BROWSING));
                     Criteria.checkThat(
                             mActivity.getActivityTab().getNativePage() instanceof TvHomePage,
@@ -234,6 +237,27 @@ public class TvHomePageTest {
         assertTrue(mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
         assertFalse(
                 mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
+    }
+
+    @Test
+    @MediumTest
+    public void compactControlsActivatePageAfterToolbarSettles() {
+        mActivityTestRule.loadUrl(URL);
+        Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        TabBrowserControlsConstraintsHelper.getConstraints(page)
+                                        == BrowserControlsState.HIDDEN
+                                && mActivity.getBrowserControlsManager().getContentOffset() == 0);
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(
+                () -> !mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
+        CriteriaHelper.pollUiThread(() -> page.getContentView().hasFocus());
+        ThreadUtils.runOnUiThreadBlocking(() -> assertTrue(mActivity.getActivityTab() == page));
     }
 
     @Test
