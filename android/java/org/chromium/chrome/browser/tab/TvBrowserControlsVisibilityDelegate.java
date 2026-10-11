@@ -17,7 +17,7 @@ import org.chromium.content_public.browser.WebContents;
 /** Retains native safety/input observers while ordinary TV pages use compact controls. */
 public final class TvBrowserControlsVisibilityDelegate
         extends TabStateBrowserControlsVisibilityDelegate {
-    private @Nullable BrowserControlsVisibilityDelegate mAppVisibility;
+    private final @Nullable BrowserControlsVisibilityDelegate mAppVisibility;
     private final Callback<Integer> mAppObserver = ignored -> updateVisibilityConstraints();
 
     /**
