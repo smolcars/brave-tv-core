@@ -200,6 +200,9 @@ public class TvDownloadsPanelTest {
 
     private void selectTerminalAction(int resource) {
         mDevice.pressDPadDown();
+        focus(label(R.string.brave_tv_resume_download));
+        assertFalse(mDevice.findObject(label(R.string.brave_tv_resume_download)).isEnabled());
+        mDevice.pressDPadDown();
         focus(label(R.string.brave_tv_remove_download));
         if (resource == R.string.brave_tv_delete_download) {
             mDevice.pressDPadRight();
@@ -237,6 +240,9 @@ public class TvDownloadsPanelTest {
             focus(By.descStartsWith("TV file " + i + "\n"));
         }
         mDevice.pressDPadDown();
+        focus(label(R.string.brave_tv_previous_downloads));
+        assertFalse(mDevice.findObject(label(R.string.brave_tv_previous_downloads)).isEnabled());
+        mDevice.pressDPadRight();
         focus(label(R.string.brave_tv_more_downloads));
         mDevice.pressDPadCenter();
         focus(By.descStartsWith("TV file " + TvDownloadsPanel.PAGE_SIZE + "\n"));
