@@ -367,6 +367,7 @@ public class BytecodeTest {
         Assert.assertTrue(classExists("org/chromium/components/browser_ui/settings/SettingsUtils"));
         Assert.assertTrue(classExists("org/chromium/chrome/browser/app/ChromeActivity"));
         Assert.assertTrue(classExists("org/chromium/chrome/browser/ChromeTabbedActivity"));
+        Assert.assertTrue(classExists("org/chromium/chrome/browser/app/BraveActivity"));
         Assert.assertTrue(
                 classExists("org/chromium/chrome/browser/tabbed_mode/TabbedRootUiCoordinator"));
         Assert.assertTrue(
@@ -1247,6 +1248,13 @@ public class BytecodeTest {
                         boolean.class,
                         Bundle.class,
                         MotionEventInfo.class));
+        Assert.assertTrue(
+                methodExists(
+                        "org/chromium/chrome/browser/app/BraveActivity",
+                        "maybeHandleTvMenuAction",
+                        MethodModifier.REGULAR,
+                        boolean.class,
+                        int.class));
         Assert.assertTrue(
                 methodExists(
                         "org/chromium/chrome/browser/toolbar/adaptive/AdaptiveToolbarPrefs",
