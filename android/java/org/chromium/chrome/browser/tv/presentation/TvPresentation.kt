@@ -391,6 +391,28 @@ object TvPresentation {
         }
     }
 
+    /** Nonmodal connection status; D-pad Disconnect remains in native browser controls. */
+    @JvmStatic
+    fun connectionBadge(context: Context, label: String, open: Runnable): View = view(context).apply {
+        isFocusable = false
+        setOnClickListener { open.run() }
+        setContent {
+            Theme {
+                Text(
+                    label,
+                    Modifier.background(surface, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                        .semantics {
+                            liveRegion = LiveRegionMode.Polite
+                            role = Role.Button
+                            onClick { open.run(); true }
+                        },
+                    color = accent, fontSize = 16.sp,
+                )
+            }
+        }
+    }
+
     /** UI-thread disposal for a View returned by these factories. */
     @JvmStatic
     fun dispose(view: View) {

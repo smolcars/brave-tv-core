@@ -22,6 +22,7 @@ import org.chromium.content_public.browser.WebContents;
 import org.chromium.url.GURL;
 
 import java.util.IdentityHashMap;
+import java.util.Objects;
 
 /** Authenticated commands are revalidated and delivered synchronously on the UI thread. */
 final class TvRemoteBrowser {
@@ -39,6 +40,7 @@ final class TvRemoteBrowser {
     private int mX;
     private int mY;
     private boolean mPaused = true;
+    private String mPauseReason;
 
     TvRemoteBrowser(BraveActivity activity, TvBrowserControls controls) {
         mActivity = activity;
@@ -83,14 +85,20 @@ final class TvRemoteBrowser {
                 tab == null || tab.getContentView() == null ? 0 : tab.getContentView().getWidth();
         int height =
                 tab == null || tab.getContentView() == null ? 0 : tab.getContentView().getHeight();
-        boolean paused = mControls.remotePaused();
+        String pauseReason = mControls.remotePauseReason();
+        boolean paused = pauseReason != null;
         int offset = mActivity.getBrowserControlsManager().getContentOffset();
-        if (width != mWidth || height != mHeight || paused != mPaused || offset != mContentOffset) {
+        if (width != mWidth
+                || height != mHeight
+                || !Objects.equals(pauseReason, mPauseReason)
+                || paused != mPaused
+                || offset != mContentOffset) {
             mRevision++;
             mContentOffset = offset;
             mWidth = width;
             mHeight = height;
             mPaused = paused;
+            mPauseReason = pauseReason;
             mX = width / 2;
             mY = height / 2;
         }
@@ -99,7 +107,8 @@ final class TvRemoteBrowser {
     JSONObject state() throws JSONException {
         refresh();
         JSONObject state = new JSONObject().put("revision", mRevision).put("paused", mPaused);
-        if (mPaused || mTab == null) return state;
+        if (mPaused) return state.put("pauseReason", mPauseReason);
+        if (mTab == null) return state;
         state.put("title", cut(mTab.getTitle(), 160))
                 .put("url", cut(mTab.getUrl().getSpec(), 2048))
                 .put("back", mControls.isPageFullscreen() || mTab.canGoBack())

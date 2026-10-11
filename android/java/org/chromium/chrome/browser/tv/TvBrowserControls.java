@@ -458,16 +458,23 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     boolean remotePaused() {
+        return remotePauseReason() != null;
+    }
+
+    @Nullable
+    String remotePauseReason() {
         Tab tab = mActivity.getActivityTab();
-        return !isAlive()
-                || !mActivity.hasWindowFocus()
+        if (!isAlive()
                 || tab == null
                 || tab.isIncognito()
                 || !mActivity.areTabModelsInitialized()
-                || mActivity.getTabModelSelector().isIncognitoSelected()
-                || (mDialog != null && mDialog.isShowing())
+                || mActivity.getTabModelSelector().isIncognitoSelected()) return "tv";
+        if (mDialog != null && mDialog.isShowing()) return "controls";
+        // Private and native security owners share guidance without exposing their state.
+        if (!mActivity.hasWindowFocus()
                 || nativeUiOwnsInput(true)
-                || (tab.isNativePage() && !UrlUtilities.isNtpUrl(tab.getUrl()));
+                || (tab.isNativePage() && !UrlUtilities.isNtpUrl(tab.getUrl()))) return "tv";
+        return null;
     }
 
     void remotePointer(int x, int y, String operation, int dx, int dy) {

@@ -12,10 +12,10 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -30,6 +30,7 @@ import org.chromium.base.CommandLine;
 import org.chromium.base.version_info.VersionInfo;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
+import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,7 +47,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     private TvRemoteSession mSession;
     private TvRemoteBrowser mBrowser;
     private AlertDialog mDialog;
-    private TextView mBadge;
+    private View mBadge;
     private android.net.Network mNetwork;
     private String mAddress;
     private String mOrigin;
@@ -211,19 +212,16 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
 
     private void showBadge() {
         if (mBadge != null) return;
-        mBadge = new TextView(mActivity);
-        mBadge.setText(R.string.brave_tv_phone_connected);
-        mBadge.setTextColor(Color.WHITE);
-        mBadge.setTextSize(12);
-        mBadge.setBackgroundColor(0xdd233c3a);
-        mBadge.setPadding(16, 8, 16, 8);
-        mBadge.setOnClickListener(ignored -> show());
+        mBadge =
+                TvPresentation.connectionBadge(
+                        mActivity, text(R.string.brave_tv_phone_connected), this::show);
         var params =
                 new FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.WRAP_CONTENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT,
                         Gravity.TOP | Gravity.END);
         params.topMargin = Math.round(60 * mActivity.getResources().getDisplayMetrics().density);
+        params.setMarginEnd(Math.round(24 * mActivity.getResources().getDisplayMetrics().density));
         ((FrameLayout) mActivity.findViewById(android.R.id.content)).addView(mBadge, params);
     }
 
@@ -259,7 +257,8 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
             if (!op.equals("state")) {
                 ok =
                         mSession.epoch.equals(request.getString("epoch"))
-                                && mSession.acceptSequence(TvRemoteSession.parseInteger(request.opt("seq")))
+                                && mSession.acceptSequence(
+                                        TvRemoteSession.parseInteger(request.opt("seq")))
                                 && mBrowser.command(request);
             }
             return new JSONObject()
@@ -286,8 +285,10 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         mOrigin = null;
         mUi.removeCallbacksAndMessages(null);
         dismiss();
-        if (mBadge != null && mBadge.getParent() instanceof ViewGroup parent)
-            parent.removeView(mBadge);
+        if (mBadge != null) {
+            TvPresentation.dispose(mBadge);
+            if (mBadge.getParent() instanceof ViewGroup parent) parent.removeView(mBadge);
+        }
         mBadge = null;
     }
 

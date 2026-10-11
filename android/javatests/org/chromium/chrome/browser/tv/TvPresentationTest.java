@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
@@ -19,6 +20,12 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.test.util.CommandLineFlags;
@@ -30,11 +37,6 @@ import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,6 +52,7 @@ public class TvPresentationTest {
     private BraveActivity mActivity;
     private UiDevice mDevice;
     private AlertDialog mDialog;
+    private View mBadge;
 
     @Before
     public void setUp() {
@@ -67,6 +70,11 @@ public class TvPresentationTest {
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     if (mDialog != null) mDialog.dismiss();
+                    if (mBadge != null) {
+                        TvPresentation.dispose(mBadge);
+                        if (mBadge.getParent() instanceof ViewGroup parent)
+                            parent.removeView(mBadge);
+                    }
                 });
     }
 
@@ -167,6 +175,43 @@ public class TvPresentationTest {
         mDevice.pressDPadUp();
         focused("Address or search");
         assertEquals(1, settingsRuns.get());
+    }
+
+    @Test
+    @MediumTest
+    public void connectionBadgePreservesPageFocusAndDisposes() {
+        AtomicInteger opens = new AtomicInteger();
+        View page = mActivity.getActivityTab().getContentView();
+        assertNotNull(page);
+        String label = mActivity.getString(R.string.brave_tv_phone_connected);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertTrue(page.requestFocus());
+                    View focused = mActivity.getCurrentFocus();
+                    mBadge =
+                            TvPresentation.connectionBadge(
+                                    mActivity, label, opens::incrementAndGet);
+                    ((FrameLayout) mActivity.findViewById(android.R.id.content))
+                            .addView(
+                                    mBadge,
+                                    new FrameLayout.LayoutParams(
+                                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                                            ViewGroup.LayoutParams.WRAP_CONTENT));
+                    assertEquals(focused, mActivity.getCurrentFocus());
+                });
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text(label)));
+        ThreadUtils.runOnUiThreadBlocking(() -> assertEquals(page, mActivity.getCurrentFocus()));
+        mDevice.findObject(By.text(label)).click();
+        CriteriaHelper.pollInstrumentationThread(() -> opens.get() == 1);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    TvPresentation.dispose(mBadge);
+                    ((ViewGroup) mBadge.getParent()).removeView(mBadge);
+                    mBadge = null;
+                    assertEquals(page, mActivity.getCurrentFocus());
+                });
+        CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(By.text(label)));
+        assertEquals(1, opens.get());
     }
 
     private List<TvPresentation.Action> controls() {

@@ -94,7 +94,9 @@ function render(result) {
   $('disconnect').hidden = false
   status(
     state.paused
-      ? 'Paused — use the TV remote for private or native screens.'
+      ? state.pauseReason === 'controls'
+        ? 'Paused — close the browser controls on the TV to continue.'
+        : 'Paused — continue on the TV. Phone control is unavailable on this screen.'
       : result.ok === false
         ? 'TV changed. Action discarded; try again.'
         : state.error
