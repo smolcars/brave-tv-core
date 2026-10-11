@@ -10,8 +10,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.os.Build;
-
 import androidx.core.view.OneShotPreDrawListener;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -170,40 +168,6 @@ public class TvHomePageTest {
                 });
     }
 
-    private void waitForSourceFocus() {
-        BySelector source = By.desc(mActivity.getString(R.string.brave_tv_source));
-        try {
-            waitForFocus(source);
-        } catch (CriteriaHelper.TimeoutException failure) {
-            // [DEBUG-home-footer] Fixed-label booleans only; runs after the test has failed.
-            boolean present = mDevice.hasObject(source);
-            boolean focusedBefore = mDevice.hasObject(source.focused(true));
-            boolean addressFocused =
-                    mDevice.hasObject(
-                            By.desc(mActivity.getString(R.string.brave_tv_address)).focused(true));
-            boolean favoriteFocused =
-                    mDevice.hasObject(By.descStartsWith(TITLE + "3\n").focused(true));
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                InstrumentationRegistry.getInstrumentation().getUiAutomation().clearCache();
-            }
-            boolean focusedAfter =
-                    mDevice.hasObject(
-                            By.desc(mActivity.getString(R.string.brave_tv_source)).focused(true));
-            throw new AssertionError(
-                    "[DEBUG-home-footer] present="
-                            + present
-                            + " focusedBefore="
-                            + focusedBefore
-                            + " focusedAfter="
-                            + focusedAfter
-                            + " addressFocused="
-                            + addressFocused
-                            + " favoriteFocused="
-                            + favoriteFocused,
-                    failure);
-        }
-    }
-
     private void openSettingsFromHome() {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         mDevice.pressDPadDown();
@@ -351,7 +315,7 @@ public class TvHomePageTest {
         mDevice.pressDPadDown();
         waitForFocus(By.descStartsWith(TITLE + "3\n"));
         mDevice.pressDPadDown();
-        waitForSourceFocus();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_source)));
         CriteriaHelper.pollInstrumentationThread(
                 () ->
                         mDevice.hasObject(
