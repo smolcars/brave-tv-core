@@ -498,7 +498,9 @@ public class TvHomePageTest {
         openOwnedBookmarkFolder();
         String finalTitle = "TV library fixture " + TvBrowserControls.BOOKMARK_PAGE_SIZE;
         assertFalse(mDevice.hasObject(By.desc(finalTitle)));
-        focusDown(By.desc(mActivity.getString(R.string.brave_tv_more_bookmarks)));
+        focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_bookmarks)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_bookmarks)));
         mDevice.pressDPadCenter();
         focusDown(By.desc(finalTitle));
         assertFalse(mDevice.hasObject(By.desc("TV library fixture 0")));
