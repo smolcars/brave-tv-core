@@ -31,12 +31,6 @@ import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import org.chromium.base.ActivityState;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.Callback;
@@ -77,6 +71,11 @@ import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.url.GURL;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -1027,10 +1026,58 @@ public class TvHomePageTest {
                     });
             ThreadUtils.runOnUiThreadBlocking(pending::complete);
             mActivityTestRule.resumeMainActivityFromLauncher();
-            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertFalse(mActivity.getActivityTab().isIncognito());
+                        assertTrue(
+                                mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+                    });
+            CriteriaHelper.pollInstrumentationThread(
+                    () -> {
+                        UiObject2 address =
+                                mDevice.findObject(
+                                        By.desc(mActivity.getString(R.string.brave_tv_address)));
+                        UiObject2 settings =
+                                mDevice.findObject(
+                                        By.desc(mActivity.getString(R.string.brave_tv_settings)));
+                        Criteria.checkThat(
+                                "Resume Home: SettingsFocused="
+                                        + (settings != null && settings.isFocused())
+                                        + ", pendingPanel="
+                                        + mDevice.hasObject(
+                                                By.desc(
+                                                        mActivity.getString(
+                                                                R.string.brave_tv_clear_cache))),
+                                address != null && address.isFocused(),
+                                is(true));
+                    });
             assertFalse(
                     mDevice.hasObject(
                             By.text(mActivity.getString(R.string.brave_tv_cleared_data))));
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> BrowsingDataBridgeJni.setInstanceForTesting(null));
+        }
+    }
+
+    @Test
+    @MediumTest
+    public void pendingClearCompletionReturnsToOwnedPanel() {
+        try {
+            PendingClear pending = beginPendingCacheClear();
+            ThreadUtils.runOnUiThreadBlocking(pending::complete);
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+            assertTrue(
+                    mDevice.hasObject(
+                            By.text(mActivity.getString(R.string.brave_tv_cleared_data))));
+            assertTrue(
+                    mDevice.hasObject(
+                            By.desc(mActivity.getString(R.string.brave_tv_clear_cache))
+                                    .enabled(true)));
+            mDevice.pressBack();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_data)));
+            mDevice.pressBack();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
         } finally {
             ThreadUtils.runOnUiThreadBlocking(
                     () -> BrowsingDataBridgeJni.setInstanceForTesting(null));

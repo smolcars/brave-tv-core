@@ -1667,8 +1667,20 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 R.string.brave_tv_clear_cache_scope,
                                 onReturn));
         panel.addAction(R.string.brave_tv_settings, true, () -> showSettings(context, onReturn));
-        mDialog = panel.show(() -> showSettings(context, onReturn));
-        if (mClearingData) mOnDataCleared = () -> showClearData(context, true, onReturn);
+        AlertDialog dialog = panel.show(() -> showSettings(context, onReturn));
+        mDialog = dialog;
+        if (mClearingData) {
+            mOnDataCleared =
+                    () -> {
+                        if (mDialog != dialog || !isAlive()) return;
+                        if (!tabContextValid(context)) {
+                            // Native clearing completes independently of this document's panel.
+                            dismissDialog();
+                            return;
+                        }
+                        showClearData(context, true, onReturn);
+                    };
+        }
     }
 
     private void confirmClearData(
