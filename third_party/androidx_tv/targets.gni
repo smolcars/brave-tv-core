@@ -31,6 +31,7 @@ template("brave_androidx_tv_targets") {
       "//third_party/androidx:androidx_compose_foundation_foundation_java",
       "//third_party/androidx:androidx_compose_foundation_foundation_layout_java",
       "//third_party/androidx:androidx_compose_runtime_runtime_java",
+      "//third_party/androidx:androidx_compose_ui_ui_geometry_java",
       "//third_party/androidx:androidx_compose_ui_ui_graphics_java",
       "//third_party/androidx:androidx_compose_ui_ui_java",
       "//third_party/androidx:androidx_compose_ui_ui_text_java",
