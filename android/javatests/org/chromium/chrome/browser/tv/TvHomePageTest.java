@@ -38,12 +38,14 @@ import org.chromium.base.test.util.CriteriaHelper;
 import org.chromium.base.test.util.DoNotBatch;
 import org.chromium.base.test.util.Features.DisableFeatures;
 import org.chromium.base.test.util.MinAndroidSdkLevel;
+import org.chromium.cc.input.BrowserControlsState;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.browser.tabmodel.TabClosureParams;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
@@ -117,6 +119,35 @@ public class TvHomePageTest {
                     for (BookmarkId id : mOwnedBookmarks) {
                         if (mBookmarks.doesBookmarkExist(id)) mBookmarks.deleteBookmark(id);
                     }
+                });
+    }
+
+    @Test
+    @MediumTest
+    public void televisionToolbarUsesNativeHiddenOffsets() {
+        assertTelevisionViewport();
+        mActivityTestRule.loadUrl(URL);
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
+        assertTelevisionViewport();
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        assertTelevisionViewport();
+    }
+
+    private void assertTelevisionViewport() {
+        CriteriaHelper.pollUiThread(
+                () ->
+                        TabBrowserControlsConstraintsHelper.getConstraints(
+                                                mActivity.getActivityTab())
+                                        == BrowserControlsState.HIDDEN
+                                && mActivity.getBrowserControlsManager().getContentOffset() == 0
+                                && !mActivity.findViewById(R.id.control_container).isShown());
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertTrue(mActivity.isTelevision());
+                    assertFalse(mActivity.getFullscreenManager().getPersistentFullscreenMode());
                 });
     }
 

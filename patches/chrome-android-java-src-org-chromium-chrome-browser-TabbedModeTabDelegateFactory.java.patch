@@ -1,0 +1,11 @@
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/TabbedModeTabDelegateFactory.java b/chrome/android/java/src/org/chromium/chrome/browser/TabbedModeTabDelegateFactory.java
+--- a/chrome/android/java/src/org/chromium/chrome/browser/TabbedModeTabDelegateFactory.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/TabbedModeTabDelegateFactory.java
+@@ -199,6 +199,7 @@
+ 
+     @Override
+     public BrowserControlsVisibilityDelegate createBrowserControlsVisibilityDelegate(Tab tab) {
++        if (mActivity instanceof org.chromium.chrome.browser.app.BraveActivity && ((org.chromium.chrome.browser.app.BraveActivity) mActivity).isTelevision()) return new BrowserControlsVisibilityDelegate(org.chromium.cc.input.BrowserControlsState.HIDDEN);
+         return new ComposedBrowserControlsVisibilityDelegate(
+                 new TabStateBrowserControlsVisibilityDelegate(tab),
+                 mAppBrowserControlsVisibilityDelegate);
