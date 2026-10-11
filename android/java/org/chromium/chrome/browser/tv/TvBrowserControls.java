@@ -437,13 +437,17 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     @Override
     public void showControls() {
+        showControls(false);
+    }
+
+    private void showControls(boolean restoreFocus) {
         if (!isAlive()) return;
         if (mHistoryPanel != null || mFilterPanel != null || mMediaPanel != null) dismissDialog();
         detachCursor();
         if (mDialog != null && mDialog.isShowing()) return;
         Tab tab = mActivity.getActivityTab();
         if (!canAccessTabs(tab != null && tab.isIncognito())) return;
-        if (tab != null && UrlUtilities.isNtpUrl(tab.getUrl())) {
+        if (!restoreFocus && tab != null && UrlUtilities.isNtpUrl(tab.getUrl())) {
             mLastAction = R.string.brave_tv_address;
         }
         TvBrowserSession.Context context = mSession.capture();
@@ -640,7 +644,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private void returnToControls() {
         if (!isAlive()) return;
         dismissDialog();
-        showControls();
+        showControls(true);
     }
 
     private void returnToPage() {
