@@ -6,9 +6,12 @@
 package org.chromium.chrome.browser.tv;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.content.pm.PackageInfo;
@@ -18,6 +21,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.inspector.WindowInspector;
 
+import androidx.annotation.Nullable;
 import androidx.core.view.OneShotPreDrawListener;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -33,6 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.chromium.base.ActivityState;
+import org.chromium.base.ApplicationStatus;
 import org.chromium.base.Callback;
 import org.chromium.base.PackageUtils;
 import org.chromium.base.ThreadUtils;
@@ -49,10 +55,15 @@ import org.chromium.cc.input.BrowserControlsState;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
+import org.chromium.chrome.browser.browsing_data.BrowsingDataBridge;
+import org.chromium.chrome.browser.browsing_data.BrowsingDataBridgeJni;
+import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
+import org.chromium.chrome.browser.browsing_data.TimePeriod;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.browser.layouts.LayoutType;
 import org.chromium.chrome.browser.preferences.Pref;
+import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.browser.tab.TvBrowserControlsVisibilityDelegate;
@@ -63,7 +74,6 @@ import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
-import org.chromium.components.bookmarks.BookmarkItem;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.url.GURL;
@@ -620,59 +630,7 @@ public class TvHomePageTest {
                             mBookmarks.deleteBookmark(
                                     items.get(TvBrowserControls.BOOKMARK_PAGE_SIZE)));
             String survivor = "TV library fixture " + (TvBrowserControls.BOOKMARK_PAGE_SIZE - 2);
-            try {
-                waitForFocus(By.desc(survivor));
-            } catch (CriteriaHelper.TimeoutException failure) {
-                List<String> focused = new ArrayList<>();
-                for (UiObject2 control :
-                        mDevice.findObjects(By.clazz("android.widget.Button").focused(true))) {
-                    if (focused.size() == 8) break;
-                    String label = control.getContentDescription();
-                    boolean known =
-                            label != null
-                                    && (label.startsWith("TV library fixture ")
-                                            || label.equals(
-                                                    mActivity.getString(
-                                                            R.string.brave_tv_parent_folder))
-                                            || label.equals(
-                                                    mActivity.getString(R.string.brave_tv_controls))
-                                            || label.equals(
-                                                    mActivity.getString(
-                                                            R.string.brave_tv_previous_bookmarks))
-                                            || label.equals(
-                                                    mActivity.getString(
-                                                            R.string.brave_tv_more_bookmarks))
-                                            || label.equals(
-                                                    mActivity.getString(
-                                                            R.string.brave_tv_open_bookmark))
-                                            || label.equals(
-                                                    mActivity.getString(
-                                                            R.string.brave_tv_save_bookmark)));
-                    focused.add(known ? label : "other button");
-                }
-                String modelState =
-                        ThreadUtils.runOnUiThreadBlocking(
-                                () -> {
-                                    BookmarkId survivorId =
-                                            items.get(TvBrowserControls.BOOKMARK_PAGE_SIZE - 2);
-                                    BookmarkItem survivorItem =
-                                            mBookmarks.getBookmarkById(survivorId);
-                                    assertNotNull(survivorItem);
-                                    List<BookmarkId> children =
-                                            mBookmarks.getChildIds(survivorItem.getParentId());
-                                    return "rows="
-                                            + children.size()
-                                            + ", survivorIndex="
-                                            + children.indexOf(survivorId)
-                                            + ", removedExists="
-                                            + mBookmarks.doesBookmarkExist(
-                                                    items.get(
-                                                            TvBrowserControls.BOOKMARK_PAGE_SIZE));
-                                });
-                throw new AssertionError(
-                        "Nearest owned bookmark focus failed: " + focused + "; " + modelState,
-                        failure);
-            }
+            waitForFocus(By.desc(survivor));
             String renamed = "TV library fixture renamed";
             ThreadUtils.runOnUiThreadBlocking(
                     () ->
@@ -939,6 +897,170 @@ public class TvHomePageTest {
         mDevice.pressBack();
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+    }
+
+    // Hold only native completion; actual deletion is covered by the production privacy fixture.
+    private static final class PendingClear extends BrowsingDataBridgeJni {
+        private final Profile mProfile;
+        private @Nullable BrowsingDataBridge.OnClearBrowsingDataListener mCallback;
+        private int mCalls;
+
+        PendingClear(Profile profile) {
+            mProfile = profile;
+        }
+
+        @Override
+        public void clearBrowsingData(
+                Profile profile,
+                @Nullable BrowsingDataBridge.OnClearBrowsingDataListener callback,
+                int[] dataTypes,
+                int timePeriod,
+                String[] excludedDomains,
+                String @Nullable [] ignoredDomains) {
+            ThreadUtils.assertOnUiThread();
+            assertSame(mProfile, profile);
+            assertFalse(profile.isOffTheRecord());
+            assertArrayEquals(new int[] {BrowsingDataType.CACHE}, dataTypes);
+            assertEquals(TimePeriod.ALL_TIME, timePeriod);
+            assertEquals(0, excludedDomains.length);
+            assertNotNull(ignoredDomains);
+            assertEquals(0, ignoredDomains.length);
+            assertNull(mCallback);
+            assertNotNull(callback);
+            mCallback = callback;
+            mCalls++;
+        }
+
+        void complete() {
+            ThreadUtils.assertOnUiThread();
+            BrowsingDataBridge.OnClearBrowsingDataListener callback = mCallback;
+            assertNotNull(callback);
+            mCallback = null;
+            callback.onBrowsingDataCleared();
+        }
+    }
+
+    private PendingClear beginPendingCacheClear() {
+        openSettingsFromHome();
+        PendingClear pending =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> {
+                            PendingClear fixture =
+                                    new PendingClear(mActivity.getActivityTab().getProfile());
+                            BrowsingDataBridgeJni.setInstanceForTesting(fixture);
+                            return fixture;
+                        });
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.content_filters_title)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_data)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+        mDevice.pressDPadLeft();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_cache)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_confirm)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(() -> pending.mCallback != null);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+        assertTrue(
+                mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_clearing_data))));
+        assertTrue(
+                mDevice.hasObject(
+                        By.desc(mActivity.getString(R.string.brave_tv_clear_cache))
+                                .enabled(false)));
+        assertTrue(
+                mDevice.hasObject(
+                        By.desc(mActivity.getString(R.string.brave_tv_clear_history))
+                                .enabled(false)));
+        assertTrue(
+                mDevice.hasObject(
+                        By.desc(mActivity.getString(R.string.brave_tv_clear_cookies))
+                                .enabled(false)));
+        return pending;
+    }
+
+    @Test
+    @MediumTest
+    public void pendingClearBackDoesNotReopenOrDuplicate() {
+        try {
+            PendingClear pending = beginPendingCacheClear();
+            mDevice.pressDPadLeft();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_cache)));
+            mDevice.pressDPadCenter();
+            ThreadUtils.runOnUiThreadBlocking(() -> assertEquals(1, pending.mCalls));
+            mDevice.pressBack();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_data)));
+            mDevice.pressBack();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+            ThreadUtils.runOnUiThreadBlocking(pending::complete);
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+            assertFalse(
+                    mDevice.hasObject(
+                            By.text(mActivity.getString(R.string.brave_tv_cleared_data))));
+            mDevice.pressDPadCenter();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_data)));
+            mDevice.pressDPadCenter();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+            assertTrue(
+                    mDevice.hasObject(
+                            By.desc(mActivity.getString(R.string.brave_tv_clear_cache))
+                                    .enabled(true)));
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> BrowsingDataBridgeJni.setInstanceForTesting(null));
+        }
+    }
+
+    @Test
+    @MediumTest
+    public void pendingClearPauseDoesNotReopenOnResume() throws Exception {
+        try {
+            PendingClear pending = beginPendingCacheClear();
+            mDevice.pressHome();
+            CriteriaHelper.pollUiThread(
+                    () -> {
+                        int state = ApplicationStatus.getStateForActivity(mActivity);
+                        return state == ActivityState.PAUSED || state == ActivityState.STOPPED;
+                    });
+            ThreadUtils.runOnUiThreadBlocking(pending::complete);
+            mActivityTestRule.resumeMainActivityFromLauncher();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+            assertFalse(
+                    mDevice.hasObject(
+                            By.text(mActivity.getString(R.string.brave_tv_cleared_data))));
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> BrowsingDataBridgeJni.setInstanceForTesting(null));
+        }
+    }
+
+    @Test
+    @MediumTest
+    public void pendingClearCompletionRejectsReplacedDocument() {
+        try {
+            PendingClear pending = beginPendingCacheClear();
+            Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+            mActivityTestRule.loadUrl(URL);
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertSame(original, mActivity.getActivityTab());
+                        assertEquals(new GURL(URL), original.getUrl());
+                        pending.complete();
+                    });
+            CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+            assertFalse(
+                    mDevice.hasObject(
+                            By.text(mActivity.getString(R.string.brave_tv_cleared_data))));
+            assertFalse(
+                    mDevice.hasObject(By.desc(mActivity.getString(R.string.brave_tv_clear_cache))));
+            assertTrue(mDevice.hasObject(By.text("TV saved page")));
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> BrowsingDataBridgeJni.setInstanceForTesting(null));
+        }
     }
 
     @Test

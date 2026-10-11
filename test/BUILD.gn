@@ -1726,6 +1726,7 @@ if (is_android) {
       "//chrome/browser/back_press/android:java",
       "//chrome/browser/bookmarks/android:java",
       "//chrome/browser/browser_controls/android:java",
+      "//chrome/browser/browsing_data/android:java",
       "//chrome/browser/commerce/price_tracking/android:java",
       "//chrome/browser/contextmenu:java",
       "//chrome/browser/data_sharing:data_sharing_public_java",

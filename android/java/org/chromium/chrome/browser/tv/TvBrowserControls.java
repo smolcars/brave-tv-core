@@ -1041,16 +1041,18 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         dismissDialog();
                         return;
                     }
-                    for (TvPresentation.Action action : actions) {
-                        if (!action.hasFocus()) continue;
-                        int key = action.getKey();
-                        for (int i = 0; i < visibleTabs.size(); i++) {
-                            if (visibleTabs.get(i).getId() != key) continue;
-                            showTabs(incognito, pageStart + i, key, 0);
+                    if (panel.hasRestoredFocus()) {
+                        for (TvPresentation.Action action : actions) {
+                            if (!action.hasFocus()) continue;
+                            int key = action.getKey();
+                            for (int i = 0; i < visibleTabs.size(); i++) {
+                                if (visibleTabs.get(i).getId() != key) continue;
+                                showTabs(incognito, pageStart + i, key, 0);
+                                return;
+                            }
+                            showTabs(incognito, pageStart, Tab.INVALID_TAB_ID, key);
                             return;
                         }
-                        showTabs(incognito, pageStart, Tab.INVALID_TAB_ID, key);
-                        return;
                     }
                     showTabs(incognito, fallbackIndex, restoredTabId, focusedAction);
                 };
@@ -1263,20 +1265,22 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         Runnable refresh =
                 () -> {
                     if (mDialog != dialog || !documentContextValid(context)) return;
-                    for (TvPresentation.Action action : actions) {
-                        if (!action.hasFocus()) continue;
-                        int key = action.getKey();
-                        BookmarkId selectedId =
-                                key > pageStart && key <= pageStart + visibleIds.size()
-                                        ? visibleIds.get(key - pageStart - 1)
-                                        : null;
-                        showBookmarks(
-                                context,
-                                id,
-                                selectedId == null ? pageStart : key - 1,
-                                selectedId,
-                                key);
-                        return;
+                    if (panel.hasRestoredFocus()) {
+                        for (TvPresentation.Action action : actions) {
+                            if (!action.hasFocus()) continue;
+                            int key = action.getKey();
+                            BookmarkId selectedId =
+                                    key > pageStart && key <= pageStart + visibleIds.size()
+                                            ? visibleIds.get(key - pageStart - 1)
+                                            : null;
+                            showBookmarks(
+                                    context,
+                                    id,
+                                    selectedId == null ? pageStart : key - 1,
+                                    selectedId,
+                                    key);
+                            return;
+                        }
                     }
                     showBookmarks(context, id, fallbackIndex, restoredId, preferred);
                 };

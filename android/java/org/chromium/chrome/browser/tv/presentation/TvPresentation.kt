@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
@@ -325,11 +326,13 @@ object TvPresentation {
     /** UI thread only. Entries are complete before creation; native dialog owns their lifetime.
      * The context owns lifecycle/saved state. Actions and descriptions may update while shown.
      * Restoration may focus a disabled preferred action; activation remains blocked.
-     * Ordinary entry selects the preferred enabled action, then the first enabled action. */
+     * Ordinary entry selects the preferred enabled action, then the first enabled action.
+     * Acknowledge successful initial focus before native observers preserve focused actions. */
     @JvmStatic
     fun panel(
         context: Context, title: String, subtitle: String, backHint: String,
         entries: List<PanelEntry>, preferredKey: Int, restorePreferredFocus: Boolean,
+        onFocusRestored: Runnable,
     ): View = view(context).apply {
         val actions = entries.filterIsInstance<ActionRow>().flatMap { it.actions }
         val metrics = context.resources.displayMetrics
@@ -371,7 +374,11 @@ object TvPresentation {
                     val selected = actions.firstOrNull {
                         it.key == preferredKey && (it.enabled || restorePreferredFocus)
                     } ?: actions.firstOrNull { it.enabled }
-                    selected?.let { initialTargets.getValue(it).requestFocus() }
+                    selected?.let {
+                        if (initialTargets.getValue(it).requestFocus(FocusDirection.Enter)) {
+                            onFocusRestored.run()
+                        }
+                    }
                 }
             }
         }

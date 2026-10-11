@@ -32,6 +32,7 @@ final class TvBrowserPanel {
     private boolean mWide;
     private boolean mPrivateContent;
     private boolean mRestorePreferredFocus;
+    private boolean mFocusRestored;
     private @Nullable Runnable mOnDismiss;
 
     TvBrowserPanel(BraveActivity activity, String title, String subtitle, int preferredAction) {
@@ -51,6 +52,10 @@ final class TvBrowserPanel {
 
     void restorePreferredFocus() {
         mRestorePreferredFocus = true;
+    }
+
+    boolean hasRestoredFocus() {
+        return mFocusRestored;
     }
 
     void useWideLayout() {
@@ -96,6 +101,7 @@ final class TvBrowserPanel {
     }
 
     AlertDialog show(Runnable onCancel) {
+        mFocusRestored = false;
         View content =
                 TvPresentation.panel(
                         mActivity,
@@ -104,7 +110,8 @@ final class TvBrowserPanel {
                         mActivity.getString(R.string.brave_tv_panel_back_hint),
                         List.copyOf(mEntries),
                         mPreferredAction,
-                        mRestorePreferredFocus);
+                        mRestorePreferredFocus,
+                        () -> mFocusRestored = true);
         AlertDialog dialog =
                 new AlertDialog.Builder(mActivity)
                         .setView(content)
@@ -112,6 +119,7 @@ final class TvBrowserPanel {
                         .create();
         dialog.setOnDismissListener(
                 ignored -> {
+                    mFocusRestored = false;
                     TvPresentation.dispose(content);
                     if (mOnDismiss != null) mOnDismiss.run();
                 });
