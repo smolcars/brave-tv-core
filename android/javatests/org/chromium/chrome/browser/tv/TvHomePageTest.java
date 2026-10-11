@@ -635,8 +635,19 @@ public class TvHomePageTest {
                                                     mActivity.getString(
                                                             R.string.brave_tv_parent_folder))
                                             || label.equals(
+                                                    mActivity.getString(R.string.brave_tv_controls))
+                                            || label.equals(
                                                     mActivity.getString(
-                                                            R.string.brave_tv_controls)));
+                                                            R.string.brave_tv_previous_bookmarks))
+                                            || label.equals(
+                                                    mActivity.getString(
+                                                            R.string.brave_tv_more_bookmarks))
+                                            || label.equals(
+                                                    mActivity.getString(
+                                                            R.string.brave_tv_open_bookmark))
+                                            || label.equals(
+                                                    mActivity.getString(
+                                                            R.string.brave_tv_save_bookmark)));
                     focused.add(known ? label : "other button");
                 }
                 String modelState =
