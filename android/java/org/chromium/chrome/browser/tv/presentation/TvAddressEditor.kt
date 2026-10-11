@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +47,7 @@ import androidx.compose.ui.platform.PlatformTextInputInterceptor
 import androidx.compose.ui.platform.PlatformTextInputMethodRequest
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -126,11 +128,16 @@ object TvAddressEditor {
                     }) {
                         BasicTextField(
                             state = state.field,
-                            inputTransformation = InputTransformation {
-                                if (length > MAX_TEXT_LENGTH) {
-                                    revertAllChanges()
-                                    state.error = labels.tooLong
-                                } else state.error = ""
+                            inputTransformation = object : InputTransformation {
+                                override fun TextFieldBuffer.transformInput() {
+                                    if (length > MAX_TEXT_LENGTH) {
+                                        revertAllChanges()
+                                        state.error = labels.tooLong
+                                    } else state.error = ""
+                                }
+                                override fun SemanticsPropertyReceiver.applySemantics() {
+                                    contentDescription = labels.title
+                                }
                             },
                             lineLimits = TextFieldLineLimits.SingleLine,
                             textStyle = TextStyle(color = TvPresentation.text, fontSize = 20.sp),
@@ -148,7 +155,7 @@ object TvAddressEditor {
                                         }
                                         true
                                     } else false
-                                }.semantics { contentDescription = labels.title }
+                                }
                                 .background(TvPresentation.surface, RoundedCornerShape(10.dp))
                                 .border(1.dp, TvPresentation.secondary, RoundedCornerShape(10.dp))
                                 .padding(16.dp),
