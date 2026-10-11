@@ -257,8 +257,8 @@ public class TvDownloadsPanelTest {
         confirm(R.string.brave_tv_remove_download);
         CriteriaHelper.pollUiThread(() -> mHistoryRemovals == 1);
         verify(mProvider, never()).removeItem(any());
-        ThreadUtils.runOnUiThreadBlocking(() -> mItems.add(item(1)));
         focus(label(R.string.brave_tv_refresh_downloads));
+        ThreadUtils.runOnUiThreadBlocking(() -> mItems.add(item(1)));
         mDevice.pressDPadCenter();
         focus(By.descStartsWith("TV file 1\n"));
         mDevice.pressDPadCenter();
