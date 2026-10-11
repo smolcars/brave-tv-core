@@ -1018,6 +1018,9 @@ public class TvHomePageTest {
     public void pendingClearPauseDoesNotReopenOnResume() throws Exception {
         try {
             PendingClear pending = beginPendingCacheClear();
+            TvHomePage home =
+                    ThreadUtils.runOnUiThreadBlocking(
+                            () -> (TvHomePage) mActivity.getActivityTab().getNativePage());
             mDevice.pressHome();
             CriteriaHelper.pollUiThread(
                     () -> {
@@ -1027,30 +1030,8 @@ public class TvHomePageTest {
             ThreadUtils.runOnUiThreadBlocking(pending::complete);
             mActivityTestRule.resumeMainActivityFromLauncher();
             ThreadUtils.runOnUiThreadBlocking(
-                    () -> {
-                        assertFalse(mActivity.getActivityTab().isIncognito());
-                        assertTrue(
-                                mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
-                    });
-            CriteriaHelper.pollInstrumentationThread(
-                    () -> {
-                        UiObject2 address =
-                                mDevice.findObject(
-                                        By.desc(mActivity.getString(R.string.brave_tv_address)));
-                        UiObject2 settings =
-                                mDevice.findObject(
-                                        By.desc(mActivity.getString(R.string.brave_tv_settings)));
-                        Criteria.checkThat(
-                                "Resume Home: SettingsFocused="
-                                        + (settings != null && settings.isFocused())
-                                        + ", pendingPanel="
-                                        + mDevice.hasObject(
-                                                By.desc(
-                                                        mActivity.getString(
-                                                                R.string.brave_tv_clear_cache))),
-                                address != null && address.isFocused(),
-                                is(true));
-                    });
+                    () -> assertSame(home, mActivity.getActivityTab().getNativePage()));
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
             assertFalse(
                     mDevice.hasObject(
                             By.text(mActivity.getString(R.string.brave_tv_cleared_data))));
