@@ -192,11 +192,29 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void televisionTabAnimationPolicySurvivesAccessibilityChanges() {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    var layout = mActivityTestRule.getActivity().getLayoutManager();
+                    assertFalse(layout.animationsEnabled());
+                    layout.onAccessibilityModeChanged(false);
+                    assertFalse(layout.animationsEnabled());
+                    layout.onAccessibilityModeChanged(true);
+                    assertFalse(layout.animationsEnabled());
+                });
+    }
+
+    @Test
+    @MediumTest
     @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
     public void closingFinalPrivateTabRetainsOriginalNormalHome() {
         Tab normal = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         ThreadUtils.runOnUiThreadBlocking(
-                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+                () -> {
+                    assertFalse(
+                            mActivityTestRule.getActivity().getLayoutManager().animationsEnabled());
+                    mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false);
+                });
         CriteriaHelper.pollUiThread(
                 () ->
                         mActivity.getActivityTab().isIncognito()
