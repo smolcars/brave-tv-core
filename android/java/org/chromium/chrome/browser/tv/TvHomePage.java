@@ -70,6 +70,16 @@ public final class TvHomePage extends BasicNativePage {
                 public void tabRemoved(Tab tab) {
                     refreshRecentTabs();
                 }
+
+                @Override
+                public void didRemoveTabForClosure(Tab tab) {
+                    refreshRecentTabs();
+                }
+
+                @Override
+                public void tabClosureUndone(Tab tab) {
+                    refreshRecentTabs();
+                }
             };
     private final TabObserver mRecentTabObserver =
             new TabObserver() {
@@ -224,7 +234,10 @@ public final class TvHomePage extends BasicNativePage {
         List<BookmarkId> ids = new ArrayList<>();
         if (folder != null) {
             // Home is a bounded preview; the bookmark panel retains the entire folder.
-            int end = Math.min(64, mBookmarks.getChildCount(folder));
+            int end =
+                    Math.min(
+                            TvPresentation.MAX_HOME_BOOKMARK_CANDIDATES,
+                            mBookmarks.getChildCount(folder));
             for (int i = 0; i < end; i++) {
                 BookmarkId id = mBookmarks.getChildAt(folder, i);
                 if (id == null) continue;
@@ -243,7 +256,7 @@ public final class TvHomePage extends BasicNativePage {
                 saved.action.setLabel(item.getTitle() + "\n" + item.getUrlForDisplay());
                 ids.add(id);
                 actions.add(saved.action);
-                if (actions.size() == 6) break;
+                if (actions.size() == TvPresentation.MAX_HOME_FAVORITES) break;
             }
         }
         mFavorites.keySet().retainAll(ids);
@@ -277,9 +290,11 @@ public final class TvHomePage extends BasicNativePage {
             int rank = 0;
             while (rank < recent.size()
                     && recent.get(rank).getTimestampMillis() >= tab.getTimestampMillis()) rank++;
-            if (rank >= 4) continue;
+            if (rank >= TvPresentation.MAX_HOME_RECENT_TABS) continue;
             recent.add(rank, tab);
-            if (recent.size() > 4) recent.remove(4);
+            if (recent.size() > TvPresentation.MAX_HOME_RECENT_TABS) {
+                recent.remove(TvPresentation.MAX_HOME_RECENT_TABS);
+            }
         }
         for (Tab tab : mObservedTabs) tab.removeObserver(mRecentTabObserver);
         mObservedTabs.clear();

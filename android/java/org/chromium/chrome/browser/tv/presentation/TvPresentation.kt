@@ -71,6 +71,9 @@ import androidx.tv.material3.darkColorScheme
 
 /** Presentation only: callbacks retain native tab, profile and security ownership. */
 object TvPresentation {
+    const val MAX_HOME_FAVORITES = 6
+    const val MAX_HOME_RECENT_TABS = 4
+    const val MAX_HOME_BOOKMARK_CANDIDATES = 64
     internal val backgroundColor = Color(0xFF151719)
     internal val surface = Color(0xFF25282B)
     internal val text = Color(0xFFF3EFE7)
@@ -117,15 +120,21 @@ object TvPresentation {
         internal var recentTabs by mutableStateOf<List<Action>>(emptyList())
         internal var loadingFavorites by mutableStateOf(true)
 
+        /** UI thread only. Retain Action identities for unchanged native bookmark IDs.
+         * Throws IllegalArgumentException above MAX_HOME_FAVORITES or for nonempty private state.
+         * Restores retained focus after movement, or Address when the focused item disappears. */
         fun setFavorites(actions: List<Action>, loading: Boolean) {
-            require(actions.size <= 6 && (showSections || actions.isEmpty()))
+            require(actions.size <= MAX_HOME_FAVORITES && (showSections || actions.isEmpty()))
             if (favorites != actions) restoreSectionFocus(favorites, actions)
             favorites = actions
             loadingFavorites = loading
         }
 
+        /** UI thread only. Retain Action identities for unchanged native tab IDs.
+         * Throws IllegalArgumentException above MAX_HOME_RECENT_TABS or for nonempty private state.
+         * Restores retained focus after movement, or Address when the focused item disappears. */
         fun setRecentTabs(actions: List<Action>) {
-            require(actions.size <= 4 && (showSections || actions.isEmpty()))
+            require(actions.size <= MAX_HOME_RECENT_TABS && (showSections || actions.isEmpty()))
             if (recentTabs != actions) restoreSectionFocus(recentTabs, actions)
             recentTabs = actions
         }

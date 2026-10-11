@@ -34,6 +34,10 @@ import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
+import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tabmodel.TabClosureParams;
+import org.chromium.chrome.browser.tabmodel.TabModel;
+import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
@@ -75,7 +79,7 @@ public class TvHomePageTest {
                 () -> {
                     BookmarkId folder = mBookmarks.getDefaultBookmarkFolder();
                     assertNotNull(folder);
-                    for (int i = 0; i < 7; i++) {
+                    for (int i = 0; i <= TvPresentation.MAX_HOME_FAVORITES; i++) {
                         BookmarkId id =
                                 mBookmarks.addBookmark(
                                         folder, i, TITLE + i, new GURL(URL + "#" + i));
@@ -104,13 +108,20 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     public void homePreviewsSixSavedPages() {
-        assertFalse(mDevice.hasObject(By.descStartsWith(TITLE + "6\n")));
+        assertFalse(
+                mDevice.hasObject(
+                        By.descStartsWith(TITLE + TvPresentation.MAX_HOME_FAVORITES + "\n")));
         UiObject2 scroll = mDevice.findObject(By.scrollable(true));
         assertNotNull(scroll);
         scroll.scroll(Direction.DOWN, 0.8f);
         CriteriaHelper.pollInstrumentationThread(
-                () -> mDevice.hasObject(By.descStartsWith(TITLE + "5\n")));
-        assertFalse(mDevice.hasObject(By.descStartsWith(TITLE + "6\n")));
+                () ->
+                        mDevice.hasObject(
+                                By.descStartsWith(
+                                        TITLE + (TvPresentation.MAX_HOME_FAVORITES - 1) + "\n")));
+        assertFalse(
+                mDevice.hasObject(
+                        By.descStartsWith(TITLE + TvPresentation.MAX_HOME_FAVORITES + "\n")));
     }
 
     @Test
@@ -155,21 +166,11 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     public void recentPageSelectsExistingTab() {
-        mActivityTestRule.loadUrl(
-                "data:text/html,<title>TV%20recent%20fixture</title><h1>Recent%20page</h1>");
-        int recentId = ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getId());
-        ThreadUtils.runOnUiThreadBlocking(
-                () -> mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false));
-        CriteriaHelper.pollUiThread(
-                () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+        Tab recentTab = openHomeWithRecentPage();
+        int recentId = ThreadUtils.runOnUiThreadBlocking(recentTab::getId);
         int count =
                 ThreadUtils.runOnUiThreadBlocking(
                         () -> mActivity.getTabModelSelector().getModel(false).getCount());
-        UiObject2 scroll = mDevice.findObject(By.scrollable(true));
-        assertNotNull(scroll);
-        scroll.scroll(Direction.DOWN, 0.8f);
-        CriteriaHelper.pollInstrumentationThread(
-                () -> mDevice.hasObject(By.descStartsWith("TV recent fixture\n")));
         UiObject2 recent = mDevice.findObject(By.descStartsWith("TV recent fixture\n"));
         assertNotNull(recent);
         recent.click();
@@ -178,6 +179,62 @@ public class TvHomePageTest {
                 () ->
                         assertEquals(
                                 count, mActivity.getTabModelSelector().getModel(false).getCount()));
+    }
+
+    private Tab openHomeWithRecentPage() {
+        mActivityTestRule.loadUrl(
+                "data:text/html,<title>TV%20recent%20fixture</title><h1>Recent%20page</h1>");
+        Tab recent = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+        UiObject2 scroll = mDevice.findObject(By.scrollable(true));
+        assertNotNull(scroll);
+        scroll.scroll(Direction.DOWN, 0.8f);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.descStartsWith("TV recent fixture\n")));
+        return recent;
+    }
+
+    @Test
+    @MediumTest
+    public void closingAndUndoingUnselectedRecentTabRefreshesSameHome() {
+        Tab recent = openHomeWithRecentPage();
+        TvHomePage home =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> (TvHomePage) mActivity.getActivityTab().getNativePage());
+        TabModel model =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> mActivity.getTabModelSelector().getModel(false));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertTrue(model.supportsPendingClosures());
+                    model.getTabRemover()
+                            .closeTabs(
+                                    TabClosureParams.closeTab(recent).allowUndo(true).build(),
+                                    false);
+                    assertTrue(model.isClosurePending(recent.getId()));
+                    assertTrue(mActivity.getActivityTab().getNativePage() == home);
+                });
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(
+                                        mActivity.getString(
+                                                R.string.brave_tv_home_empty_recent_tabs))));
+        assertFalse(mDevice.hasObject(By.descStartsWith("TV recent fixture\n")));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    model.cancelTabClosure(recent.getId());
+                    assertFalse(model.isClosurePending(recent.getId()));
+                    assertTrue(mActivity.getActivityTab().getNativePage() == home);
+                });
+        UiObject2 scroll = mDevice.findObject(By.scrollable(true));
+        assertNotNull(scroll);
+        scroll.scroll(Direction.DOWN, 0.8f);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.descStartsWith("TV recent fixture\n")));
     }
 
     @Test
