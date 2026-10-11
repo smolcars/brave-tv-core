@@ -17,6 +17,10 @@ import static org.junit.Assert.assertTrue;
 import android.content.pm.PackageInfo;
 import android.graphics.Rect;
 import android.os.Build;
+import android.os.SystemClock;
+import android.view.InputDevice;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inspector.WindowInspector;
@@ -382,6 +386,61 @@ public class TvHomePageTest {
                 () -> !mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
         CriteriaHelper.pollUiThread(() -> page.getContentView().hasFocus());
         ThreadUtils.runOnUiThreadBlocking(() -> assertTrue(mActivity.getActivityTab() == page));
+    }
+
+    @Test
+    @MediumTest
+    public void dedicatedDpadFromVirtualKeyboardClicksOnce() {
+        mActivityTestRule.loadUrl(
+                "data:text/html,<style>button{position:fixed;inset:0}</style>"
+                        + "<button onclick='this.textContent=\"Pointer clicks \"+"
+                        + "(++window.clicks)+\" detail \"+event.detail'>Pointer fixture</button>"
+                        + "<script>window.clicks=0</script>");
+        Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        !page.isLoading()
+                                && TabBrowserControlsConstraintsHelper.getConstraints(page)
+                                        == BrowserControlsState.HIDDEN
+                                && mActivity.getBrowserControlsManager().getContentOffset() == 0);
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.hasWindowFocus() && page.getContentView().hasFocus());
+        long downTime = SystemClock.uptimeMillis();
+        KeyEvent down =
+                new KeyEvent(
+                        downTime,
+                        downTime,
+                        KeyEvent.ACTION_DOWN,
+                        KeyEvent.KEYCODE_DPAD_CENTER,
+                        0,
+                        0,
+                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                        0,
+                        0,
+                        InputDevice.SOURCE_DPAD);
+        InputDevice device = down.getDevice();
+        assertNotNull(device);
+        assertEquals(InputDevice.KEYBOARD_TYPE_ALPHABETIC, device.getKeyboardType());
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    for (int repeat = 0; repeat < 3; repeat++) {
+                        mActivity.dispatchKeyEvent(
+                                KeyEvent.changeTimeRepeat(
+                                        down, SystemClock.uptimeMillis(), repeat));
+                    }
+                    mActivity.dispatchKeyEvent(KeyEvent.changeAction(down, KeyEvent.ACTION_UP));
+                });
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("Pointer clicks 1 detail 1")));
+        assertEquals(
+                "1",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        page.getWebContents(), "window.clicks"));
     }
 
     @Test
