@@ -576,26 +576,13 @@ public class TvHomePageTest {
                             }
                             return mBookmarks.getBookmarkById(parent).getTitle();
                         });
-        int capturedOffset =
-                ThreadUtils.runOnUiThreadBlocking(
-                        () -> mActivity.getBrowserControlsManager().getContentOffset());
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBookmarks);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
         focusDown(By.desc(mActivity.getString(R.string.brave_tv_bookmark_folder, parentTitle)));
         mDevice.pressDPadCenter();
-        CriteriaHelper.pollInstrumentationThread(
-                () -> {
-                    assertEquals(
-                            "Bookmark callback captured a changing native content offset",
-                            capturedOffset,
-                            (int)
-                                    ThreadUtils.runOnUiThreadBlocking(
-                                            () ->
-                                                    mActivity
-                                                            .getBrowserControlsManager()
-                                                            .getContentOffset()));
-                    return mDevice.hasObject(By.text(parentTitle));
-                });
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text(parentTitle)));
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.getBrowserControlsManager().getContentOffset() == 0);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_parent_folder)));
         focusDown(
                 By.desc(

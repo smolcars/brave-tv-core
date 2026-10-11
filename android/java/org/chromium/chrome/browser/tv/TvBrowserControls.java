@@ -823,7 +823,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (mAddressState != state) return;
         List<TvPresentation.Action> suggestions = new ArrayList<>();
         Tab tab = context.tab;
-        if (tab != null && addressContextValid(context)) {
+        if (tab != null && documentContextValid(context)) {
             BookmarkModel model =
                     BookmarkModel.getForProfile(tab.getProfile().getOriginalProfile());
             if (model.isBookmarkModelLoaded()) {
@@ -837,7 +837,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                     item.getTitle() + "\n" + item.getUrlForDisplay(),
                                     true,
                                     () -> {
-                                        if (!addressContextValid(context)) {
+                                        if (!documentContextValid(context)) {
                                             state.setError(
                                                     mActivity.getString(
                                                             R.string.brave_tv_address_changed));
@@ -860,7 +860,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private void submitAddress(
             TvBrowserSession.Context context, TvAddressEditor.State state, String input) {
         if (mAddressState != state || mDialog == null || !mDialog.isShowing()) return;
-        if (!addressContextValid(context)) {
+        if (!documentContextValid(context)) {
             state.setError(mActivity.getString(R.string.brave_tv_address_changed));
             return;
         }
@@ -980,7 +980,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 && canAccessTabs(tab.isIncognito());
     }
 
-    private boolean addressContextValid(TvBrowserSession.Context context) {
+    private boolean documentContextValid(TvBrowserSession.Context context) {
         Tab tab = context.tab;
         return tab != null
                 && isAlive()
@@ -1002,7 +1002,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             TvBrowserSession.Context context, @Nullable BookmarkId folderId, int start) {
         Tab tab = context.tab;
         if (tab == null) return;
-        if (!tabContextValid(context)) return;
+        if (!documentContextValid(context)) return;
         dismissDialog();
         BookmarkModel model = BookmarkModel.getForProfile(tab.getProfile().getOriginalProfile());
         if (!model.isBookmarkModelLoaded()) {
@@ -1018,7 +1018,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             model.finishLoadingBookmarkModel(
                     mBookmarkCallbacks.makeCancelable(
                             () -> {
-                                if (tabContextValid(context))
+                                if (documentContextValid(context))
                                     showBookmarks(context, folderId, start);
                             }));
             return;
@@ -1083,7 +1083,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         Tab tab = context.tab;
         if (tab == null) return;
         String url = context.url;
-        if (!tabContextValid(context) || !isWebTab(tab) || !model.isEditBookmarksEnabled()) return;
+        if (!documentContextValid(context) || !isWebTab(tab) || !model.isEditBookmarksEnabled())
+            return;
         BookmarkId folder = model.getDefaultBookmarkFolder();
         BookmarkItem parent = model.getBookmarkById(folder);
         if (folder == null || parent == null || parent.isManaged()) return;
@@ -1105,7 +1106,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             int start) {
         Tab tab = context.tab;
         if (tab == null) return;
-        if (!tabContextValid(context)) return;
+        if (!documentContextValid(context)) return;
         BookmarkItem item = model.getBookmarkById(id);
         if (item == null) {
             showBookmarks(context, folder, start);
@@ -1127,7 +1128,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 R.string.brave_tv_open_bookmark,
                 true,
                 () -> {
-                    if (!tabContextValid(context)) return;
+                    if (!documentContextValid(context)) return;
                     BookmarkItem current = model.getBookmarkById(id);
                     if (current == null || current.isFolder()) {
                         back.run();
@@ -1152,7 +1153,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             int start) {
         Tab tab = context.tab;
         if (tab == null) return;
-        if (!tabContextValid(context)) return;
+        if (!documentContextValid(context)) return;
         BookmarkItem item = model.getBookmarkById(id);
         if (item == null
                 || item.isFolder()
@@ -1172,7 +1173,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 R.string.brave_tv_remove_bookmark,
                 true,
                 () -> {
-                    if (!tabContextValid(context)) return;
+                    if (!documentContextValid(context)) return;
                     BookmarkItem current = model.getBookmarkById(id);
                     if (current != null
                             && !current.isFolder()

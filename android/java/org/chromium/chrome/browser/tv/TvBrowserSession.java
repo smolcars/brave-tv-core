@@ -221,7 +221,7 @@ final class TvBrowserSession {
                 && expected.offset == current.offset;
     }
 
-    /** Address input has no page coordinates; showing its IME may resize the same document. */
+    /** Document actions have no page coordinates; IME/layout may resize the same document. */
     boolean isCurrentDocument(@Nullable Context expected) {
         ThreadUtils.assertOnUiThread();
         if (expected == null || mDestroyed || mActivity.isFinishing() || mActivity.isDestroyed()) {
