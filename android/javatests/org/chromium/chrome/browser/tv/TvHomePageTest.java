@@ -15,6 +15,8 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import android.content.pm.PackageInfo;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.SystemClock;
@@ -393,11 +395,15 @@ public class TvHomePageTest {
     @MediumTest
     public void dedicatedDpadFromVirtualKeyboardClicksOnce() throws Exception {
         mActivityTestRule.loadUrl(
-                "data:text/html,<style>button{position:fixed;inset:0}</style>"
+                "data:text/html,<style>button{position:fixed;inset:0;background:%23202124;"
+                        + "color:white;display:flex;align-items:flex-start}</style>"
                         + "<button onclick='this.textContent=\"Pointer clicks \"+"
-                        + "(++window.clicks)+\" detail \"+event.detail'>Pointer fixture</button>"
+                        + "(++window.clicks)+\" detail \"+event.detail;"
+                        + "window.point=[event.clientX,event.clientY,innerWidth,innerHeight]'>"
+                        + "Pointer fixture</button>"
                         + "<script>window.clicks=0</script>");
         Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        String fixtureUrl = ThreadUtils.runOnUiThreadBlocking(() -> page.getUrl().getSpec());
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         CriteriaHelper.pollUiThread(
@@ -438,6 +444,95 @@ public class TvHomePageTest {
         InputDevice device = down.getDevice();
         assertNotNull(device);
         assertEquals(InputDevice.KEYBOARD_TYPE_ALPHABETIC, device.getKeyboardType());
+        dispatchHeldDpad(down);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("Pointer clicks 1 detail 1")));
+        assertEquals(
+                "1",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        page.getWebContents(), "window.clicks"));
+
+        CriteriaHelper.pollInstrumentationThread(
+                () -> fixtureCenterColor(page, fixtureUrl) == Color.WHITE);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    for (int source :
+                            new int[] {InputDevice.SOURCE_KEYBOARD, InputDevice.SOURCE_DPAD}) {
+                        KeyEvent keyboard =
+                                new KeyEvent(
+                                        downTime,
+                                        SystemClock.uptimeMillis(),
+                                        KeyEvent.ACTION_DOWN,
+                                        KeyEvent.KEYCODE_DPAD_RIGHT,
+                                        0,
+                                        source == InputDevice.SOURCE_DPAD
+                                                ? KeyEvent.META_CTRL_ON
+                                                : 0,
+                                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                                        0,
+                                        0,
+                                        source);
+                        mActivity.dispatchKeyEvent(keyboard);
+                        mActivity.dispatchKeyEvent(
+                                KeyEvent.changeAction(keyboard, KeyEvent.ACTION_UP));
+                    }
+                });
+        assertEquals(Color.WHITE, fixtureCenterColor(page, fixtureUrl));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> fixtureCenterColor(page, fixtureUrl) == Color.rgb(32, 33, 36), 5000, 250);
+        dispatchHeldDpad(down);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> fixtureCenterColor(page, fixtureUrl) == Color.WHITE);
+        assertEquals(
+                "1",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        page.getWebContents(), "window.clicks"));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    mActivity.dispatchKeyEvent(
+                            KeyEvent.changeTimeRepeat(down, SystemClock.uptimeMillis(), 0));
+                    mActivity.dispatchKeyEvent(KeyEvent.changeAction(down, KeyEvent.ACTION_UP));
+                });
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("Pointer clicks 2 detail 1")));
+        assertEquals(
+                "true",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        page.getWebContents(),
+                        "window.clicks===2 && Math.abs(point[0]-point[2]/2)<2"
+                                + " && Math.abs(point[1]-point[3]/2)<2"));
+    }
+
+    private int fixtureCenterColor(Tab page, String fixtureUrl) {
+        int[] center =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> {
+                            assertSame(page, mActivity.getActivityTab());
+                            assertFalse(page.isIncognito());
+                            assertEquals(fixtureUrl, page.getUrl().getSpec());
+                            assertTrue(mActivity.hasWindowFocus());
+                            assertEquals(
+                                    0,
+                                    mActivity.getWindow().getAttributes().flags
+                                            & WindowManager.LayoutParams.FLAG_SECURE);
+                            int[] position = new int[2];
+                            View content = page.getContentView();
+                            content.getLocationOnScreen(position);
+                            position[0] += content.getWidth() / 2;
+                            position[1] += content.getHeight() / 2;
+                            return position;
+                        });
+        Bitmap screen =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot();
+        assertNotNull(screen);
+        try {
+            return screen.getPixel(center[0], center[1]);
+        } finally {
+            screen.recycle();
+        }
+    }
+
+    private void dispatchHeldDpad(KeyEvent down) {
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     for (int repeat = 0; repeat < 3; repeat++) {
@@ -447,12 +542,6 @@ public class TvHomePageTest {
                     }
                     mActivity.dispatchKeyEvent(KeyEvent.changeAction(down, KeyEvent.ACTION_UP));
                 });
-        CriteriaHelper.pollInstrumentationThread(
-                () -> mDevice.hasObject(By.text("Pointer clicks 1 detail 1")));
-        assertEquals(
-                "1",
-                JavaScriptUtils.executeJavaScriptAndWaitForResult(
-                        page.getWebContents(), "window.clicks"));
     }
 
     @Test
