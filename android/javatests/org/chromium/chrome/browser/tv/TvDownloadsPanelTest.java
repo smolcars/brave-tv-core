@@ -175,13 +175,6 @@ public class TvDownloadsPanelTest {
                 });
     }
 
-    private void click(BySelector selector) {
-        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(selector));
-        UiObject2 action = mDevice.findObject(selector);
-        assertNotNull(action);
-        action.click();
-    }
-
     private void showOne() {
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
@@ -194,7 +187,7 @@ public class TvDownloadsPanelTest {
     }
 
     private void confirm(int resource) {
-        click(label(resource));
+        selectTerminalAction(resource);
         focus(label(R.string.cancel));
         mDevice.pressDPadRight();
         focus(label(resource));
@@ -202,6 +195,16 @@ public class TvDownloadsPanelTest {
         focus(label(R.string.cancel));
         mDevice.pressDPadRight();
         focus(label(resource));
+        mDevice.pressDPadCenter();
+    }
+
+    private void selectTerminalAction(int resource) {
+        mDevice.pressDPadDown();
+        focus(label(R.string.brave_tv_remove_download));
+        if (resource == R.string.brave_tv_delete_download) {
+            mDevice.pressDPadRight();
+            focus(label(resource));
+        }
         mDevice.pressDPadCenter();
     }
 
@@ -229,7 +232,13 @@ public class TvDownloadsPanelTest {
                     mPanel.onItemUpdated(mItems.get(0), new UpdateDelta());
                 });
         focus(By.descStartsWith("TV file 0\n"));
-        click(label(R.string.brave_tv_more_downloads));
+        for (int i = 1; i < TvDownloadsPanel.PAGE_SIZE; i++) {
+            mDevice.pressDPadDown();
+            focus(By.descStartsWith("TV file " + i + "\n"));
+        }
+        mDevice.pressDPadDown();
+        focus(label(R.string.brave_tv_more_downloads));
+        mDevice.pressDPadCenter();
         focus(By.descStartsWith("TV file " + TvDownloadsPanel.PAGE_SIZE + "\n"));
         assertFalse(mDevice.hasObject(By.descStartsWith("TV file 0\n")));
         assertFalse(mDevice.hasObject(By.descStartsWith("Private file")));
@@ -243,7 +252,8 @@ public class TvDownloadsPanelTest {
         CriteriaHelper.pollUiThread(() -> mHistoryRemovals == 1);
         verify(mProvider, never()).removeItem(any());
         ThreadUtils.runOnUiThreadBlocking(() -> mItems.add(item(1)));
-        click(label(R.string.brave_tv_refresh_downloads));
+        focus(label(R.string.brave_tv_refresh_downloads));
+        mDevice.pressDPadCenter();
         focus(By.descStartsWith("TV file 1\n"));
         mDevice.pressDPadCenter();
         focus(label(R.string.brave_tv_open_download));
@@ -260,7 +270,7 @@ public class TvDownloadsPanelTest {
     @MediumTest
     public void cancelConfirmationAndPrivateReplacementRejectActions() {
         showOne();
-        click(label(R.string.brave_tv_delete_download));
+        selectTerminalAction(R.string.brave_tv_delete_download);
         focus(label(R.string.cancel));
         mDevice.pressDPadCenter();
         focus(label(R.string.brave_tv_open_download));
