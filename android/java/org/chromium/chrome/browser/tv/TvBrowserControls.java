@@ -1215,11 +1215,34 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     public void showSettings() {
+        showSettings(null);
+    }
+
+    public void showSettings(@Nullable TvHomePage home) {
         if (!isAlive()) return;
-        dismissDialog();
         Tab tab = mActivity.getActivityTab();
         if (tab == null || !canAccessTabs(tab.isIncognito())) return;
         TvBrowserSession.Context context = mSession.capture();
+        if (home != null && tab.getNativePage() != home) return;
+        Runnable onReturn =
+                home == null
+                        ? this::returnToControls
+                        : () -> {
+                            if (!isAlive()) return;
+                            dismissDialog();
+                            if (!mSession.isCurrentDocument(context)
+                                    || tab.getNativePage() != home
+                                    || !home.focusSettings()) {
+                                returnToPage();
+                            }
+                        };
+        showSettings(context, onReturn);
+    }
+
+    private void showSettings(TvBrowserSession.Context context, Runnable onReturn) {
+        Tab tab = context.tab;
+        if (tab == null || !tabContextValid(context)) return;
+        dismissDialog();
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
@@ -1229,7 +1252,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         panel.addItem(
                         mActivity.getString(R.string.brave_tv_search_engine),
                         R.string.brave_tv_search_engine,
-                        () -> showSearchEngines(context))
+                        () -> showSearchEngines(context, onReturn))
                 .setIcon(R.drawable.ic_search);
         panel.addItem(
                         mActivity.getString(R.string.content_filters_title),
@@ -1238,7 +1261,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             if (!tabContextValid(context)) return;
                             dismissDialog();
                             mLastSettingsAction = R.string.content_filters_title;
-                            mFilterPanel = new TvFilterPanel(mActivity, tab, this::showSettings);
+                            mFilterPanel =
+                                    new TvFilterPanel(
+                                            mActivity, tab, () -> showSettings(context, onReturn));
                             mFilterPanel.show();
                         })
                 .setIcon(R.drawable.ic_shield_done);
@@ -1246,7 +1271,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             panel.addItem(
                             mActivity.getString(R.string.brave_tv_clear_data),
                             R.string.brave_tv_clear_data,
-                            () -> showClearData(context, false))
+                            () -> showClearData(context, false, onReturn))
                     .setIcon(R.drawable.ic_shred_data);
         }
         panel.addItem(
@@ -1264,7 +1289,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         R.string.brave_tv_controls,
                         this::returnToControls)
                 .setIcon(R.drawable.ic_tune);
-        mDialog = panel.show(this::returnToControls);
+        mDialog = panel.show(onReturn);
     }
 
     private boolean canClearData(TvBrowserSession.Context context, int type) {
@@ -1278,7 +1303,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 .getBoolean(Pref.ALLOW_DELETING_BROWSER_HISTORY));
     }
 
-    private void showClearData(TvBrowserSession.Context context, boolean completed) {
+    private void showClearData(
+            TvBrowserSession.Context context, boolean completed, Runnable onReturn) {
         Tab tab = context.tab;
         if (tab == null) return;
         if (!tabContextValid(context) || tab.isIncognito()) return;
@@ -1303,7 +1329,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 context,
                                 BrowsingDataType.HISTORY,
                                 R.string.brave_tv_clear_history,
-                                R.string.brave_tv_clear_history_scope));
+                                R.string.brave_tv_clear_history_scope,
+                                onReturn));
         panel.addAction(
                 R.string.brave_tv_clear_cookies,
                 canClearData(context, BrowsingDataType.SITE_DATA),
@@ -1312,7 +1339,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 context,
                                 BrowsingDataType.SITE_DATA,
                                 R.string.brave_tv_clear_cookies,
-                                R.string.brave_tv_clear_cookies_scope));
+                                R.string.brave_tv_clear_cookies_scope,
+                                onReturn));
         panel.addAction(
                 R.string.brave_tv_clear_cache,
                 canClearData(context, BrowsingDataType.CACHE),
@@ -1321,14 +1349,15 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 context,
                                 BrowsingDataType.CACHE,
                                 R.string.brave_tv_clear_cache,
-                                R.string.brave_tv_clear_cache_scope));
-        panel.addAction(R.string.brave_tv_settings, true, this::showSettings);
-        mDialog = panel.show(this::showSettings);
-        if (mClearingData) mOnDataCleared = () -> showClearData(context, true);
+                                R.string.brave_tv_clear_cache_scope,
+                                onReturn));
+        panel.addAction(R.string.brave_tv_settings, true, () -> showSettings(context, onReturn));
+        mDialog = panel.show(() -> showSettings(context, onReturn));
+        if (mClearingData) mOnDataCleared = () -> showClearData(context, true, onReturn);
     }
 
     private void confirmClearData(
-            TvBrowserSession.Context context, int type, int title, int scope) {
+            TvBrowserSession.Context context, int type, int title, int scope, Runnable onReturn) {
         Tab tab = context.tab;
         if (tab == null) return;
         if (!canClearData(context, type)) return;
@@ -1339,14 +1368,14 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         mActivity.getString(title),
                         mActivity.getString(scope),
                         R.string.cancel);
-        panel.addAction(R.string.cancel, true, () -> showClearData(context, false));
+        panel.addAction(R.string.cancel, true, () -> showClearData(context, false, onReturn));
         panel.addAction(
                 R.string.brave_tv_clear_confirm,
                 true,
                 () -> {
                     if (!canClearData(context, type)) return;
                     mClearingData = true;
-                    showClearData(context, false);
+                    showClearData(context, false, onReturn);
                     BrowsingDataBridge.getForProfile(tab.getProfile())
                             .clearBrowsingData(
                                     () -> {
@@ -1358,10 +1387,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                     new int[] {type},
                                     TimePeriod.ALL_TIME);
                 });
-        mDialog = panel.show(() -> showClearData(context, false));
+        mDialog = panel.show(() -> showClearData(context, false, onReturn));
     }
 
-    private void showSearchEngines(TvBrowserSession.Context context) {
+    private void showSearchEngines(TvBrowserSession.Context context, Runnable onReturn) {
         Tab tab = context.tab;
         if (tab == null) return;
         if (!tabContextValid(context)) return;
@@ -1369,7 +1398,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         dismissDialog();
         TemplateUrlService service = TemplateUrlServiceFactory.getForProfile(tab.getProfile());
         if (service == null) {
-            showSettings();
+            showSettings(context, onReturn);
             return;
         }
         if (!service.isLoaded()) {
@@ -1379,11 +1408,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             mActivity.getString(R.string.brave_tv_search_engine),
                             mActivity.getString(R.string.brave_tv_loading_search),
                             0);
-            loading.addAction(R.string.brave_tv_settings, true, this::showSettings);
-            mDialog = loading.show(this::showSettings);
+            loading.addAction(
+                    R.string.brave_tv_settings, true, () -> showSettings(context, onReturn));
+            mDialog = loading.show(() -> showSettings(context, onReturn));
             mSearchCallbacks = new CallbackController();
             service.runWhenLoaded(
-                    mSearchCallbacks.makeCancelable(() -> showSearchEngines(context)));
+                    mSearchCallbacks.makeCancelable(() -> showSearchEngines(context, onReturn)));
             return;
         }
         TemplateUrl selected = service.getDefaultSearchEngineTemplateUrl();
@@ -1423,18 +1453,20 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                         .writeBoolean(
                                                 BravePreferenceKeys.DEFAULT_SEARCH_ENGINE_CHANGED,
                                                 true);
-                                showSearchEngines(context);
+                                showSearchEngines(context, onReturn);
                                 return;
                             }
-                            showSearchEngines(context);
+                            showSearchEngines(context, onReturn);
                         });
             }
         } else {
             panel.addItem(
-                    mActivity.getString(R.string.brave_tv_managed_search), 0, this::showSettings);
+                    mActivity.getString(R.string.brave_tv_managed_search),
+                    0,
+                    () -> showSettings(context, onReturn));
         }
-        panel.addAction(R.string.brave_tv_settings, true, this::showSettings);
-        mDialog = panel.show(this::showSettings);
+        panel.addAction(R.string.brave_tv_settings, true, () -> showSettings(context, onReturn));
+        mDialog = panel.show(() -> showSettings(context, onReturn));
     }
 
     private void performAction(int action) {

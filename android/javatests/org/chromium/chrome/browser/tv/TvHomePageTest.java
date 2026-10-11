@@ -228,6 +228,50 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void nestedClearDataBackRetainsHomeSettingsInvoker() {
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
+        mDevice.pressDPadRight();
+        mDevice.pressDPadRight();
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.content_filters_title)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_data)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_data)));
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+    }
+
+    @Test
+    @MediumTest
+    public void settingsEntryRejectsReplacedHome() {
+        TvHomePage home =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> (TvHomePage) mActivity.getActivityTab().getNativePage());
+        mActivityTestRule.loadUrl(URL);
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertFalse(mActivity.getActivityTab().getNativePage() == home);
+                    mActivity.showTvSettings(home);
+                    assertEquals(new GURL(URL), mActivity.getActivityTab().getUrl());
+                });
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        assertFalse(
+                mDevice.hasObject(By.desc(mActivity.getString(R.string.brave_tv_search_engine))));
+    }
+
+    @Test
+    @MediumTest
     public void recentPageSelectsExistingTab() {
         Tab recentTab = openHomeWithRecentPage();
         int recentId = ThreadUtils.runOnUiThreadBlocking(recentTab::getId);

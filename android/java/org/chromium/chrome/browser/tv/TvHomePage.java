@@ -40,6 +40,7 @@ public final class TvHomePage extends BasicNativePage {
     private final Tab mTab;
     private final View mContent;
     private final TvPresentation.HomeState mState;
+    private final TvPresentation.Action mSettingsAction;
     private final Map<BookmarkId, SavedPage> mFavorites = new HashMap<>();
     private final Map<Integer, TvPresentation.Action> mRecentActions = new HashMap<>();
     private final List<Tab> mObservedTabs = new ArrayList<>();
@@ -141,6 +142,7 @@ public final class TvHomePage extends BasicNativePage {
                         R.string.brave_tv_source,
                         () -> open("https://github.com/smolcars/brave-tv")));
         links.add(action(R.string.brave_tv_licenses, () -> open("chrome://credits")));
+        mSettingsAction = action(R.string.brave_tv_settings, () -> activity.showTvSettings(this));
         mContent =
                 TvPresentation.home(
                         activity,
@@ -162,11 +164,7 @@ public final class TvHomePage extends BasicNativePage {
                                 action(R.string.brave_tv_controls, activity::showTvBrowserControls),
                                 action(R.string.brave_tv_tabs, activity::showTvTabs),
                                 action(R.string.brave_tv_bookmarks, activity::showTvBookmarks),
-                                action(
-                                        R.string.brave_tv_settings,
-                                        () ->
-                                                activity.onMenuOrKeyboardAction(
-                                                        R.id.preferences_id, false))),
+                                mSettingsAction),
                         links,
                         mState);
         mContent.addOnAttachStateChangeListener(
@@ -352,6 +350,12 @@ public final class TvHomePage extends BasicNativePage {
             startObserving();
             TvPresentation.focusHome(mContent);
         }
+    }
+
+    boolean focusSettings() {
+        if (!isCurrentHome()) return false;
+        mSettingsAction.requestFocus();
+        return true;
     }
 
     @Override
