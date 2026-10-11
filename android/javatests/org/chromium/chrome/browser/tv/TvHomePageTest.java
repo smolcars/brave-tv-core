@@ -13,6 +13,10 @@ import static org.junit.Assert.assertTrue;
 
 import android.graphics.Rect;
 import android.os.Build;
+import android.os.SystemClock;
+import android.view.InputDevice;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inspector.WindowInspector;
@@ -499,12 +503,12 @@ public class TvHomePageTest {
         String finalTitle = "TV library fixture " + TvBrowserControls.BOOKMARK_PAGE_SIZE;
         assertFalse(mDevice.hasObject(By.desc(finalTitle)));
         focusDown(By.desc(mActivity.getString(R.string.brave_tv_more_bookmarks)));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         focusDown(By.desc(finalTitle));
         assertFalse(mDevice.hasObject(By.desc("TV library fixture 0")));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         CriteriaHelper.pollUiThread(
                 () ->
                         mActivity
@@ -523,23 +527,23 @@ public class TvHomePageTest {
     public void bookmarkRemovalCancelPreservesThenConfirmRemovesOnlySelectedPage() {
         List<BookmarkId> items = openOwnedBookmarkFolder();
         focusDown(By.desc("TV library fixture 0"));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_bookmark)));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> assertTrue(mBookmarks.doesBookmarkExist(items.get(0))));
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_bookmark)));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_bookmark)));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         CriteriaHelper.pollUiThread(() -> !mBookmarks.doesBookmarkExist(items.get(0)));
         focusDown(By.desc("TV library fixture 1"));
         ThreadUtils.runOnUiThreadBlocking(
@@ -579,14 +583,14 @@ public class TvHomePageTest {
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBookmarks);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
         focusDown(By.desc(mActivity.getString(R.string.brave_tv_bookmark_folder, parentTitle)));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text(parentTitle)));
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_parent_folder)));
         focusDown(
                 By.desc(
                         mActivity.getString(
                                 R.string.brave_tv_bookmark_folder, "TV library fixture folder")));
-        mDevice.pressDPadCenter();
+        pressTvOk();
         CriteriaHelper.pollInstrumentationThread(
                 () -> mDevice.hasObject(By.text("TV library fixture folder")));
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_parent_folder)));
@@ -601,6 +605,44 @@ public class TvHomePageTest {
             mDevice.waitForIdle();
         }
         waitForFocus(target);
+    }
+
+    private void pressTvOk() {
+        var automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        long downTime = SystemClock.uptimeMillis();
+        assertTrue(
+                automation.injectInputEvent(
+                        new KeyEvent(
+                                downTime,
+                                downTime,
+                                KeyEvent.ACTION_DOWN,
+                                KeyEvent.KEYCODE_DPAD_CENTER,
+                                0,
+                                0,
+                                KeyCharacterMap.VIRTUAL_KEYBOARD,
+                                0,
+                                0,
+                                InputDevice.SOURCE_DPAD),
+                        true));
+        try {
+            // Model a physical press, rather than UiDevice's zero-duration keyboard event.
+            SystemClock.sleep(100);
+        } finally {
+            assertTrue(
+                    automation.injectInputEvent(
+                            new KeyEvent(
+                                    downTime,
+                                    SystemClock.uptimeMillis(),
+                                    KeyEvent.ACTION_UP,
+                                    KeyEvent.KEYCODE_DPAD_CENTER,
+                                    0,
+                                    0,
+                                    KeyCharacterMap.VIRTUAL_KEYBOARD,
+                                    0,
+                                    0,
+                                    InputDevice.SOURCE_DPAD),
+                            true));
+        }
     }
 
     @Test
@@ -642,7 +684,7 @@ public class TvHomePageTest {
                     assertEquals(new GURL(url), original.getUrl());
                 });
         mDevice.pressBack();
-        waitForFocus(By.desc(mActivity.getString(R.string.menu_page_info)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_controls)));
     }
 
     private void openSettingsFromHome() {
