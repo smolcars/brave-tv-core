@@ -110,6 +110,7 @@ function render(result) {
     $('tabs').replaceChildren()
     delete $('tabs').dataset.state
     resetInput()
+    if (!previous?.paused) $('status').scrollIntoView({ block: 'start' })
     return
   }
   $('title').textContent = state.title || 'TV home'
