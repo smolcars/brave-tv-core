@@ -620,7 +620,9 @@ public class TvHomePageTest {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_controls)));
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_history)));
-        mDevice.pressDPadDown();
+        mDevice.pressDPadRight();
+        mDevice.pressDPadRight();
+        mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.menu_page_info)));
         mDevice.pressDPadCenter();
         BySelector nativeInfo = By.res(mActivity.getPackageName(), "page_info_url_wrapper");
