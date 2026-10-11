@@ -220,6 +220,14 @@ public class TvHomePageTest {
         CriteriaHelper.pollUiThread(
                 () -> {
                     Criteria.checkThat(
+                            "Normal activity tab must remain selected during layout return; layout="
+                                    + mActivityTestRule
+                                            .getActivity()
+                                            .getLayoutManager()
+                                            .getActiveLayoutType(),
+                            mActivity.getActivityTab() == normal,
+                            is(true));
+                    Criteria.checkThat(
                             "Final private closure must return to browsing, not cover normal Home",
                             mActivityTestRule
                                     .getActivity()
