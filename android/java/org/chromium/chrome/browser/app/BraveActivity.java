@@ -311,6 +311,7 @@ public abstract class BraveActivity extends ChromeActivity
     private SettableMonotonicObservableSupplier<BrowserControlsManager>
             mBrowserControlsManagerSupplier;
 
+
     private static final int PIP_UPDATE_DELAY_MS = 500;
     private boolean mIsVerification;
     public boolean mIsDeepLink;
@@ -975,9 +976,8 @@ public abstract class BraveActivity extends ChromeActivity
     public void walletInteractionDetected(WebContents webContents) {
         Tab tab = getActivityTab();
         if (tab == null
-                || !webContents
-                        .getLastCommittedUrl()
-                        .equals(tab.getWebContents().getLastCommittedUrl())) {
+                || !webContents.getLastCommittedUrl().equals(
+                        tab.getWebContents().getLastCommittedUrl())) {
             return;
         }
         BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
@@ -1052,18 +1052,17 @@ public abstract class BraveActivity extends ChromeActivity
                         checkForVpn();
                     } else {
                         mIsVerification = false;
-                        if (BraveVpnProfileUtils.getInstance()
-                                        .isBraveVPNConnected(BraveActivity.this)
+                        if (BraveVpnProfileUtils.getInstance().isBraveVPNConnected(
+                                    BraveActivity.this)
                                 && !TextUtils.isEmpty(BraveVpnPrefUtils.getHostname())
                                 && !TextUtils.isEmpty(BraveVpnPrefUtils.getClientId())
                                 && !TextUtils.isEmpty(BraveVpnPrefUtils.getSubscriberCredential())
                                 && !TextUtils.isEmpty(BraveVpnPrefUtils.getApiAuthToken())) {
-                            BraveVpnNativeWorker.getInstance()
-                                    .verifyCredentials(
-                                            BraveVpnPrefUtils.getHostname(),
-                                            BraveVpnPrefUtils.getClientId(),
-                                            BraveVpnPrefUtils.getSubscriberCredential(),
-                                            BraveVpnPrefUtils.getApiAuthToken());
+                            BraveVpnNativeWorker.getInstance().verifyCredentials(
+                                    BraveVpnPrefUtils.getHostname(),
+                                    BraveVpnPrefUtils.getClientId(),
+                                    BraveVpnPrefUtils.getSubscriberCredential(),
+                                    BraveVpnPrefUtils.getApiAuthToken());
                         }
                     }
                     BraveVpnUtils.dismissProgressDialog();
@@ -1082,8 +1081,7 @@ public abstract class BraveActivity extends ChromeActivity
             }
             mIsVerification = false;
         }
-    }
-    ;
+    };
 
     private void checkForVpn() {
         BraveVpnNativeWorker.getInstance().reportForegroundP3A();
@@ -1193,10 +1191,7 @@ public abstract class BraveActivity extends ChromeActivity
         mIsProcessingPendingDappsTxRequest = false;
 
         PostTask.postTask(
-                TaskTraits.BEST_EFFORT_MAY_BLOCK,
-                () -> {
-                    BraveStatsUtil.removeShareStatsFile();
-                });
+                TaskTraits.BEST_EFFORT_MAY_BLOCK, () -> { BraveStatsUtil.removeShareStatsFile(); });
 
         // We need to enable widget promo for later release
         /* int appOpenCountForWidgetPromo = SharedPreferencesManager.getInstance().readInt(
@@ -1769,12 +1764,9 @@ public abstract class BraveActivity extends ChromeActivity
             if (!TextUtils.isEmpty(BraveVpnPrefUtils.getPurchaseToken())
                     && !TextUtils.isEmpty(BraveVpnPrefUtils.getProductId())) {
                 mIsVerification = true;
-                BraveVpnNativeWorker.getInstance()
-                        .verifyPurchaseToken(
-                                BraveVpnPrefUtils.getPurchaseToken(),
-                                BraveVpnPrefUtils.getProductId(),
-                                BraveVpnUtils.SUBSCRIPTION_PARAM_TEXT,
-                                getPackageName());
+                BraveVpnNativeWorker.getInstance().verifyPurchaseToken(
+                        BraveVpnPrefUtils.getPurchaseToken(), BraveVpnPrefUtils.getProductId(),
+                        BraveVpnUtils.SUBSCRIPTION_PARAM_TEXT, getPackageName());
             }
         }
     }
@@ -1959,8 +1951,8 @@ public abstract class BraveActivity extends ChromeActivity
                     if (getActivityTab() != null
                             && getActivityTab().getUrl().getSpec() != null
                             && !UrlUtilities.isNtpUrl(getActivityTab().getUrl().getSpec())) {
-                        getTabCreator(false)
-                                .launchUrl(UrlConstants.NTP_URL, TabLaunchType.FROM_CHROME_UI);
+                        getTabCreator(false).launchUrl(
+                                UrlConstants.NTP_URL, TabLaunchType.FROM_CHROME_UI);
                     }
                     break;
                 case RetentionNotificationUtil.DAY_10:
@@ -1986,8 +1978,8 @@ public abstract class BraveActivity extends ChromeActivity
                     && !UrlUtilities.isNtpUrl(getActivityTab().getUrl().getSpec())) {
                 OnboardingPrefManager.getInstance().setFromNotification(true);
                 if (getTabCreator(false) != null) {
-                    getTabCreator(false)
-                            .launchUrl(UrlConstants.NTP_URL, TabLaunchType.FROM_CHROME_UI);
+                    getTabCreator(false).launchUrl(
+                            UrlConstants.NTP_URL, TabLaunchType.FROM_CHROME_UI);
                 }
             } else {
                 showOnboardingV2(false);
@@ -1999,9 +1991,8 @@ public abstract class BraveActivity extends ChromeActivity
         try {
             OnboardingPrefManager.getInstance().setNewOnboardingShown(true);
             FragmentManager fm = getSupportFragmentManager();
-            HighlightDialogFragment fragment =
-                    (HighlightDialogFragment)
-                            fm.findFragmentByTag(HighlightDialogFragment.TAG_FRAGMENT);
+            HighlightDialogFragment fragment = (HighlightDialogFragment) fm.findFragmentByTag(
+                    HighlightDialogFragment.TAG_FRAGMENT);
             FragmentTransaction transaction = fm.beginTransaction();
 
             if (fragment != null) {
@@ -2029,9 +2020,8 @@ public abstract class BraveActivity extends ChromeActivity
         // the NotificationChannel class is new and not in the support library
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
-            NotificationChannel channel =
-                    new NotificationChannel(
-                            CHANNEL_ID, getString(R.string.brave_browser), importance);
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID, getString(R.string.brave_browser), importance);
             channel.setDescription(
                     getString(R.string.brave_browser_notification_channel_description));
             // Register the channel with the system; you can't change the importance
@@ -2556,8 +2546,8 @@ public abstract class BraveActivity extends ChromeActivity
             int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         FragmentManager fm = getSupportFragmentManager();
         BraveStatsBottomSheetDialogFragment fragment =
-                (BraveStatsBottomSheetDialogFragment)
-                        fm.findFragmentByTag(BraveStatsUtil.STATS_FRAGMENT_TAG);
+                (BraveStatsBottomSheetDialogFragment) fm.findFragmentByTag(
+                        BraveStatsUtil.STATS_FRAGMENT_TAG);
         if (fragment != null) {
             fragment.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
@@ -2576,8 +2566,7 @@ public abstract class BraveActivity extends ChromeActivity
         if (dbUtil.dbOperationRequested()) {
             AlertDialog dialog =
                     new AlertDialog.Builder(this)
-                            .setMessage(
-                                    dbUtil.performDbExportOnStart()
+                            .setMessage(dbUtil.performDbExportOnStart()
                                             ? getString(
                                                     R.string.brave_db_processing_export_alert_info)
                                             : getString(
@@ -2603,9 +2592,8 @@ public abstract class BraveActivity extends ChromeActivity
     @Override
     protected @LaunchIntentDispatcher.Action int maybeDispatchLaunchIntent(
             Intent intent, Bundle savedInstanceState) {
-        boolean notificationUpdate =
-                IntentUtils.safeGetBooleanExtra(
-                        intent, BravePreferenceKeys.BRAVE_UPDATE_EXTRA_PARAM, false);
+        boolean notificationUpdate = IntentUtils.safeGetBooleanExtra(
+                intent, BravePreferenceKeys.BRAVE_UPDATE_EXTRA_PARAM, false);
         if (notificationUpdate) {
             setUpdatePreferences();
         }
@@ -2617,9 +2605,8 @@ public abstract class BraveActivity extends ChromeActivity
         Calendar currentTime = Calendar.getInstance();
         long milliSeconds = currentTime.getTimeInMillis();
 
-        SharedPreferences sharedPref =
-                getApplicationContext()
-                        .getSharedPreferences(BravePreferenceKeys.BRAVE_NOTIFICATION_PREF_NAME, 0);
+        SharedPreferences sharedPref = getApplicationContext().getSharedPreferences(
+                BravePreferenceKeys.BRAVE_NOTIFICATION_PREF_NAME, 0);
         SharedPreferences.Editor editor = sharedPref.edit();
 
         editor.putLong(BravePreferenceKeys.BRAVE_MILLISECONDS_NAME, milliSeconds);
