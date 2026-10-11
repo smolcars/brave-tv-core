@@ -278,30 +278,44 @@ public class BytecodeTest {
         Class<?> ime = Class.forName("org.chromium.content.browser.input.ImeAdapterImpl");
         Class<?> span = Class.forName("org.chromium.content.browser.input.ImeTextSpan");
         Class<?> bridge = Class.forName("org.chromium.content.browser.input.TvTextInput");
-        ime.getDeclaredMethod(
-                "focusedNodeChanged", boolean.class, int.class, int.class, int.class, int.class);
-        ime.getDeclaredMethod("destroyFromNative");
-        ime.getDeclaredMethod("resetAndHideKeyboard");
-        ime.getDeclaredMethod(
-                "updateState",
-                int.class,
-                int.class,
-                int.class,
-                int.class,
-                boolean.class,
-                boolean.class,
-                String.class,
-                int.class,
-                int.class,
-                int.class,
-                int.class,
-                boolean.class,
-                int.class,
-                int.class,
-                java.lang.reflect.Array.newInstance(span, 0).getClass());
-        bridge.getDeclaredMethod("focusChanged", ime);
-        bridge.getDeclaredMethod(
-                "stateChanged", ime, int.class, int.class, String.class, int.class, int.class);
+        Assert.assertNotNull(
+                ime.getDeclaredMethod(
+                        "focusedNodeChanged",
+                        boolean.class,
+                        int.class,
+                        int.class,
+                        int.class,
+                        int.class));
+        Assert.assertNotNull(ime.getDeclaredMethod("destroyFromNative"));
+        Assert.assertNotNull(ime.getDeclaredMethod("resetAndHideKeyboard"));
+        Assert.assertNotNull(
+                ime.getDeclaredMethod(
+                        "updateState",
+                        int.class,
+                        int.class,
+                        int.class,
+                        int.class,
+                        boolean.class,
+                        boolean.class,
+                        String.class,
+                        int.class,
+                        int.class,
+                        int.class,
+                        int.class,
+                        boolean.class,
+                        int.class,
+                        int.class,
+                        java.lang.reflect.Array.newInstance(span, 0).getClass()));
+        Assert.assertNotNull(bridge.getDeclaredMethod("focusChanged", ime));
+        Assert.assertNotNull(
+                bridge.getDeclaredMethod(
+                        "stateChanged",
+                        ime,
+                        int.class,
+                        int.class,
+                        String.class,
+                        int.class,
+                        int.class));
     }
 
     @Test
