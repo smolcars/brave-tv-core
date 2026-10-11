@@ -11,6 +11,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.pm.PackageInfo;
 import android.graphics.Rect;
 import android.os.Build;
 import android.view.View;
@@ -33,6 +34,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.chromium.base.Callback;
+import org.chromium.base.PackageUtils;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.Token;
 import org.chromium.base.test.util.ApplicationTestUtils;
@@ -60,6 +62,7 @@ import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
+import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.url.GURL;
 
 import java.util.ArrayList;
@@ -659,6 +662,56 @@ public class TvHomePageTest {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+    }
+
+    @Test
+    @MediumTest
+    public void aboutBackRestoresSettingsAndOpensGeneratedLicenses() throws Exception {
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        openSettingsFromHome();
+        focusDown(By.desc(mActivity.getString(R.string.brave_tv_about)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+        PackageInfo info = PackageUtils.getPackageInfo(mActivity.getPackageName(), 0);
+        assertNotNull(info);
+        assertTrue(
+                mDevice.hasObject(
+                        By.text(
+                                mActivity.getString(
+                                        R.string.brave_tv_about_version, info.versionName))));
+        assertTrue(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_attribution))));
+        assertTrue(mDevice.hasObject(By.desc(mActivity.getString(R.string.brave_tv_source))));
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_about)));
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+        ThreadUtils.runOnUiThreadBlocking(() -> assertTrue(mActivity.getActivityTab() == original));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_about)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+        mDevice.pressDPadUp();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_source)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_licenses)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(
+                () ->
+                        original.getUrl().equals(new GURL("chrome://credits"))
+                                && !original.isLoading());
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertTrue(mActivity.getActivityTab() == original);
+                    assertFalse(original.isShowingErrorPage());
+                });
+        assertEquals(
+                "true",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        original.getWebContents(),
+                        "document.querySelectorAll('a').length > 10 &&"
+                            + " /copyright/i.test(document.body.textContent)"));
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
     }
 
     @Test

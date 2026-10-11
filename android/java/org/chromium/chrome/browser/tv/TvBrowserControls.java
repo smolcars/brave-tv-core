@@ -5,6 +5,7 @@
 
 package org.chromium.chrome.browser.tv;
 
+import android.content.pm.PackageInfo;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
@@ -34,6 +35,7 @@ import com.google.android.material.color.MaterialColors;
 
 import org.chromium.base.BravePreferenceKeys;
 import org.chromium.base.CallbackController;
+import org.chromium.base.PackageUtils;
 import org.chromium.base.supplier.NonNullObservableSupplier;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
@@ -1336,14 +1338,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     .setIcon(R.drawable.ic_shred_data);
         }
         panel.addItem(
-                        mActivity.getString(R.string.brave_tv_licenses),
-                        R.string.brave_tv_licenses,
-                        () -> {
-                            if (!tabContextValid(context)) return;
-                            dismissDialog();
-                            mLastSettingsAction = R.string.brave_tv_licenses;
-                            tab.loadUrl(new LoadUrlParams("chrome://credits"));
-                        })
+                        mActivity.getString(R.string.brave_tv_about),
+                        R.string.brave_tv_about,
+                        () -> showAbout(context, onReturn))
                 .setIcon(R.drawable.ic_code);
         panel.addItem(
                         mActivity.getString(R.string.brave_tv_controls),
@@ -1351,6 +1348,42 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         this::returnToControls)
                 .setIcon(R.drawable.ic_tune);
         mDialog = panel.show(onReturn);
+    }
+
+    private void showAbout(TvBrowserSession.Context context, Runnable onReturn) {
+        Tab tab = context.tab;
+        if (tab == null || !tabContextValid(context)) return;
+        dismissDialog();
+        mLastSettingsAction = R.string.brave_tv_about;
+        PackageInfo info = PackageUtils.getPackageInfo(mActivity.getPackageName(), 0);
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_about),
+                        info == null || info.versionName == null
+                                ? ""
+                                : mActivity.getString(
+                                        R.string.brave_tv_about_version, info.versionName),
+                        R.string.brave_tv_settings);
+        panel.addDescription(mActivity.getString(R.string.brave_tv_attribution));
+        panel.addAction(
+                R.string.brave_tv_source,
+                true,
+                () -> openAboutDestination(context, "https://github.com/smolcars/brave-tv"));
+        panel.addAction(
+                R.string.brave_tv_licenses,
+                true,
+                () -> openAboutDestination(context, "chrome://credits"));
+        Runnable back = () -> showSettings(context, onReturn);
+        panel.addAction(R.string.brave_tv_settings, true, back);
+        mDialog = panel.show(back);
+    }
+
+    private void openAboutDestination(TvBrowserSession.Context context, String url) {
+        Tab tab = context.tab;
+        if (tab == null || !tabContextValid(context)) return;
+        dismissDialog();
+        tab.loadUrl(new LoadUrlParams(url));
     }
 
     private boolean canClearData(TvBrowserSession.Context context, int type) {
