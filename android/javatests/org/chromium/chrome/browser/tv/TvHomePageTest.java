@@ -72,6 +72,7 @@ import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
+import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.url.GURL;
@@ -441,6 +442,29 @@ public class TvHomePageTest {
                 "1",
                 JavaScriptUtils.executeJavaScriptAndWaitForResult(
                         page.getWebContents(), "window.clicks"));
+    }
+
+    @Test
+    @MediumTest
+    public void nativeCertificateBackReturnsToSafeDocument() {
+        // Host TLS fixture and explicit emulator reverse required; see tests/device/README.md.
+        mActivityTestRule.loadUrl(URL);
+        Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        mActivityTestRule.loadUrl("https://127.0.0.1:18085/certificate.html");
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.hasWindowFocus()
+                                && page.getUrl()
+                                        .equals(new GURL("https://127.0.0.1:18085/certificate.html"))
+                                && SecurityStateModel.isContentDangerous(page.getWebContents()));
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab() == page
+                                && page.getUrl().equals(new GURL(URL))
+                                && !page.isLoading()
+                                && !SecurityStateModel.isContentDangerous(page.getWebContents()));
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
     }
 
     @Test
