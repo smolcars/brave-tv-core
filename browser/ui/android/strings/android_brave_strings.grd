@@ -4039,6 +4039,15 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_LICENSES" desc="TV home button opening third-party licenses and credits.">Open-source licenses</message>
     <message name="IDS_BRAVE_TV_LAUNCHER" desc="Name of the development TV launcher entry.">TV Browser (prototype)</message>
     <message name="IDS_BRAVE_TV_ADDRESS" desc="TV control to edit the address bar.">Address or search</message>
+    <message name="IDS_BRAVE_TV_ADDRESS_DESCRIPTION" desc="TV address editor description before the selected search provider is available.">Enter a web address or search with your selected provider.</message>
+    <message name="IDS_BRAVE_TV_ADDRESS_PROVIDER" desc="TV address editor description naming the selected native search provider.">Search with <ph name="PROVIDER">%s<ex>DuckDuckGo</ex></ph>, or enter a web address.</message>
+    <message name="IDS_BRAVE_TV_GO" desc="TV address editor action to submit the current address or search query.">Go</message>
+    <message name="IDS_BRAVE_TV_CLEAR_ADDRESS" desc="TV address editor action clearing only the text currently being edited.">Clear</message>
+    <message name="IDS_BRAVE_TV_SAVED_SUGGESTIONS" desc="TV address editor heading for matching existing bookmarks.">Matching bookmarks</message>
+    <message name="IDS_BRAVE_TV_ADDRESS_HINT" desc="TV address editor hints for keyboard and action navigation with a remote.">OK for keyboard · Down for actions · Back to return</message>
+    <message name="IDS_BRAVE_TV_ADDRESS_TOO_LONG" desc="TV address editor error when text exceeds the bounded editor length.">This address is too long. Shorten it and try again.</message>
+    <message name="IDS_BRAVE_TV_ADDRESS_INVALID" desc="Recoverable TV address error when native classification cannot produce a valid destination.">Could not open this address or search. Edit it and try again.</message>
+    <message name="IDS_BRAVE_TV_ADDRESS_CHANGED" desc="TV address editor error if its underlying tab or document changed while editing.">The page changed while you were editing. Return to the page and open Address again.</message>
     <message name="IDS_BRAVE_TV_MORE_CONTROLS" desc="TV control opening secondary browser actions.">More controls</message>
     <message name="IDS_BRAVE_TV_POINTER" desc="TV control to move a pointer on the page.">Page cursor</message>
     <message name="IDS_BRAVE_TV_SCROLL" desc="TV control to scroll at the pointer position.">Scroll page</message>

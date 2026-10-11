@@ -41,7 +41,10 @@ template("brave_androidx_tv_targets") {
   }
 
   android_library("brave_tv_presentation_java") {
-    sources = [ "//brave/android/java/org/chromium/chrome/browser/tv/presentation/TvPresentation.kt" ]
+    sources = [
+      "//brave/android/java/org/chromium/chrome/browser/tv/presentation/TvAddressEditor.kt",
+      "//brave/android/java/org/chromium/chrome/browser/tv/presentation/TvPresentation.kt",
+    ]
     enable_compose = true
     deps = [
       ":brave_tv_material_java",

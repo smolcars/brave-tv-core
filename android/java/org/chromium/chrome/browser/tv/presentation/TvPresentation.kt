@@ -71,11 +71,11 @@ import androidx.tv.material3.darkColorScheme
 
 /** Presentation only: callbacks retain native tab, profile and security ownership. */
 object TvPresentation {
-    private val backgroundColor = Color(0xFF151719)
-    private val surface = Color(0xFF25282B)
-    private val text = Color(0xFFF3EFE7)
-    private val secondary = Color(0xFFBBB9B3)
-    private val accent = Color(0xFFC7D8AF)
+    internal val backgroundColor = Color(0xFF151719)
+    internal val surface = Color(0xFF25282B)
+    internal val text = Color(0xFFF3EFE7)
+    internal val secondary = Color(0xFFBBB9B3)
+    internal val accent = Color(0xFFC7D8AF)
 
     /** UI-thread action state, owned by its native panel; never saved across sessions. */
     class Action @JvmOverloads constructor(
@@ -132,7 +132,7 @@ object TvPresentation {
         return true
     }
 
-    private fun view(context: Context): ComposeView = ComposeView(context).apply {
+    internal fun view(context: Context): ComposeView = ComposeView(context).apply {
         setViewTreeLifecycleOwner(context as LifecycleOwner)
         setViewTreeSavedStateRegistryOwner(context as SavedStateRegistryOwner)
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindowOrReleasedFromPool)
@@ -305,7 +305,7 @@ object TvPresentation {
     }
 
     @Composable
-    private fun Theme(content: @Composable () -> Unit) {
+    internal fun Theme(content: @Composable () -> Unit) {
         MaterialTheme(
             colorScheme = darkColorScheme(
                 primary = accent, onPrimary = backgroundColor, background = backgroundColor,
@@ -316,7 +316,7 @@ object TvPresentation {
     }
 
     @Composable
-    private fun ActionButton(action: Action, modifier: Modifier = Modifier) {
+    internal fun ActionButton(action: Action, modifier: Modifier = Modifier) {
         var hasFocus by remember { mutableStateOf(false) }
         val requested = remember { FocusRequester() }
         LaunchedEffect(action.focusRequest) {

@@ -510,6 +510,10 @@ public abstract class BraveActivity extends ChromeActivity
             @Nullable Bundle menuItemData,
             @Nullable MotionEventInfo triggeringMotion) {
         if (mTvBrowserControls != null) {
+            if (id == R.id.focus_url_bar) {
+                mTvBrowserControls.showAddress();
+                return true;
+            }
             if (id == R.id.show_menu) {
                 mTvBrowserControls.showControls();
                 return true;

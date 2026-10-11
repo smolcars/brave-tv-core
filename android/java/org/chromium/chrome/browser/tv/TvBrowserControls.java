@@ -21,6 +21,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
@@ -41,6 +42,7 @@ import org.chromium.chrome.browser.bookmarks.BookmarkModel;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataBridge;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
 import org.chromium.chrome.browser.browsing_data.TimePeriod;
+import org.chromium.chrome.browser.omnibox.suggestions.AutocompleteController;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
 import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
@@ -50,12 +52,14 @@ import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelSelectorTabModelObserver;
 import org.chromium.chrome.browser.tabmodel.TabModelUtils;
+import org.chromium.chrome.browser.tv.presentation.TvAddressEditor;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.bookmarks.BookmarkItem;
 import org.chromium.components.browser_ui.widget.gesture.BackPressHandler;
 import org.chromium.components.embedder_support.util.UrlUtilities;
 import org.chromium.components.embedder_support.view.ContentView;
+import org.chromium.components.omnibox.AutocompleteMatch;
 import org.chromium.components.search_engines.TemplateUrl;
 import org.chromium.components.search_engines.TemplateUrlService;
 import org.chromium.components.user_prefs.UserPrefs;
@@ -78,6 +82,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final TvPhoneRemote mPhoneRemote;
     private final TvBrowserSession mSession;
     private @Nullable View mControlsView;
+    private @Nullable TvAddressEditor.State mAddressState;
     private @Nullable Tab mControlsTab;
     private boolean mControlsUpdatePosted;
     private final Cursor mCursor;
@@ -593,6 +598,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void dismissDialog() {
+        mAddressState = null;
         mControlsView = null;
         mControlsTab = null;
         mOnDataCleared = null;
@@ -656,6 +662,153 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         } else if (currentPage() != null) {
             performAction(R.string.brave_tv_pointer);
         }
+    }
+
+    /** Opens a TV editor without transferring native page or profile ownership. */
+    public void showAddress() {
+        if (!isAlive()) return;
+        Tab tab = mActivity.getActivityTab();
+        if (tab == null || tab.isDestroyed() || !canAccessTabs(tab.isIncognito())) return;
+        mLastAction = R.string.brave_tv_address;
+        dismissDialog();
+        detachCursor();
+        TvBrowserSession.Context context = mSession.capture();
+        String initial = tab.isNativePage() ? "" : context.url;
+        TvAddressEditor.State state =
+                new TvAddressEditor.State(initial.length() <= 8192 ? initial : "");
+        mAddressState = state;
+        if (initial.length() > 8192) {
+            state.setError(mActivity.getString(R.string.brave_tv_address_too_long));
+        }
+        var service = TemplateUrlServiceFactory.getForProfile(tab.getProfile());
+        TemplateUrl engine =
+                service.isLoaded() ? service.getDefaultSearchEngineTemplateUrl() : null;
+        String description =
+                engine == null
+                        ? mActivity.getString(R.string.brave_tv_address_description)
+                        : mActivity.getString(
+                                R.string.brave_tv_address_provider, engine.getShortName());
+        if (isWebTab(tab)) description += "\n" + tab.getUrl().getOrigin().getSpec();
+        var labels =
+                new TvAddressEditor.Labels(
+                        mActivity.getString(R.string.brave_tv_address),
+                        description,
+                        mActivity.getString(R.string.brave_tv_go),
+                        mActivity.getString(R.string.brave_tv_clear_address),
+                        mActivity.getString(R.string.cancel),
+                        mActivity.getString(R.string.brave_tv_saved_suggestions),
+                        mActivity.getString(R.string.brave_tv_address_hint),
+                        mActivity.getString(R.string.brave_tv_address_too_long));
+        View content =
+                TvAddressEditor.create(
+                        mActivity,
+                        state,
+                        labels,
+                        input -> updateAddressSuggestions(context, state, input),
+                        input -> submitAddress(context, state, input),
+                        this::returnToPage);
+        updateAddressSuggestions(context, state, initial);
+        AlertDialog dialog =
+                new AlertDialog.Builder(mActivity)
+                        .setView(content)
+                        .setOnCancelListener(ignored -> returnToPage())
+                        .create();
+        dialog.setOnDismissListener(
+                ignored -> {
+                    if (mDialog == dialog) {
+                        mDialog = null;
+                        mAddressState = null;
+                    }
+                    TvPresentation.dispose(content);
+                });
+        dialog.setCanceledOnTouchOutside(false);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            if (tab.isIncognito()) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+            window.setBackgroundDrawableResource(android.R.color.transparent);
+            window.setGravity(Gravity.CENTER);
+        }
+        mDialog = dialog;
+        dialog.show();
+        if (window != null) {
+            var metrics = mActivity.getResources().getDisplayMetrics();
+            window.setLayout(
+                    Math.min(
+                            Math.round(700 * metrics.density),
+                            Math.round(metrics.widthPixels * 0.92f)),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private void updateAddressSuggestions(
+            TvBrowserSession.Context context, TvAddressEditor.State state, String input) {
+        if (mAddressState != state) return;
+        List<TvPresentation.Action> suggestions = new ArrayList<>();
+        Tab tab = context.tab;
+        if (tab != null && tabContextValid(context)) {
+            BookmarkModel model =
+                    BookmarkModel.getForProfile(tab.getProfile().getOriginalProfile());
+            if (model.isBookmarkModelLoaded()) {
+                for (BookmarkId id : model.searchBookmarks(input.trim(), 6)) {
+                    BookmarkItem item = model.getBookmarkById(id);
+                    if (item == null || item.isFolder()) continue;
+                    String url = item.getUrl().getSpec();
+                    suggestions.add(
+                            new TvPresentation.Action(
+                                    item.getTitle() + "\n" + item.getUrlForDisplay(),
+                                    true,
+                                    () -> {
+                                        if (!tabContextValid(context)) {
+                                            state.setError(
+                                                    mActivity.getString(
+                                                            R.string.brave_tv_address_changed));
+                                            return;
+                                        }
+                                        BookmarkItem current = model.getBookmarkById(id);
+                                        if (current == null
+                                                || !current.getUrl().getSpec().equals(url)) {
+                                            updateAddressSuggestions(context, state, input);
+                                            return;
+                                        }
+                                        submitAddress(context, state, url);
+                                    }));
+                }
+            }
+        }
+        state.setSuggestions(List.copyOf(suggestions));
+    }
+
+    private void submitAddress(
+            TvBrowserSession.Context context, TvAddressEditor.State state, String input) {
+        if (mAddressState != state || mDialog == null || !mDialog.isShowing()) return;
+        if (!tabContextValid(context)) {
+            state.setError(mActivity.getString(R.string.brave_tv_address_changed));
+            return;
+        }
+        String text = input.trim();
+        if (text.isEmpty() || text.length() > 8192 || text.chars().anyMatch(c -> c < 32)) {
+            state.setError(mActivity.getString(R.string.brave_tv_address_invalid));
+            return;
+        }
+        Tab tab = context.tab;
+        if (tab == null) return;
+        AutocompleteController controller = AutocompleteController.getForProfile(tab.getProfile());
+        AutocompleteMatch match = controller == null ? null : controller.classify(text);
+        if (match == null || !match.getUrl().isValid()) {
+            state.setError(mActivity.getString(R.string.brave_tv_address_invalid));
+            return;
+        }
+        if (mAddressState != state || !mSession.isCurrent(context)) {
+            state.setError(mActivity.getString(R.string.brave_tv_address_changed));
+            return;
+        }
+        dismissDialog();
+        tab.loadUrl(
+                new LoadUrlParams(
+                        match.getUrl().getSpec(),
+                        match.getTransition() | PageTransition.FROM_ADDRESS_BAR));
+        performAction(R.string.brave_tv_pointer);
     }
 
     public void showTabs() {
@@ -1268,7 +1421,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             ? TvRemoteInput.Mode.POINTER
                             : TvRemoteInput.Mode.SCROLL);
         } else if (action == R.string.brave_tv_address) {
-            mActivity.onMenuOrKeyboardAction(R.id.focus_url_bar, false);
+            showAddress();
         } else if (action == R.string.brave_tv_home) {
             Tab tab = mActivity.getActivityTab();
             if (tab != null) tab.loadUrl(new LoadUrlParams("chrome-native://newtab/"));
