@@ -409,8 +409,19 @@ public class TvHomePageTest {
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
         mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(
+                () -> !mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
         CriteriaHelper.pollUiThread(
-                () -> mActivity.hasWindowFocus() && page.getContentView().hasFocus());
+                () -> {
+                    Criteria.checkThat(
+                            "Browser activity owns window focus",
+                            mActivity.hasWindowFocus(),
+                            is(true));
+                    Criteria.checkThat(
+                            "Native content owns view focus",
+                            page.getContentView().hasFocus(),
+                            is(true));
+                });
         long downTime = SystemClock.uptimeMillis();
         KeyEvent down =
                 new KeyEvent(
@@ -455,7 +466,9 @@ public class TvHomePageTest {
                 () ->
                         mActivity.hasWindowFocus()
                                 && page.getUrl()
-                                        .equals(new GURL("https://127.0.0.1:18085/certificate.html"))
+                                        .equals(
+                                                new GURL(
+                                                        "https://127.0.0.1:18085/certificate.html"))
                                 && SecurityStateModel.isContentDangerous(page.getWebContents()));
         mDevice.pressBack();
         CriteriaHelper.pollUiThread(
