@@ -13,10 +13,10 @@
 
 #include "chrome/android/chrome_jni_headers/TvTextInput_jni.h"
 
-static bool
-JNI_TvTextInput_AwaitInput(JNIEnv *env,
-                           const jni_zero::JavaRef<jobject> &contents,
-                           const jni_zero::JavaRef<jobject> &completion) {
+static bool JNI_TvTextInput_AwaitInput(
+    JNIEnv* env,
+    const jni_zero::JavaRef<jobject>& contents,
+    const jni_zero::JavaRef<jobject>& completion) {
   return content::AwaitTvTextInput(
       content::WebContents::FromJavaWebContents(contents),
       base::BindOnce(&jni_zero::RunRunnable,

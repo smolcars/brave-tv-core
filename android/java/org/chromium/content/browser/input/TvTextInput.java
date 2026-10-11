@@ -38,6 +38,8 @@ public final class TvTextInput {
     private String mText = "";
     private int mStart;
     private int mEnd;
+    private int mCompositionStart = -1;
+    private int mCompositionEnd = -1;
     private @Nullable PendingEdit mPendingEdit;
     private boolean mNativeCompleted;
 
@@ -45,7 +47,8 @@ public final class TvTextInput {
         SELECT_ALL,
         TEXT,
         SELECTION,
-        STATE
+        RESULT,
+        DRAIN
     }
 
     private static final class PendingEdit {
@@ -53,14 +56,25 @@ public final class TvTextInput {
         final String text;
         final int start;
         final int end;
+        final int compositionStart;
+        final int compositionEnd;
         final long deadline = SystemClock.uptimeMillis() + 2000;
         Phase phase;
 
-        PendingEdit(String originalText, String text, int start, int end, Phase phase) {
+        PendingEdit(
+                String originalText,
+                String text,
+                int start,
+                int end,
+                int compositionStart,
+                int compositionEnd,
+                Phase phase) {
             this.originalText = originalText;
             this.text = text;
             this.start = start;
             this.end = end;
+            this.compositionStart = compositionStart;
+            this.compositionEnd = compositionEnd;
             this.phase = phase;
         }
     }
@@ -113,6 +127,8 @@ public final class TvTextInput {
         mEligible = false;
         mAwaitingState = true;
         mText = "";
+        mCompositionStart = -1;
+        mCompositionEnd = -1;
         mPendingEdit = null;
     }
 
@@ -123,7 +139,14 @@ public final class TvTextInput {
     }
 
     public static void stateChanged(
-            ImeAdapterImpl adapter, int type, int flags, String text, int start, int end) {
+            ImeAdapterImpl adapter,
+            int type,
+            int flags,
+            String text,
+            int start,
+            int end,
+            int compositionStart,
+            int compositionEnd) {
         ThreadUtils.assertOnUiThread();
         TvTextInput input = ACTIVE.get(adapter);
         if (input == null) return;
@@ -136,7 +159,9 @@ public final class TvTextInput {
                                         & (WebTextInputFlags.HAS_BEEN_PASSWORD_FIELD
                                                 | WebTextInputFlags.HAS_BEEN_CUSTOM_PASSWORD))
                                 == 0
-                        && text.length() <= 2048;
+                        && text.length() <= 2048
+                        && boundary(text, start)
+                        && boundary(text, end);
         if (input.mEligible != eligible) {
             input.mRevision++;
             input.mPendingEdit = null;
@@ -144,24 +169,33 @@ public final class TvTextInput {
         if (input.mEligible != eligible
                 || !input.mText.equals(text)
                 || input.mStart != start
-                || input.mEnd != end) input.mVersion++;
+                || input.mEnd != end
+                || input.mCompositionStart != compositionStart
+                || input.mCompositionEnd != compositionEnd) input.mVersion++;
         input.mEligible = eligible;
         input.mAwaitingState = false;
         input.mText = eligible ? text : "";
         input.mStart = eligible ? start : 0;
         input.mEnd = eligible ? end : 0;
+        input.mCompositionStart = eligible ? compositionStart : -1;
+        input.mCompositionEnd = eligible ? compositionEnd : -1;
         input.advanceEdit();
     }
 
     private void advanceEdit() {
         PendingEdit edit = mPendingEdit;
         if (edit == null) return;
-        if (edit.phase != Phase.STATE
+        if (edit.phase != Phase.RESULT
+                && edit.phase != Phase.DRAIN
                 && !mText.equals(edit.originalText)
                 && !mText.equals(edit.text)) {
             // Discard remaining phases; drain the native operation already submitted.
-            mPendingEdit = mNativeCompleted ? null : new PendingEdit("", "", 0, 0, Phase.STATE);
-            mAwaitingState = !mNativeCompleted;
+            edit.phase = Phase.DRAIN;
+            mAwaitingState = true;
+            if (mNativeCompleted) {
+                invalidate();
+                mAdapter.requestTextInputStateUpdate();
+            }
             return;
         }
         mAwaitingState = true;
@@ -180,7 +214,7 @@ public final class TvTextInput {
                 invalidate();
                 mAdapter.requestTextInputStateUpdate();
             }
-        } else if (edit.phase == Phase.TEXT && mText.equals(edit.text)) {
+        } else if (edit.phase == Phase.TEXT && matchesResult(edit, false)) {
             edit.phase = Phase.SELECTION;
             if (mStart == edit.start && mEnd == edit.end) {
                 mPendingEdit = null;
@@ -196,16 +230,23 @@ public final class TvTextInput {
                     mAdapter.requestTextInputStateUpdate();
                 }
             }
-        } else if (edit.phase == Phase.SELECTION
-                && mText.equals(edit.text)
-                && mStart == edit.start
-                && mEnd == edit.end) {
+        } else if (edit.phase == Phase.SELECTION && matchesResult(edit, true)) {
             mPendingEdit = null;
             mAwaitingState = false;
-        } else if (edit.phase == Phase.STATE) {
+        } else if (edit.phase == Phase.RESULT && matchesResult(edit, true)) {
             mPendingEdit = null;
             mAwaitingState = false;
+        } else if (edit.phase == Phase.DRAIN) {
+            invalidate();
+            mAdapter.requestTextInputStateUpdate();
         }
+    }
+
+    private boolean matchesResult(PendingEdit edit, boolean selection) {
+        return mText.equals(edit.text)
+                && mCompositionStart == edit.compositionStart
+                && mCompositionEnd == edit.compositionEnd
+                && (!selection || (mStart == edit.start && mEnd == edit.end));
     }
 
     private boolean awaitNativeInput() {
@@ -252,7 +293,13 @@ public final class TvTextInput {
                     return false;
                 mPendingEdit =
                         new PendingEdit(
-                                mText, text, start, end, composing ? Phase.SELECT_ALL : Phase.TEXT);
+                                mText,
+                                text,
+                                start,
+                                end,
+                                composing && !text.isEmpty() ? 0 : -1,
+                                composing && !text.isEmpty() ? text.length() : -1,
+                                composing ? Phase.SELECT_ALL : Phase.TEXT);
                 if (composing) {
                     mAdapter.finishComposingText();
                     result = mAdapter.setEditableSelectionOffsets(0, mText.length());
@@ -264,9 +311,26 @@ public final class TvTextInput {
             case "commit":
             case "compose":
                 if (!validUtf16(text)) return false;
+                int from = mCompositionStart >= 0 ? mCompositionStart : Math.min(mStart, mEnd);
+                int to = mCompositionStart >= 0 ? mCompositionEnd : Math.max(mStart, mEnd);
+                if (!boundary(mText, from) || !boundary(mText, to) || from > to) return false;
+                String expected = mText.substring(0, from) + text + mText.substring(to);
+                if (expected.length() > 2048) return false;
+                int caret = from + text.length();
+                boolean compose = operation.equals("compose") && !text.isEmpty();
+                mPendingEdit =
+                        new PendingEdit(
+                                mText,
+                                expected,
+                                caret,
+                                caret,
+                                compose ? from : -1,
+                                compose ? caret : -1,
+                                Phase.RESULT);
                 result = mAdapter.sendCompositionToNative(text, 1, operation.equals("commit"), 0);
                 break;
             case "finish":
+                mPendingEdit = new PendingEdit(mText, mText, mStart, mEnd, -1, -1, Phase.RESULT);
                 result = mAdapter.finishComposingText();
                 break;
             case "select":
@@ -277,18 +341,42 @@ public final class TvTextInput {
                                 mText,
                                 Math.min(start, end),
                                 Math.max(start, end),
+                                mCompositionStart,
+                                mCompositionEnd,
                                 Phase.SELECTION);
                 result = mAdapter.setEditableSelectionOffsets(start, end);
                 break;
             case "delete":
                 if (start < 0 || end < 0 || start > 2048 || end > 2048) return false;
+                int left = Math.min(mStart, mEnd);
+                int right = Math.max(mStart, mEnd);
+                int before =
+                        mText.offsetByCodePoints(
+                                left, -Math.min(start, mText.codePointCount(0, left)));
+                int after =
+                        mText.offsetByCodePoints(
+                                right, Math.min(end, mText.codePointCount(right, mText.length())));
+                // Chromium deletes around a selected range and preserves the selected text.
+                String deleted =
+                        mText.substring(0, before)
+                                + mText.substring(left, right)
+                                + mText.substring(after);
+                int compStart = deletedOffset(mCompositionStart, before, left, right, after);
+                int compEnd = deletedOffset(mCompositionEnd, before, left, right, after);
+                if (compStart == compEnd) compStart = compEnd = -1;
+                mPendingEdit =
+                        new PendingEdit(
+                                mText,
+                                deleted,
+                                before,
+                                before + right - left,
+                                compStart,
+                                compEnd,
+                                Phase.RESULT);
                 result = mAdapter.deleteSurroundingTextInCodePoints(start, end);
                 break;
             default:
                 return false;
-        }
-        if (mPendingEdit == null) {
-            mPendingEdit = new PendingEdit(mText, "", 0, 0, Phase.STATE);
         }
         result = result && awaitNativeInput();
         mAwaitingState = true;
@@ -297,6 +385,13 @@ public final class TvTextInput {
             mAdapter.requestTextInputStateUpdate();
         }
         return result;
+    }
+
+    private static int deletedOffset(int offset, int before, int left, int right, int after) {
+        if (offset < 0) return -1;
+        return offset
+                - Math.max(0, Math.min(offset, left) - before)
+                - Math.max(0, Math.min(offset, after) - right);
     }
 
     @NativeMethods

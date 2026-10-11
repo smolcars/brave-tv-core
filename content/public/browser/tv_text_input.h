@@ -14,9 +14,10 @@ class WebContents;
 
 // UI thread only. Completes after prior native input tasks on the focused
 // widget; callers must cancel stale field/document identities and bound their
-// wait.
-CONTENT_EXPORT bool AwaitTvTextInput(WebContents *contents,
+// wait. False means no barrier was submitted and completion will not run. True
+// means submitted; disconnection may prevent completion, requiring a timeout.
+CONTENT_EXPORT bool AwaitTvTextInput(WebContents* contents,
                                      base::OnceClosure completion);
-} // namespace content
+}  // namespace content
 
-#endif // BRAVE_CONTENT_PUBLIC_BROWSER_TV_TEXT_INPUT_H_
+#endif  // BRAVE_CONTENT_PUBLIC_BROWSER_TV_TEXT_INPUT_H_

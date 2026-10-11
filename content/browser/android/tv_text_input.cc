@@ -15,12 +15,12 @@
 #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
 
 namespace content {
-bool AwaitTvTextInput(WebContents *contents, base::OnceClosure completion) {
+bool AwaitTvTextInput(WebContents* contents, base::OnceClosure completion) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
   if (!contents || !contents->GetFocusedFrame()) {
     return false;
   }
-  auto *widget = RenderWidgetHostImpl::From(
+  auto* widget = RenderWidgetHostImpl::From(
       contents->GetFocusedFrame()->GetRenderWidgetHost());
   if (!widget) {
     return false;
@@ -30,4 +30,4 @@ bool AwaitTvTextInput(WebContents *contents, base::OnceClosure completion) {
   widget->GetWidgetInputHandler()->PingMainThread(std::move(completion));
   return true;
 }
-} // namespace content
+}  // namespace content
