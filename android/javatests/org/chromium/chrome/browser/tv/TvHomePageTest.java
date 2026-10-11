@@ -606,9 +606,12 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     public void compactPageInfoUsesNativeOriginAndReturnsToSamePage() {
-        String url =
-                mActivityTestRule.getTestServer().getURL("/chrome/test/data/android/simple.html");
+        String url = InstrumentationRegistry.getArguments().getString("tv_site_info_fixture_url");
+        assertNotNull("Start the owned HTTP bookmark fixture and pass its URL", url);
+        assertEquals("http", new GURL(url).getScheme());
         mActivityTestRule.loadUrl(url);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("TV bookmark workflow fixture")));
         Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
@@ -627,7 +630,7 @@ public class TvHomePageTest {
         mDevice.pressDPadCenter();
         BySelector nativeInfo = By.res(mActivity.getPackageName(), "page_info_url_wrapper");
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(nativeInfo));
-        assertTrue(mDevice.hasObject(By.textContains("127.0.0.1")));
+        assertTrue(mDevice.hasObject(By.textContains(new GURL(url).getHost())));
         assertTrue(
                 mDevice.hasObject(By.res(mActivity.getPackageName(), "page_info_connection_row")));
         mDevice.pressBack();
