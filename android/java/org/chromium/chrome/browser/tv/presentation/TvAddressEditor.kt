@@ -148,7 +148,12 @@ object TvAddressEditor {
                             modifier = Modifier.fillMaxWidth().focusRequester(editorFocus)
                                 .onPreviewKeyEvent {
                                     val event = it.nativeKeyEvent
-                                    if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                                    if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER) {
+                                        if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                                            keyboard?.show()
+                                        }
+                                        true
+                                    } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
                                         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                                             keyboard?.hide()
                                             (if (go.enabled) go else clear).requestFocus()

@@ -752,6 +752,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mDialog = dialog;
         dialog.show();
         if (window != null) {
+            // AlertDialog checks for Android text editors before Compose attaches its input.
+            window.clearFlags(WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM);
             var metrics = mActivity.getResources().getDisplayMetrics();
             window.setLayout(
                     Math.min(
