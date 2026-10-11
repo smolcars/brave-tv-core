@@ -69,6 +69,7 @@ import org.chromium.components.embedder_support.view.ContentView;
 import org.chromium.components.omnibox.AutocompleteMatch;
 import org.chromium.components.search_engines.TemplateUrl;
 import org.chromium.components.search_engines.TemplateUrlService;
+import org.chromium.components.security_state.ConnectionSecurityLevel;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
@@ -530,6 +531,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                         ? R.string.brave_tv_private_controls
                                         : R.string.brave_tv_controls),
                         tab == null || tab.isNativePage() ? "" : url,
+                        controlStatus(context),
                         actions,
                         mLastAction,
                         mActivity.getString(R.string.brave_tv_more_controls));
@@ -620,8 +622,35 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                     context.tab == null || context.tab.isNativePage()
                                             ? ""
                                             : context.url,
+                                    controlStatus(context),
                                     controlActions(context));
                         });
+    }
+
+    private String controlStatus(TvBrowserSession.Context context) {
+        Tab tab = context.tab;
+        if (!isWebTab(tab) || tab == null) return "";
+        WebContents contents = context.contents;
+        if (contents == null || contents.isDestroyed()) return "";
+        int security = SecurityStateModel.getSecurityLevelForWebContents(contents);
+        int connection =
+                security == ConnectionSecurityLevel.SECURE
+                        ? R.string.accessibility_security_btn_secure
+                        : security == ConnectionSecurityLevel.DANGEROUS
+                                ? R.string.accessibility_security_btn_dangerous
+                                : R.string.accessibility_security_btn_warn;
+        boolean shields =
+                BraveShieldsContentSettings.getShields(
+                        tab.getProfile(),
+                        context.url,
+                        BraveShieldsContentSettings.RESOURCE_IDENTIFIER_BRAVE_SHIELDS);
+        return mActivity.getString(
+                R.string.brave_tv_browser_state,
+                mActivity.getString(connection),
+                mActivity.getString(
+                        shields
+                                ? R.string.brave_tv_protection_on
+                                : R.string.brave_tv_protection_off));
     }
 
     private List<TvPresentation.Action> controlActions(TvBrowserSession.Context context) {

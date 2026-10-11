@@ -20,12 +20,6 @@ import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.test.util.CommandLineFlags;
 import org.chromium.base.test.util.CriteriaHelper;
@@ -36,6 +30,11 @@ import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -192,15 +191,23 @@ public class TvPresentationTest {
                                         mActivity,
                                         "Browser controls",
                                         "",
+                                        "Initial native status",
                                         controls(),
                                         4,
                                         "More controls"));
         ThreadUtils.runOnUiThreadBlocking(() -> showNarrow(content, 48));
         focused("Address or search");
         ThreadUtils.runOnUiThreadBlocking(
-                () -> TvPresentation.updateControls(content, "Page state changed", controls()));
+                () ->
+                        TvPresentation.updateControls(
+                                content,
+                                "Page state changed",
+                                "Updated native status",
+                                controls()));
         CriteriaHelper.pollInstrumentationThread(
                 () -> mDevice.hasObject(By.text("Page state changed")));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("Updated native status")));
         focused("Address or search");
         mDevice.pressDPadDown();
         focused("Tabs");

@@ -63,9 +63,11 @@ import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.browser.layouts.LayoutType;
 import org.chromium.chrome.browser.preferences.Pref;
+import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
+import org.chromium.chrome.browser.tab.TabObserver;
 import org.chromium.chrome.browser.tab.TvBrowserControlsVisibilityDelegate;
 import org.chromium.chrome.browser.tabmodel.TabClosureParams;
 import org.chromium.chrome.browser.tabmodel.TabModel;
@@ -76,6 +78,7 @@ import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
+import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.url.GURL;
 import org.junit.After;
@@ -501,6 +504,143 @@ public class TvHomePageTest {
                         page.getWebContents(),
                         "window.clicks===2 && Math.abs(point[0]-point[2]/2)<2"
                                 + " && Math.abs(point[1]-point[3]/2)<2"));
+    }
+
+    @Test
+    @MediumTest
+    public void compactControlsUseNativeNavigationAndSiteState() throws Exception {
+        // Owned HTTP fixture and explicit emulator reverse required; see tests/device/README.md.
+        String fixture = "http://127.0.0.1:18084/permission.html";
+        String slow = "http://127.0.0.1:18084/slow.html";
+        mActivityTestRule.loadUrl(URL);
+        Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        String original = ThreadUtils.runOnUiThreadBlocking(() -> page.getUrl().getSpec());
+        mActivityTestRule.loadUrl(fixture);
+        boolean protection =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () ->
+                                BraveShieldsContentSettings.getShields(
+                                        page.getProfile(),
+                                        fixture,
+                                        BraveShieldsContentSettings
+                                                .RESOURCE_IDENTIFIER_BRAVE_SHIELDS));
+        CallbackHelper loads = new CallbackHelper();
+        TabObserver observer =
+                new TabObserver() {
+                    @Override
+                    public void onLoadStarted(Tab tab, boolean toDifferentDocument) {
+                        loads.notifyCalled();
+                    }
+                };
+        ThreadUtils.runOnUiThreadBlocking(() -> page.addObserver(observer));
+        try {
+            openControlsWithAddressFocus();
+            String connection = mActivity.getString(R.string.accessibility_security_btn_warn);
+            String status =
+                    mActivity.getString(
+                            R.string.brave_tv_browser_state,
+                            connection,
+                            mActivity.getString(
+                                    protection
+                                            ? R.string.brave_tv_protection_on
+                                            : R.string.brave_tv_protection_off));
+            CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text(status)));
+            assertFalse(
+                    mDevice.findObject(By.desc(mActivity.getString(R.string.brave_tv_forward)))
+                            .isEnabled());
+            mDevice.pressDPadRight();
+            mDevice.pressDPadRight();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_back)));
+            mDevice.pressDPadCenter();
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            mActivity.getActivityTab() == page
+                                    && !page.isLoading()
+                                    && original.equals(page.getUrl().getSpec()));
+            openControlsWithAddressFocus();
+            for (int i = 0; i < 3; i++) mDevice.pressDPadRight();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_forward)));
+            mDevice.pressDPadCenter();
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            mActivity.getActivityTab() == page
+                                    && !page.isLoading()
+                                    && fixture.equals(page.getUrl().getSpec()));
+            openControlsWithAddressFocus();
+            mDevice.pressDPadDown();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_reload)));
+            int beforeReload = loads.getCallCount();
+            mDevice.pressDPadCenter();
+            loads.waitForCallback(beforeReload);
+            CriteriaHelper.pollUiThread(() -> !page.isLoading());
+
+            openControlsWithAddressFocus();
+            UiObject2 address =
+                    mDevice.findObject(By.desc(mActivity.getString(R.string.brave_tv_address)));
+            int beforeProtection = loads.getCallCount();
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        BraveShieldsContentSettings.setShields(
+                                page.getProfile(),
+                                fixture,
+                                BraveShieldsContentSettings.RESOURCE_IDENTIFIER_BRAVE_SHIELDS,
+                                !protection,
+                                false);
+                        page.reload();
+                    });
+            loads.waitForCallback(beforeProtection);
+            String changed =
+                    mActivity.getString(
+                            R.string.brave_tv_browser_state,
+                            connection,
+                            mActivity.getString(
+                                    protection
+                                            ? R.string.brave_tv_protection_off
+                                            : R.string.brave_tv_protection_on));
+            CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text(changed)));
+            assertTrue(address.isFocused());
+            mDevice.pressBack();
+
+            ThreadUtils.runOnUiThreadBlocking(() -> page.loadUrl(new LoadUrlParams(slow)));
+            CriteriaHelper.pollInstrumentationThread(
+                    () -> mDevice.hasObject(By.text("Controlled slow document")));
+            CriteriaHelper.pollUiThread(
+                    () -> page.isLoading() && slow.equals(page.getUrl().getSpec()));
+            openControlsWithAddressFocus();
+            mDevice.pressDPadDown();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_stop)));
+            mDevice.pressDPadCenter();
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            mActivity.getActivityTab() == page
+                                    && !page.isLoading()
+                                    && slow.equals(page.getUrl().getSpec()));
+            CriteriaHelper.pollInstrumentationThread(
+                    () ->
+                            !mDevice.hasObject(
+                                    By.text(mActivity.getString(R.string.brave_tv_controls))));
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        page.removeObserver(observer);
+                        BraveShieldsContentSettings.setShields(
+                                page.getProfile(),
+                                fixture,
+                                BraveShieldsContentSettings.RESOURCE_IDENTIFIER_BRAVE_SHIELDS,
+                                protection,
+                                false);
+                        page.stopLoading();
+                    });
+        }
+    }
+
+    private void openControlsWithAddressFocus() {
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
+        for (int i = 0; i < 2; i++) mDevice.pressDPadUp();
+        for (int i = 0; i < 3; i++) mDevice.pressDPadLeft();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
     }
 
     private int fixtureCenterColor(Tab page, String fixtureUrl) {

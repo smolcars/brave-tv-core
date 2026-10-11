@@ -117,8 +117,9 @@ object TvPresentation {
     class ActionRow(val actions: List<Action>) : PanelEntry
     class NativeContent(val view: View, val heightDp: Int) : PanelEntry
 
-    private class ControlsState(preferred: Int, subtitle: String, actions: List<Action>) {
+    private class ControlsState(preferred: Int, subtitle: String, status: String, actions: List<Action>) {
         var subtitle by mutableStateOf(subtitle)
+        var status by mutableStateOf(status)
         var actions by mutableStateOf(actions)
         var expanded by mutableStateOf(false)
         var preferredKey by mutableStateOf(preferred)
@@ -272,11 +273,12 @@ object TvPresentation {
         context: Context,
         title: String,
         subtitle: String,
+        status: String,
         actions: List<Action>,
         preferredKey: Int,
         moreLabel: String,
     ): View = view(context).apply {
-        val state = ControlsState(preferredKey, subtitle, actions)
+        val state = ControlsState(preferredKey, subtitle, status, actions)
         tag = state
         setContent {
             Theme {
@@ -301,6 +303,8 @@ object TvPresentation {
                         modifier = Modifier.semantics { heading() })
                     if (state.subtitle.isNotEmpty()) Text(state.subtitle, color = secondary,
                         fontSize = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (state.status.isNotEmpty()) Text(state.status, color = secondary,
+                        fontSize = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     ActionRows(visible, 4, 12.dp) { action, modifier ->
                         ActionButton(action, modifier.then(
                             if (action === selected) Modifier.focusRequester(initial)
@@ -317,9 +321,10 @@ object TvPresentation {
 
     /** Native observer updates retain the dialog and keyed focus targets. UI thread only. */
     @JvmStatic
-    fun updateControls(view: View, subtitle: String, actions: List<Action>) {
+    fun updateControls(view: View, subtitle: String, status: String, actions: List<Action>) {
         val state = view.tag as? ControlsState ?: return
         state.subtitle = subtitle
+        state.status = status
         state.actions = actions
     }
 

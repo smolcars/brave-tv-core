@@ -124,6 +124,11 @@ final class TvBrowserSession {
                     public void onTitleUpdated(Tab tab) {
                         mOnChanged.run();
                     }
+
+                    @Override
+                    public void onSSLStateUpdated(Tab tab) {
+                        mOnChanged.run();
+                    }
                 };
         // The supplier posts its initial notification; capture also refreshes synchronously.
     }
