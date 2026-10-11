@@ -156,7 +156,7 @@ public class TvDownloadsPanelTest {
         OfflineItem item = new OfflineItem();
         item.id = new ContentId(LegacyHelpers.LEGACY_DOWNLOAD_NAMESPACE, "tv-fixture-" + index);
         item.title = "TV file " + index;
-        item.creationTimeMs = 1000 - index;
+        item.creationTimeMs = 1000L - index;
         item.receivedBytes = 123;
         item.state = OfflineItemState.COMPLETE;
         item.isOpenable = true;
