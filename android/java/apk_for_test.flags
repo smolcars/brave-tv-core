@@ -390,7 +390,9 @@
     boolean onMenuOrKeyboardAction(int, boolean, android.os.Bundle, org.chromium.components.browser_ui.util.motion.MotionEventInfo);
 }
 
--keep class org.chromium.chrome.browser.app.BraveActivity
+-keep class org.chromium.chrome.browser.app.BraveActivity {
+    boolean maybeHandleTvMenuAction(int);
+}
 
 -keep class org.chromium.chrome.browser.media.BravePictureInPictureActivity
 
