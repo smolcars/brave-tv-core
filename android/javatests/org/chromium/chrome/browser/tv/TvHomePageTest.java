@@ -176,6 +176,7 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
     public void closingFinalPrivateTabRetainsOriginalNormalHome() {
         Tab normal = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         ThreadUtils.runOnUiThreadBlocking(
@@ -183,8 +184,10 @@ public class TvHomePageTest {
         CriteriaHelper.pollUiThread(
                 () ->
                         mActivity.getActivityTab().isIncognito()
-                                && mActivity.getActivityTab().getNativePage()
-                                        instanceof TvHomePage);
+                                && mActivity.getActivityTab().getNativePage() instanceof TvHomePage
+                                && (mActivity.getWindow().getAttributes().flags
+                                                & WindowManager.LayoutParams.FLAG_SECURE)
+                                        != 0);
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     assertEquals(1, mActivity.getTabModelSelector().getModel(true).getCount());
