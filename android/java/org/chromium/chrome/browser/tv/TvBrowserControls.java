@@ -200,11 +200,16 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false);
         } else if (closedPrivateTab
                 && mActivity.getTabModelSelector().getModel(true).getCount() == 0) {
-            Tab current = mActivity.getActivityTab();
+            TabModel normal = mActivity.getTabModelSelector().getModel(false);
+            Tab current = TabModelUtils.getCurrentTab(normal);
             if (current != null
                     && !current.isDestroyed()
                     && !current.isIncognito()
-                    && current.getNativePage() instanceof TvHomePage home) home.focusAddress();
+                    && current.getNativePage() instanceof TvHomePage home) {
+                // Closing the private model can clear the activity's selected-tab supplier.
+                TabModelUtils.setIndex(normal, normal.index());
+                home.focusAddress();
+            }
         }
     }
 

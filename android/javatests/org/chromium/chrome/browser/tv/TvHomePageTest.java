@@ -224,7 +224,11 @@ public class TvHomePageTest {
                                     + mActivityTestRule
                                             .getActivity()
                                             .getLayoutManager()
-                                            .getActiveLayoutType(),
+                                            .getActiveLayoutType()
+                                    + "; private model selected="
+                                    + mActivity.getTabModelSelector().isIncognitoSelected()
+                                    + "; model retains normal="
+                                    + (mActivity.getTabModelSelector().getCurrentTab() == normal),
                             mActivity.getActivityTab() == normal,
                             is(true));
                     Criteria.checkThat(
