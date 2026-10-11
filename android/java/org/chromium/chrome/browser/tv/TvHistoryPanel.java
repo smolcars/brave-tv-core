@@ -15,6 +15,7 @@ import org.chromium.chrome.browser.history.HistoryItem;
 import org.chromium.chrome.browser.history.HistoryProvider;
 import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
 
@@ -32,6 +33,12 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
     private final Runnable mOnClose;
     private final BrowsingHistoryBridge mHistory;
     private final List<HistoryItem> mItems = new ArrayList<>();
+    private final List<TvPresentation.Action> mRows = new ArrayList<>();
+    private @Nullable HistoryItem mFocusedItem;
+    private boolean mSeekingFocus;
+    private int mFocusedIndex;
+    private int mWindowStart;
+    private int mNextIndex;
     private @Nullable AlertDialog mDialog;
     private int mStart;
     private boolean mHasMore;
@@ -51,6 +58,7 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
                         super.onRemoveComplete();
                         if (!isUsable()) return;
                         mRemoving = false;
+                        mFocusedItem = null;
                         refresh();
                     }
 
@@ -84,6 +92,9 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
         if (mDialog != null) mDialog.dismiss();
         mDialog = null;
         mHistory.destroy();
+        mItems.clear();
+        mRows.clear();
+        mFocusedItem = null;
     }
 
     private void show(TvBrowserPanel panel, Runnable onCancel) {
@@ -110,8 +121,25 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
             return;
         }
         mReloadPending = false;
+        rememberFocus();
+        mSeekingFocus = mFocusedItem != null;
+        restartQuery();
+    }
+
+    private void rememberFocus() {
+        for (int i = 0; i < mRows.size(); i++) {
+            if (!mRows.get(i).hasFocus()) continue;
+            mFocusedIndex = mStart + i;
+            mFocusedItem = mItems.get(mFocusedIndex - mWindowStart);
+            return;
+        }
+    }
+
+    private void restartQuery() {
         mItems.clear();
-        mStart = 0;
+        mRows.clear();
+        mWindowStart = mNextIndex = 0;
+        mHasMore = false;
         mQuerying = true;
         showBusy(R.string.brave_tv_loading_history);
         mHistory.queryHistory("", null);
@@ -125,9 +153,34 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
             refresh();
             return;
         }
+        // Native queries return at most150 items. Retain only the page boundary.
+        int keep = Math.min(PAGE_SIZE * 2, mItems.size());
+        mItems.subList(0, mItems.size() - keep).clear();
         mItems.addAll(items);
+        mNextIndex += items.size();
+        mWindowStart = mNextIndex - mItems.size();
         mHasMore = hasMorePotentialMatches;
-        showList("");
+        if (mSeekingFocus && mFocusedItem != null) {
+            for (int i = 0; i < mItems.size(); i++) {
+                HistoryItem item = mItems.get(i);
+                if (item.getUrl().equals(mFocusedItem.getUrl())
+                        && item.getTimestamp() == mFocusedItem.getTimestamp()) {
+                    mFocusedIndex = mWindowStart + i;
+                    mStart = (mFocusedIndex / PAGE_SIZE) * PAGE_SIZE;
+                    mSeekingFocus = false;
+                    break;
+                }
+            }
+            if (mSeekingFocus && !mHasMore) {
+                mSeekingFocus = false;
+                mFocusedItem = null;
+                if (mStart < mWindowStart) {
+                    restartQuery();
+                    return;
+                }
+            }
+        }
+        ensurePage();
     }
 
     @Override
@@ -141,9 +194,37 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
     @Override
     public void onQueryAppsComplete(List<String> items) {}
 
+    private void ensurePage() {
+        if (!isUsable() || mQuerying || mRemoving) return;
+        if (mSeekingFocus || (mStart + PAGE_SIZE > mNextIndex && mHasMore)) {
+            mQuerying = true;
+            mRows.clear();
+            showBusy(R.string.brave_tv_loading_history);
+            mHistory.queryHistoryContinuation();
+            return;
+        }
+        if (!mHasMore && mStart >= mNextIndex) {
+            mStart = Math.max(0, ((mNextIndex - 1) / PAGE_SIZE) * PAGE_SIZE);
+        }
+        if (mStart < mWindowStart) {
+            restartQuery();
+            return;
+        }
+        showList("");
+    }
+
+    private void page(int start) {
+        if (!isUsable() || mQuerying || mRemoving) return;
+        mFocusedItem = null;
+        mSeekingFocus = false;
+        mFocusedIndex = mStart = start;
+        ensurePage();
+    }
+
     private void showList(String error) {
         if (!isUsable()) return;
-        mStart = Math.min(mStart, Math.max(0, ((mItems.size() - 1) / PAGE_SIZE) * PAGE_SIZE));
+        int end = Math.min(mStart + PAGE_SIZE, mNextIndex);
+        int focused = Math.max(mStart, Math.min(mFocusedIndex, end - 1));
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
@@ -151,33 +232,27 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
                         error.isEmpty() && mItems.isEmpty()
                                 ? mActivity.getString(R.string.brave_tv_empty_history)
                                 : error,
-                        0);
-        int end = Math.min(mStart + PAGE_SIZE, mItems.size());
+                        end > mStart ? focused - mStart + 1 : R.string.brave_tv_controls);
+        mRows.clear();
         for (int i = mStart; i < end; i++) {
-            HistoryItem item = mItems.get(i);
-            panel.addItem(item.getTitle() + "\n" + item.getDomain(), 0, () -> showItem(item));
+            int index = i;
+            HistoryItem item = mItems.get(i - mWindowStart);
+            mRows.add(
+                    panel.addItem(
+                            item.getTitle() + "\n" + item.getDomain(),
+                            i - mStart + 1,
+                            () -> {
+                                mFocusedItem = item;
+                                mFocusedIndex = index;
+                                showItem(item);
+                            }));
         }
         panel.addAction(
                 R.string.brave_tv_previous_history,
                 mStart > 0,
-                () -> {
-                    mStart = Math.max(0, mStart - PAGE_SIZE);
-                    showList("");
-                });
+                () -> page(Math.max(0, mStart - PAGE_SIZE)));
         panel.addAction(
-                R.string.brave_tv_more_history,
-                end < mItems.size() || mHasMore,
-                () -> {
-                    if (!isUsable() || mQuerying || mRemoving) return;
-                    mStart = end;
-                    if (end < mItems.size()) {
-                        showList("");
-                    } else {
-                        mQuerying = true;
-                        showBusy(R.string.brave_tv_loading_history);
-                        mHistory.queryHistoryContinuation();
-                    }
-                });
+                R.string.brave_tv_more_history, end < mNextIndex || mHasMore, () -> page(end));
         panel.addAction(R.string.brave_tv_controls, true, mOnClose);
         show(panel, mOnClose);
     }
@@ -196,6 +271,7 @@ final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
 
     private void showItem(HistoryItem item) {
         if (!isUsable()) return;
+        mRows.clear();
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
