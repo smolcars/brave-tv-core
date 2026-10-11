@@ -131,6 +131,7 @@ final class TvRemoteBrowser {
                     new JSONObject()
                             .put("revision", mText.revision())
                             .put("version", mText.version())
+                            .put("replacementVersion", mText.replacementVersion())
                             .put("ready", mText.ready())
                             .put("text", mText.text())
                             .put("start", mText.start())
@@ -221,12 +222,16 @@ final class TvRemoteBrowser {
                 mControls.remotePointer(mX, mY, op, dx, dy);
                 return true;
             case "edit":
-                return webPage()
-                        && mText != null
-                        && TvRemoteSession.parseInteger(command.opt("version")) == mText.version()
+                if (!webPage() || mText == null) return false;
+                String operation = command.getString("edit");
+                return (TvRemoteSession.parseInteger(command.opt("version")) == mText.version()
+                                || (operation.equals("replace")
+                                        && TvRemoteSession.parseInteger(
+                                                        command.opt("replacementVersion"))
+                                                == mText.replacementVersion()))
                         && mText.edit(
                                 TvRemoteSession.parseInteger(command.opt("editable")),
-                                command.getString("edit"),
+                                operation,
                                 command.optString("text", ""),
                                 bounded(command, "start", 2048),
                                 bounded(command, "end", 2048),

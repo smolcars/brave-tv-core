@@ -33,6 +33,7 @@ public final class TvTextInput {
     private long mOperationId;
     private long mRevision = 1;
     private long mVersion = 1;
+    private long mReplacementVersion = 1;
     private boolean mEligible;
     private boolean mAwaitingState = true;
     private String mText = "";
@@ -104,6 +105,11 @@ public final class TvTextInput {
         return mVersion;
     }
 
+    /** Whole-field replacement does not depend on the current composition range. */
+    public long replacementVersion() {
+        return mReplacementVersion;
+    }
+
     public boolean ready() {
         return !mAwaitingState;
     }
@@ -172,10 +178,13 @@ public final class TvTextInput {
             input.mRevision++;
             input.mPendingEdit = null;
         }
-        if (input.mEligible != eligible
-                || !input.mText.equals(text)
-                || input.mStart != start
-                || input.mEnd != end
+        boolean replacementChanged =
+                input.mEligible != eligible
+                        || !input.mText.equals(text)
+                        || input.mStart != start
+                        || input.mEnd != end;
+        if (replacementChanged) input.mReplacementVersion++;
+        if (replacementChanged
                 || input.mCompositionStart != compositionStart
                 || input.mCompositionEnd != compositionEnd) input.mVersion++;
         input.mEligible = eligible;

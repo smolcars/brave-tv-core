@@ -18,6 +18,7 @@ let gesture = null,
   polling = null,
   waiting = false,
   dirtyVersion = 0,
+  dirtyReplacementVersion = 0,
   pendingEdit = null
 function status(text) {
   $('status').textContent = text
@@ -80,7 +81,10 @@ function render(result) {
       && editable.start === pendingEdit.start
       && editable.end === pendingEdit.end
     ) {
-      if (dirty) dirtyVersion = editable.version
+      if (dirty) {
+        dirtyVersion = editable.version
+        dirtyReplacementVersion = editable.replacementVersion
+      }
     } else dirty = composing = false
     pendingEdit = null
   }
@@ -361,11 +365,17 @@ $('editor').addEventListener('compositionstart', () => {
 })
 $('editor').addEventListener('compositionend', () => {
   composing = false
-  if (!dirty) dirtyVersion = state?.editable?.version
+  if (!dirty) {
+    dirtyVersion = state?.editable?.version
+    dirtyReplacementVersion = state?.editable?.replacementVersion
+  }
   dirty = true
 })
 $('editor').oninput = () => {
-  if (!dirty) dirtyVersion = state?.editable?.version
+  if (!dirty) {
+    dirtyVersion = state?.editable?.version
+    dirtyReplacementVersion = state?.editable?.replacementVersion
+  }
   dirty = true
 }
 setInterval(async () => {
@@ -386,6 +396,7 @@ setInterval(async () => {
     editable: field,
     edit: 'replace',
     version: dirtyVersion,
+    replacementVersion: dirtyReplacementVersion,
     text,
     start,
     end,
