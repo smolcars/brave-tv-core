@@ -52,6 +52,7 @@ import org.chromium.chrome.browser.bookmarks.BookmarkModel;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.browser.layouts.LayoutType;
+import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.browser.tab.TvBrowserControlsVisibilityDelegate;
@@ -62,6 +63,7 @@ import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
+import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.url.GURL;
 
@@ -546,7 +548,7 @@ public class TvHomePageTest {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_bookmark)));
         mDevice.pressDPadCenter();
         CriteriaHelper.pollUiThread(() -> !mBookmarks.doesBookmarkExist(items.get(0)));
-        focusDown(By.desc("TV library fixture 1"));
+        waitForFocus(By.desc("TV library fixture 1"));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     for (int i = 1; i < items.size(); i++) {
@@ -556,6 +558,83 @@ public class TvHomePageTest {
                         assertTrue(mBookmarks.doesBookmarkExist(mOwnedBookmarks.get(i)));
                     }
                 });
+    }
+
+    @Test
+    @MediumTest
+    public void bookmarkLibraryRestoresNativeSelectionAcrossUpdates() {
+        List<BookmarkId> items = openOwnedBookmarkFolder();
+        String lastTitle = "TV library fixture " + TvBrowserControls.BOOKMARK_PAGE_SIZE;
+        focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_bookmarks)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_bookmarks)));
+        mDevice.pressDPadCenter();
+        focusDown(By.desc(lastTitle));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
+        mDevice.pressBack();
+        waitForFocus(By.desc(lastTitle));
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        mBookmarks.deleteBookmark(
+                                items.get(TvBrowserControls.BOOKMARK_PAGE_SIZE - 1)));
+        waitForFocus(By.desc(lastTitle));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.desc("TV library fixture 0")));
+        boolean editing =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () ->
+                                UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                        .getBoolean(Pref.EDIT_BOOKMARKS_ENABLED));
+        try {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                    .setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, false));
+            CriteriaHelper.pollUiThread(() -> !mBookmarks.isEditBookmarksEnabled());
+            waitForFocus(By.desc(lastTitle));
+            mDevice.pressDPadCenter();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
+            CriteriaHelper.pollInstrumentationThread(
+                    () ->
+                            mDevice.hasObject(
+                                    By.desc(mActivity.getString(R.string.brave_tv_remove_bookmark))
+                                            .enabled(false)));
+            mDevice.pressBack();
+            waitForFocus(By.desc(lastTitle));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                    .setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, true));
+            CriteriaHelper.pollUiThread(mBookmarks::isEditBookmarksEnabled);
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            mBookmarks.deleteBookmark(
+                                    items.get(TvBrowserControls.BOOKMARK_PAGE_SIZE)));
+            String survivor = "TV library fixture " + (TvBrowserControls.BOOKMARK_PAGE_SIZE - 2);
+            waitForFocus(By.desc(survivor));
+            String renamed = "TV library fixture renamed";
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            mBookmarks.setBookmarkTitle(
+                                    items.get(TvBrowserControls.BOOKMARK_PAGE_SIZE - 2), renamed));
+            waitForFocus(By.desc(renamed));
+            mDevice.pressDPadCenter();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
+            mDevice.pressBack();
+            waitForFocus(By.desc(renamed));
+            mDevice.pressBack();
+            waitForFocus(
+                    By.desc(
+                            mActivity.getString(
+                                    R.string.brave_tv_bookmark_folder,
+                                    "TV library fixture folder")));
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                    .setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, editing));
+        }
     }
 
     private List<BookmarkId> openOwnedBookmarkFolder() {

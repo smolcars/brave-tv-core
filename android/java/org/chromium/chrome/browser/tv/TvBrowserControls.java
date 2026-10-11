@@ -41,6 +41,7 @@ import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.back_press.BackPressManager;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
+import org.chromium.chrome.browser.bookmarks.BookmarkModelObserver;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataBridge;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
 import org.chromium.chrome.browser.browsing_data.TimePeriod;
@@ -101,6 +102,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable ContentView mPage;
     private @Nullable AlertDialog mDialog;
     private @Nullable CallbackController mBookmarkCallbacks;
+    private @Nullable Runnable mBookmarkCleanup;
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
     private @Nullable TvDownloadsPanel mDownloadsPanel;
@@ -694,6 +696,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             mSearchCallbacks.destroy();
             mSearchCallbacks = null;
         }
+        if (mBookmarkCleanup != null) {
+            mBookmarkCleanup.run();
+            mBookmarkCleanup = null;
+        }
         if (mBookmarkCallbacks != null) {
             mBookmarkCallbacks.destroy();
             mBookmarkCallbacks = null;
@@ -1004,6 +1010,15 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void showBookmarks(
             TvBrowserSession.Context context, @Nullable BookmarkId folderId, int start) {
+        showBookmarks(context, folderId, start, null, R.string.brave_tv_save_bookmark);
+    }
+
+    private void showBookmarks(
+            TvBrowserSession.Context context,
+            @Nullable BookmarkId folderId,
+            int start,
+            @Nullable BookmarkId focusedId,
+            int focusedAction) {
         Tab tab = context.tab;
         if (tab == null) return;
         if (!documentContextValid(context)) return;
@@ -1023,7 +1038,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     mBookmarkCallbacks.makeCancelable(
                             () -> {
                                 if (documentContextValid(context))
-                                    showBookmarks(context, folderId, start);
+                                    showBookmarks(
+                                            context, folderId, start, focusedId, focusedAction);
                             }));
             return;
         }
@@ -1039,7 +1055,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         Runnable back =
                 atRoot
                         ? this::returnToControls
-                        : () -> showBookmarks(context, folder.getParentId(), 0);
+                        : () -> showBookmarks(context, folder.getParentId(), 0, id, 1);
+        int selected = focusedId == null ? -1 : children.indexOf(focusedId);
+        if (focusedId != null && selected < 0) selected = Math.min(start, children.size() - 1);
+        int first = Math.max(0, Math.min(selected < 0 ? start : selected, children.size() - 1));
+        first -= first % BOOKMARK_PAGE_SIZE;
+        int end = Math.min(first + BOOKMARK_PAGE_SIZE, children.size());
+        int preferred = selected >= 0 ? selected + 1 : focusedAction;
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
@@ -1049,38 +1071,82 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         children.isEmpty()
                                 ? mActivity.getString(R.string.brave_tv_empty_bookmarks)
                                 : "",
-                        R.string.brave_tv_save_bookmark);
-        panel.addAction(
-                R.string.brave_tv_save_bookmark,
-                isWebTab(tab)
-                        && model.isEditBookmarksEnabled()
-                        && model.getUserBookmarkIdForTab(tab) == null,
-                () -> saveBookmark(context, model));
-        panel.addAction(R.string.brave_tv_parent_folder, !atRoot, back);
-        panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
-        int first = Math.max(0, Math.min(start, Math.max(0, children.size() - 1)));
-        int end = Math.min(first + BOOKMARK_PAGE_SIZE, children.size());
+                        preferred);
+        List<TvPresentation.Action> actions = new ArrayList<>();
+        actions.add(
+                panel.addAction(
+                        R.string.brave_tv_save_bookmark,
+                        isWebTab(tab)
+                                && model.isEditBookmarksEnabled()
+                                && model.getUserBookmarkIdForTab(tab) == null,
+                        () -> saveBookmark(context, model)));
+        actions.add(panel.addAction(R.string.brave_tv_parent_folder, !atRoot, back));
+        actions.add(panel.addAction(R.string.brave_tv_controls, true, this::returnToControls));
         for (int i = first; i < end; i++) {
             BookmarkId childId = children.get(i);
             BookmarkItem item = model.getBookmarkById(childId);
             if (item == null) continue;
             String title = item.getTitle().isEmpty() ? item.getUrlForDisplay() : item.getTitle();
-            panel.addItem(
-                    item.isFolder()
-                            ? mActivity.getString(R.string.brave_tv_bookmark_folder, title)
-                            : title,
-                    i,
-                    () -> showBookmark(context, model, childId, id, first));
+            int index = i;
+            actions.add(
+                    panel.addItem(
+                            item.isFolder()
+                                    ? mActivity.getString(R.string.brave_tv_bookmark_folder, title)
+                                    : title,
+                            i + 1,
+                            () -> showBookmark(context, model, childId, id, index)));
         }
-        panel.addAction(
-                R.string.brave_tv_previous_bookmarks,
-                first > 0,
-                () -> showBookmarks(context, id, Math.max(0, first - BOOKMARK_PAGE_SIZE)));
-        panel.addAction(
-                R.string.brave_tv_more_bookmarks,
-                end < children.size(),
-                () -> showBookmarks(context, id, end));
-        mDialog = panel.show(back);
+        int pageStart = first;
+        List<BookmarkId> visibleIds = List.copyOf(children.subList(first, end));
+        actions.add(
+                panel.addAction(
+                        R.string.brave_tv_previous_bookmarks,
+                        first > 0,
+                        () ->
+                                showBookmarks(
+                                        context, id, Math.max(0, pageStart - BOOKMARK_PAGE_SIZE))));
+        actions.add(
+                panel.addAction(
+                        R.string.brave_tv_more_bookmarks,
+                        end < children.size(),
+                        () -> showBookmarks(context, id, end)));
+        AlertDialog dialog = panel.show(back);
+        mDialog = dialog;
+        View owner = mActivity.getWindow().getDecorView();
+        Runnable refresh =
+                () -> {
+                    if (mDialog != dialog || !documentContextValid(context)) return;
+                    for (TvPresentation.Action action : actions) {
+                        if (!action.hasFocus()) continue;
+                        int key = action.getKey();
+                        BookmarkId selectedId =
+                                key > pageStart && key <= pageStart + visibleIds.size()
+                                        ? visibleIds.get(key - pageStart - 1)
+                                        : null;
+                        showBookmarks(
+                                context,
+                                id,
+                                selectedId == null ? pageStart : key - 1,
+                                selectedId,
+                                key);
+                        return;
+                    }
+                    showBookmarks(context, id, pageStart, focusedId, preferred);
+                };
+        BookmarkModelObserver observer =
+                new BookmarkModelObserver() {
+                    @Override
+                    public void bookmarkModelChanged() {
+                        owner.removeCallbacks(refresh);
+                        owner.post(refresh);
+                    }
+                };
+        model.addObserver(observer);
+        mBookmarkCleanup =
+                () -> {
+                    model.removeObserver(observer);
+                    owner.removeCallbacks(refresh);
+                };
     }
 
     private void saveBookmark(TvBrowserSession.Context context, BookmarkModel model) {
@@ -1092,6 +1158,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         BookmarkId folder = model.getDefaultBookmarkFolder();
         BookmarkItem parent = model.getBookmarkById(folder);
         if (folder == null || parent == null || parent.isManaged()) return;
+        dismissDialog();
         if (model.getUserBookmarkIdForTab(tab) == null) {
             model.addBookmark(
                     folder,
@@ -1113,7 +1180,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (!documentContextValid(context)) return;
         BookmarkItem item = model.getBookmarkById(id);
         if (item == null) {
-            showBookmarks(context, folder, start);
+            showBookmarks(context, folder, start, id, start + 1);
             return;
         }
         if (item.isFolder()) {
@@ -1121,7 +1188,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             return;
         }
         dismissDialog();
-        Runnable back = () -> showBookmarks(context, folder, start);
+        Runnable back = () -> showBookmarks(context, folder, start, id, start + 1);
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
@@ -1186,7 +1253,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             && model.isEditBookmarksEnabled()) {
                         model.deleteBookmarks(id);
                     }
-                    showBookmarks(context, folder, start);
+                    showBookmarks(context, folder, start, id, start + 1);
                 });
         mDialog = panel.show(cancel);
     }
