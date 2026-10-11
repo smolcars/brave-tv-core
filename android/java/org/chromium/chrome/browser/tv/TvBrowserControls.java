@@ -309,7 +309,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (mActivity.getModalDialogManager() != null
                 && mActivity.getModalDialogManager().isShowing()) return true;
         View focus = mActivity.getCurrentFocus();
-        if (focus != null && page != null && !page.hasFocus()) return true;
+        // Native dialog dismissal can return focus to Chromium's content host.
+        if (focus != null
+                && page != null
+                && !page.hasFocus()
+                && focus.getId() != R.id.compositor_view_holder) return true;
         // CloseWatcher can outrank Find; inspect the native UI independently.
         View findToolbar = mActivity.findViewById(R.id.find_toolbar);
         if (findToolbar != null && findToolbar.isShown()) return true;
