@@ -45,7 +45,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.InterceptPlatformTextInput
 import androidx.compose.ui.platform.PlatformTextInputInterceptor
 import androidx.compose.ui.platform.PlatformTextInputMethodRequest
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.hintText
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
@@ -136,7 +136,7 @@ object TvAddressEditor {
                                     } else state.error = ""
                                 }
                                 override fun SemanticsPropertyReceiver.applySemantics() {
-                                    contentDescription = labels.title
+                                    hintText = labels.title
                                 }
                             },
                             lineLimits = TextFieldLineLimits.SingleLine,
