@@ -327,7 +327,9 @@ object TvPresentation {
      * The context owns lifecycle/saved state. Actions and descriptions may update while shown.
      * Restoration may focus a disabled preferred action; activation remains blocked.
      * Ordinary entry selects the preferred enabled action, then the first enabled action.
-     * Acknowledge successful initial focus before native observers preserve focused actions. */
+     * onFocusRestored runs on the UI thread after the initial frame and successful focus.
+     * No selection, failed focus, or disposal before restoration leaves it uncalled.
+     * Native observers preserve captured selection until that acknowledgement. */
     @JvmStatic
     fun panel(
         context: Context, title: String, subtitle: String, backHint: String,
