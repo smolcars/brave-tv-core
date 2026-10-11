@@ -132,6 +132,12 @@ public final class TvTextInput {
         mPendingEdit = null;
     }
 
+    /** Reacquires native field state after the owner has cancelled an invalid browser context. */
+    public void requestStateUpdate() {
+        ThreadUtils.assertOnUiThread();
+        mAdapter.requestTextInputStateUpdate();
+    }
+
     // Called by a signature-checked bytecode hook, including equal-type focus changes.
     public static void focusChanged(ImeAdapterImpl adapter) {
         TvTextInput input = ACTIVE.get(adapter);

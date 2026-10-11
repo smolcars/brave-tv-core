@@ -1,0 +1,12 @@
+diff --git a/third_party/blink/renderer/core/editing/ime/input_method_controller.cc b/third_party/blink/renderer/core/editing/ime/input_method_controller.cc
+index d1785e509ac2b924b1d8a7747f5cf6124153c5d3..c5cf1e0118cdfd9367ab3cf0430d1aeb8ca93f29 100644
+--- a/third_party/blink/renderer/core/editing/ime/input_method_controller.cc
++++ b/third_party/blink/renderer/core/editing/ime/input_method_controller.cc
+@@ -1597,6 +1597,7 @@
+       return;
+     if (!DeleteSelectionWithoutAdjustment())
+       return;
++    BRAVE_INPUT_METHOD_CONTROLLER_DELETE_SURROUNDING_TEXT_AFTER_DELETE
+     const PlainTextRange current_selection_offsets(GetSelectionOffsets());
+     // The deletion above leaves the caret at [`end`, `end`], so to check if
+     // a listener changed the selection range we need to compare the start and

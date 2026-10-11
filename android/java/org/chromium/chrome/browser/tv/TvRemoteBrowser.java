@@ -47,7 +47,16 @@ final class TvRemoteBrowser {
 
     void invalidate() {
         mRevision++;
-        if (mText != null) mText.invalidate();
+        if (mText == null) return;
+        mText.invalidate();
+        if (mTab != null
+                && !mTab.isDestroyed()
+                && !mTab.isIncognito()
+                && mActivity.getActivityTab() == mTab
+                && mContents != null
+                && !mContents.isDestroyed()
+                && mTab.getWebContents() == mContents
+                && !mControls.remotePaused()) mText.requestStateUpdate();
     }
 
     void destroy() {

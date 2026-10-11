@@ -596,13 +596,21 @@ public class TvHomePageTest {
     }
 
     private void focusDown(BySelector target) {
+        List<String> focusTrail = new ArrayList<>();
         for (int i = 0; i < 24; i++) {
             UiObject2 control = mDevice.findObject(target);
             if (control != null && control.isFocused()) return;
+            for (UiObject2 focused : mDevice.findObjects(By.focused(true))) {
+                focusTrail.add(focused.getContentDescription());
+            }
             mDevice.pressDPadDown();
             mDevice.waitForIdle();
         }
-        waitForFocus(target);
+        try {
+            waitForFocus(target);
+        } catch (CriteriaHelper.TimeoutException failure) {
+            throw new AssertionError("Native library D-pad focus trail: " + focusTrail, failure);
+        }
     }
 
     @Test
