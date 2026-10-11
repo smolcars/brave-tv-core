@@ -396,6 +396,12 @@ public abstract class BraveActivity extends ChromeActivity
         if (mTvBrowserControls != null) mTvBrowserControls.showTabs();
     }
 
+    public void showTvUnavailableExternalLink(WebContents expectedContents) {
+        if (mTvBrowserControls != null) {
+            mTvBrowserControls.showUnavailableExternalLink(expectedContents);
+        }
+    }
+
     public void showTvSettings(TvHomePage home) {
         if (mTvBrowserControls != null) mTvBrowserControls.showSettings(home);
     }

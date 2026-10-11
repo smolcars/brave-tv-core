@@ -3944,6 +3944,9 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_PHONE_CONTINUE" desc="TV phone remote: phone continue.">Continue browsing</message>
     <message name="IDS_BRAVE_TV_PHONE_DISCONNECT" desc="TV phone remote: phone disconnect.">Disconnect</message>
     <message name="IDS_BRAVE_TV_CONTROLS" desc="Title and return button for the native TV browser panel.">Browser controls</message>
+    <message name="IDS_BRAVE_TV_LINK_UNAVAILABLE" desc="TV informational panel title after native navigation cannot open an external link.">Link unavailable</message>
+    <message name="IDS_BRAVE_TV_LINK_UNAVAILABLE_DESCRIPTION" desc="TV explanation when native navigation rejects an external link; does not imply permission approval or name the external address.">This link could not be opened here. Return to the page or use a web address.</message>
+    <message name="IDS_BRAVE_TV_RETURN_TO_PAGE" desc="TV button to dismiss an unavailable-link explanation and restore webpage controls.">Return to page</message>
     <message name="IDS_BRAVE_TV_PRIVATE_CONTROLS" desc="Title of the TV browser panel in a private tab.">Private browsing</message>
     <message name="IDS_BRAVE_TV_BACK" desc="TV button to go back in the current tab history.">Go back</message>
     <message name="IDS_BRAVE_TV_FORWARD" desc="TV button to go forward in the current tab history.">Go forward</message>

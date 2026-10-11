@@ -13,6 +13,7 @@ import org.chromium.chrome.browser.BraveConstants;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.preferences.BravePrefServiceBridge;
 import org.chromium.chrome.browser.privacy.settings.BravePrivacySettings;
+import org.chromium.components.embedder_support.util.UrlUtilities;
 import org.chromium.components.external_intents.ExternalNavigationDelegate;
 import org.chromium.components.external_intents.ExternalNavigationHandler;
 import org.chromium.components.external_intents.ExternalNavigationHandler.OverrideUrlLoadingResult;
@@ -24,9 +25,11 @@ import org.chromium.url.GURL;
  */
 public class BraveExternalNavigationHandler extends ExternalNavigationHandler {
     private static final String TAG = "BraveUrlHandler";
+    private final ExternalNavigationDelegate mNavigationDelegate;
 
     public BraveExternalNavigationHandler(ExternalNavigationDelegate delegate) {
         super(delegate);
+        mNavigationDelegate = delegate;
     }
 
     @Override
@@ -40,7 +43,18 @@ public class BraveExternalNavigationHandler extends ExternalNavigationHandler {
             }
             return OverrideUrlLoadingResult.forExternalIntent();
         }
-        return super.shouldOverrideUrlLoading(params);
+        OverrideUrlLoadingResult result = super.shouldOverrideUrlLoading(params);
+        if (result.getResultType() == OverrideUrlLoadingResultType.NO_OVERRIDE
+                && params.isMainFrame()
+                && params.hasUserGesture()
+                && !params.isIncognito()
+                && !UrlUtilities.isAcceptedScheme(params.getUrl())
+                && ContextUtils.activityFromContext(mNavigationDelegate.getContext())
+                        instanceof BraveActivity activity) {
+            var contents = mNavigationDelegate.getWebContents();
+            if (contents != null) activity.showTvUnavailableExternalLink(contents);
+        }
+        return result;
     }
 
     @Override

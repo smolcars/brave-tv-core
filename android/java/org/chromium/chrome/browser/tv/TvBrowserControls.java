@@ -73,7 +73,9 @@ import org.chromium.components.security_state.ConnectionSecurityLevel;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
+import org.chromium.content_public.browser.NavigationHandle;
 import org.chromium.content_public.browser.WebContents;
+import org.chromium.content_public.browser.WebContentsObserver;
 import org.chromium.ui.base.PageTransition;
 import org.chromium.ui.modaldialog.ModalDialogManager;
 
@@ -99,6 +101,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable TvAddressEditor.State mAddressState;
     private @Nullable TvBrowserSession.Context mAddressContext;
     private @Nullable Tab mControlsTab;
+    private @Nullable WebContents mUnavailableLinkContents;
     private boolean mControlsUpdatePosted;
     private final Cursor mCursor;
     private final View mCursorView;
@@ -602,6 +605,16 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPressedContext = null;
         mPhoneRemote.invalidate();
         if (!isAlive()) return;
+        if (mUnavailableLinkContents != null) {
+            Tab tab = mActivity.getActivityTab();
+            if (tab == null
+                    || tab.isDestroyed()
+                    || tab.isIncognito()
+                    || tab.getWebContents() != mUnavailableLinkContents
+                    || nativeSecurityOwnsInput()) {
+                dismissDialog();
+            }
+        }
         TvBrowserSession.Context addressContext = mAddressContext;
         if (mDownloadsPanel != null) mDownloadsPanel.onBrowserStateChanged();
         if (addressContext != null) {
@@ -813,6 +826,54 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         } else if (currentPage() != null) {
             performAction(R.string.brave_tv_pointer);
         }
+    }
+
+    /** Explains a native external-navigation rejection without changing its decision. */
+    public void showUnavailableExternalLink(WebContents expectedContents) {
+        if (!isAlive() || !mActivity.hasWindowFocus() || mDialog != null) return;
+        Tab tab = mActivity.getActivityTab();
+        if (tab == null
+                || tab.isDestroyed()
+                || tab.isIncognito()
+                || tab.getWebContents() != expectedContents
+                || expectedContents.isDestroyed()
+                || keyboardVisible()
+                || nativeUiOwnsInput(false)) return;
+        detachCursor();
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_link_unavailable),
+                        mActivity.getString(R.string.brave_tv_link_unavailable_description),
+                        R.string.brave_tv_return_to_page);
+        panel.addAction(R.string.brave_tv_return_to_page, true, this::returnToPage);
+        mUnavailableLinkContents = expectedContents;
+        AlertDialog dialog = panel.show(this::returnToPage);
+        mDialog = dialog;
+        WebContentsObserver observer =
+                new WebContentsObserver(expectedContents) {
+                    @Override
+                    public void didStartNavigationInPrimaryMainFrame(NavigationHandle navigation) {
+                        if (mDialog == dialog) dismissDialog();
+                    }
+
+                    @Override
+                    public void primaryMainFrameRenderProcessGone(int status) {
+                        if (mDialog == dialog) dismissDialog();
+                    }
+
+                    @Override
+                    public void webContentsDestroyed() {
+                        if (mDialog == dialog) dismissDialog();
+                    }
+                };
+        setDialogCleanup(
+                panel,
+                dialog,
+                () -> {
+                    observer.observe(null);
+                    mUnavailableLinkContents = null;
+                });
     }
 
     /** Opens a TV editor without transferring native page or profile ownership. */

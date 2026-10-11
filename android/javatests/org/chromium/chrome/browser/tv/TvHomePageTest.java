@@ -79,6 +79,8 @@ import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
+import org.chromium.content_public.browser.WebContents;
+import org.chromium.content_public.browser.test.util.DOMUtils;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.url.GURL;
 import org.junit.After;
@@ -1140,6 +1142,88 @@ public class TvHomePageTest {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+    }
+
+    @Test
+    @MediumTest
+    public void unavailableExternalLinkReturnsToSameDocumentAndDisposesOnNavigation()
+            throws Exception {
+        String url =
+                InstrumentationRegistry.getArguments().getString("tv_external_link_fixture_url");
+        assertNotNull("Start the owned native-dialog fixture and pass its URL", url);
+        assertEquals("http", new GURL(url).getScheme());
+        mActivityTestRule.loadUrl(url);
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(original::getWebContents);
+        assertNotNull(contents);
+        String document =
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        contents, "performance.timeOrigin");
+        BySelector unavailable = By.text(mActivity.getString(R.string.brave_tv_link_unavailable));
+        BySelector returnToPage = By.desc(mActivity.getString(R.string.brave_tv_return_to_page));
+        for (boolean useBack : new boolean[] {true, false}) {
+            assertTrue(DOMUtils.clickNode(contents, "external"));
+            waitForFocus(returnToPage);
+            assertTrue(mDevice.hasObject(unavailable));
+            if (useBack) {
+                mDevice.pressBack();
+            } else {
+                mDevice.pressDPadCenter();
+            }
+            CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(unavailable));
+            CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertSame(original, mActivity.getActivityTab());
+                        assertSame(contents, original.getWebContents());
+                        assertEquals(new GURL(url), original.getUrl());
+                    });
+            assertEquals(
+                    document,
+                    JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                            contents, "performance.timeOrigin"));
+        }
+        assertTrue(DOMUtils.clickNode(contents, "external"));
+        waitForFocus(returnToPage);
+        mActivityTestRule.loadUrl(URL);
+        CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(unavailable));
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+    }
+
+    @Test
+    @MediumTest
+    public void unavailableExternalLinkRejectsStaleAndPrivateOwners() {
+        mActivityTestRule.loadUrl(URL);
+        WebContents stale =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> mActivity.getActivityTab().getWebContents());
+        assertNotNull(stale);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+        ThreadUtils.runOnUiThreadBlocking(() -> mActivity.showTvUnavailableExternalLink(stale));
+        assertFalse(
+                mDevice.hasObject(
+                        By.text(mActivity.getString(R.string.brave_tv_link_unavailable))));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(() -> mActivity.getActivityTab().isIncognito());
+        mActivityTestRule.loadUrl(URL);
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    Tab privateTab = mActivity.getActivityTab();
+                    WebContents contents = privateTab.getWebContents();
+                    assertNotNull(contents);
+                    mActivity.showTvUnavailableExternalLink(contents);
+                    assertSame(privateTab, mActivity.getActivityTab());
+                    assertTrue(mActivity.getTabModelSelector().isIncognitoSelected());
+                    assertTrue(mActivity.hasWindowFocus());
+                });
+        assertFalse(
+                mDevice.hasObject(
+                        By.text(mActivity.getString(R.string.brave_tv_link_unavailable))));
     }
 
     @Test
