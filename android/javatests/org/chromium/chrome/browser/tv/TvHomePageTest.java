@@ -30,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.chromium.base.Callback;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.test.util.ApplicationTestUtils;
 import org.chromium.base.test.util.CallbackHelper;
@@ -191,6 +192,32 @@ public class TvHomePageTest {
         mActivityTestRule.loadUrl(URL);
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
         assertTelevisionViewport();
+    }
+
+    @Test
+    @MediumTest
+    public void unobservedTvDelegateReleasesNativeActivityObserver() {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    var app = mActivity.getBrowserControlsManager().getBrowserVisibilityDelegate();
+                    int existing = app.getObserverCount();
+                    var delegate =
+                            new TvBrowserControlsVisibilityDelegate(
+                                    mActivity.getActivityTab(), app);
+                    assertEquals(existing, app.getObserverCount());
+                    Callback<Integer> observer = ignored -> {};
+                    delegate.addSyncObserver(observer);
+                    assertEquals(existing + 1, app.getObserverCount());
+                    delegate.removeObserver(observer);
+                    assertEquals(existing, app.getObserverCount());
+                    int token = app.showControlsPersistent();
+                    try {
+                        assertEquals(Integer.valueOf(BrowserControlsState.SHOWN), delegate.get());
+                    } finally {
+                        app.releasePersistentShowingToken(token);
+                    }
+                    assertEquals(existing, app.getObserverCount());
+                });
     }
 
     @Test
