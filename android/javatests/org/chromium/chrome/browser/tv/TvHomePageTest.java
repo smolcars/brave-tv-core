@@ -155,6 +155,57 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void closingFinalNormalTabCreatesUsableHome() {
+        Tab closing = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertEquals(1, mActivity.getTabModelSelector().getModel(false).getCount());
+                    assertFalse(closing.isIncognito());
+                    mActivity.onMenuOrKeyboardAction(R.id.close_tab, false);
+                });
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab() != null
+                                && mActivity.getActivityTab() != closing
+                                && !mActivity.getActivityTab().isIncognito()
+                                && mActivity.getActivityTab().getNativePage() instanceof TvHomePage
+                                && mActivity.getTabModelSelector().getModel(false).getCount() == 1);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        assertTrue(mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
+    }
+
+    @Test
+    @MediumTest
+    public void closingFinalPrivateTabRetainsOriginalNormalHome() {
+        Tab normal = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab().isIncognito()
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertEquals(1, mActivity.getTabModelSelector().getModel(true).getCount());
+                    mActivity.onMenuOrKeyboardAction(R.id.close_tab, false);
+                });
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab() == normal
+                                && mActivity.getTabModelSelector().getModel(true).getCount() == 0
+                                && mActivity.getTabModelSelector().getModel(false).getCount() == 1
+                                && (mActivity.getWindow().getAttributes().flags
+                                                & WindowManager.LayoutParams.FLAG_SECURE)
+                                        == 0);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        assertTrue(mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
+        assertFalse(
+                mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
+    }
+
+    @Test
+    @MediumTest
     public void nativeAppShowingRequestOverridesCompactTvControls() {
         assertTelevisionViewport();
         int token =
