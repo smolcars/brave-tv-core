@@ -50,6 +50,8 @@ import androidx.compose.ui.semantics.focused
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.ComposeView
@@ -242,7 +244,8 @@ object TvPresentation {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(title, fontSize = 20.sp, fontWeight = FontWeight.Medium,
                 modifier = Modifier.semantics { heading() })
-            if (actions.isEmpty()) Text(emptyLabel, color = secondary, fontSize = 16.sp)
+            if (actions.isEmpty()) Text(emptyLabel, color = secondary, fontSize = 16.sp,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             actions.chunked(columns).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     row.forEach { action ->

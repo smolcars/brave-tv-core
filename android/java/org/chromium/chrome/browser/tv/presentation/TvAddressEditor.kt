@@ -47,6 +47,8 @@ import androidx.compose.ui.platform.PlatformTextInputInterceptor
 import androidx.compose.ui.platform.PlatformTextInputMethodRequest
 import androidx.compose.ui.semantics.hintText
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextRange
@@ -172,7 +174,8 @@ object TvAddressEditor {
                         }
                     }
                     if (state.error.isNotEmpty()) Text(state.error, color = TvPresentation.text,
-                        fontSize = 16.sp)
+                        fontSize = 16.sp,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                     Text(labels.hint, color = TvPresentation.secondary, fontSize = 14.sp)
                     if (state.suggestions.isNotEmpty()) {
                         Text(labels.saved, color = TvPresentation.secondary, fontSize = 16.sp)
