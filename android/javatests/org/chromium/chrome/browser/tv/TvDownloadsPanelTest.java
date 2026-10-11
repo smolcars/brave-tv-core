@@ -296,6 +296,15 @@ public class TvDownloadsPanelTest {
                                         progress.equals(String.valueOf(node.getText()))
                                                 && node.getLiveRegion()
                                                         == View.ACCESSIBILITY_LIVE_REGION_NONE));
+        assertFalse(
+                hasNode(
+                        InstrumentationRegistry.getInstrumentation()
+                                .getUiAutomation()
+                                .getRootInActiveWindow(),
+                        node ->
+                                progress.equals(String.valueOf(node.getText()))
+                                        && node.getLiveRegion()
+                                                != View.ACCESSIBILITY_LIVE_REGION_NONE));
     }
 
     @Test
