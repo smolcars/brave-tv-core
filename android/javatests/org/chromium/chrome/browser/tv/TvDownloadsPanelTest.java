@@ -360,6 +360,9 @@ public class TvDownloadsPanelTest {
         mDevice.pressDPadCenter();
         focus(label(R.string.brave_tv_open_download));
         confirm(R.string.brave_tv_delete_download);
+        focus(label(R.string.brave_tv_refresh_downloads));
+        mDevice.pressDPadUp();
+        focus(label(R.string.brave_tv_previous_downloads));
         CriteriaHelper.pollInstrumentationThread(
                 () ->
                         mDevice.hasObject(
