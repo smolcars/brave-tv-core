@@ -651,8 +651,8 @@ public class TvHomePageTest {
     @MediumTest
     public void bookmarkLibraryPreservesFocusedSaveWhenPolicyDisablesIt() {
         String url = InstrumentationRegistry.getArguments().getString("tv_bookmark_fixture_url");
-        assertNotNull("Serve the owned bookmarks.html fixture and pass its URL", url);
-        assertEquals("http://10.0.2.2:18088/bookmarks.html", url);
+        assertNotNull("Serve the owned bookmark.html fixture and pass its URL", url);
+        assertEquals("http://10.0.2.2:18088/bookmark.html", url);
         mActivityTestRule.loadUrl(url);
         CriteriaHelper.pollInstrumentationThread(
                 () -> mDevice.hasObject(By.text("TV bookmark workflow fixture")));
