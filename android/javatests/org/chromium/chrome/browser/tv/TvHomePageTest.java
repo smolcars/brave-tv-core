@@ -1029,9 +1029,12 @@ public class TvHomePageTest {
                     });
             ThreadUtils.runOnUiThreadBlocking(pending::complete);
             mActivityTestRule.resumeMainActivityFromLauncher();
+            CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
             ThreadUtils.runOnUiThreadBlocking(
                     () -> assertSame(home, mActivity.getActivityTab().getNativePage()));
             waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
+            assertFalse(
+                    mDevice.hasObject(By.desc(mActivity.getString(R.string.brave_tv_clear_cache))));
             assertFalse(
                     mDevice.hasObject(
                             By.text(mActivity.getString(R.string.brave_tv_cleared_data))));
