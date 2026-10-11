@@ -10,6 +10,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import androidx.core.view.OneShotPreDrawListener;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
@@ -39,6 +40,7 @@ import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tabmodel.TabClosureParams;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
+import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
@@ -200,7 +202,9 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
-    public void closingAndUndoingUnselectedRecentTabRefreshesSameHome() {
+    public void closingAndUndoingUnselectedRecentTabRefreshesSameHome() throws Exception {
+        // UndoIntegrationTest also scopes the native timer with this resettable hook.
+        SnackbarManager.setDurationForTesting(30_000);
         Tab recent = openHomeWithRecentPage();
         TvHomePage home =
                 ThreadUtils.runOnUiThreadBlocking(
@@ -232,14 +236,17 @@ public class TvHomePageTest {
                                         mActivity.getString(
                                                 R.string.brave_tv_home_empty_recent_tabs))));
         assertFalse(mDevice.hasObject(By.descStartsWith("TV recent fixture\n")));
+        CallbackHelper restoredLayout = new CallbackHelper();
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
+                    assertTrue(model.isClosurePending(recent.getId()));
                     model.cancelTabClosure(recent.getId());
                     assertFalse(model.isClosurePending(recent.getId()));
                     assertTrue(mActivity.getActivityTab().getNativePage() == home);
+                    OneShotPreDrawListener.add(home.getView(), restoredLayout::notifyCalled);
                 });
-        CriteriaHelper.pollInstrumentationThread(
-                () -> mDevice.hasObject(By.descStartsWith("TV recent fixture\n")));
+        // The restored card is above the focused footer and may be off screen.
+        restoredLayout.waitForCallback(0);
         mDevice.pressDPadUp();
         waitForFocus(By.descStartsWith("TV recent fixture\n"));
     }
