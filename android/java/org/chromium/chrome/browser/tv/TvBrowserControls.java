@@ -53,8 +53,8 @@ import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
 import org.chromium.chrome.browser.search_engines.settings.BraveSearchEngineAdapter;
-import org.chromium.chrome.browser.tab.EmptyTabObserver;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tab.TabObserver;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tabmodel.TabModelObserver;
 import org.chromium.chrome.browser.tabmodel.TabModelSelectorTabModelObserver;
@@ -1086,8 +1086,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         changed.run();
                     }
                 };
-        EmptyTabObserver tabObserver =
-                new EmptyTabObserver() {
+        TabObserver tabObserver =
+                new TabObserver() {
                     @Override
                     public void onTitleUpdated(Tab tab) {
                         changed.run();

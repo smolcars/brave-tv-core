@@ -127,7 +127,15 @@ public class TvTabsPanelTest {
         focusDown(By.desc(title(TvBrowserControls.TAB_PAGE_SIZE)));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> closeOwned(tabs.get(TvBrowserControls.TAB_PAGE_SIZE - 1)));
-        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.desc(title(0))));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.desc(mActivity.getString(R.string.brave_tv_previous))
+                                        .enabled(false)));
+        waitForFocus(By.desc(title(TvBrowserControls.TAB_PAGE_SIZE)));
+        for (int i = 1; i < TvBrowserControls.TAB_PAGE_SIZE; i++) mDevice.pressDPadUp();
+        waitForFocus(By.desc(title(0)));
+        for (int i = 1; i < TvBrowserControls.TAB_PAGE_SIZE; i++) mDevice.pressDPadDown();
         waitForFocus(By.desc(title(TvBrowserControls.TAB_PAGE_SIZE)));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> closeOwned(tabs.get(TvBrowserControls.TAB_PAGE_SIZE)));

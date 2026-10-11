@@ -578,9 +578,16 @@ public class TvHomePageTest {
                 () ->
                         mBookmarks.deleteBookmark(
                                 items.get(TvBrowserControls.BOOKMARK_PAGE_SIZE - 1)));
-        waitForFocus(By.desc(lastTitle));
         CriteriaHelper.pollInstrumentationThread(
-                () -> mDevice.hasObject(By.desc("TV library fixture 0")));
+                () ->
+                        mDevice.hasObject(
+                                By.desc(mActivity.getString(R.string.brave_tv_previous_bookmarks))
+                                        .enabled(false)));
+        waitForFocus(By.desc(lastTitle));
+        for (int i = 1; i < TvBrowserControls.BOOKMARK_PAGE_SIZE; i++) mDevice.pressDPadUp();
+        waitForFocus(By.desc("TV library fixture 0"));
+        for (int i = 1; i < TvBrowserControls.BOOKMARK_PAGE_SIZE; i++) mDevice.pressDPadDown();
+        waitForFocus(By.desc(lastTitle));
         boolean editing =
                 ThreadUtils.runOnUiThreadBlocking(
                         () ->

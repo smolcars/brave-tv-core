@@ -193,21 +193,9 @@ public class TvHistoryPanelTest {
     }
 
     private void focusMoreHistory() {
-        BySelector more =
-                By.desc(mActivity.getString(R.string.brave_tv_more_history)).focused(true);
-        BySelector previous =
-                By.desc(mActivity.getString(R.string.brave_tv_previous_history)).focused(true);
-        for (int i = 0; i < 12; i++) {
-            if (mDevice.hasObject(more)) return;
-            if (mDevice.hasObject(previous)) {
-                mDevice.pressDPadRight();
-                waitForFocus(more);
-                return;
-            }
-            mDevice.pressDPadDown();
-            mDevice.waitForIdle();
-        }
-        waitForFocus(more);
+        focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_history)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_history)));
     }
 
     private void focusDown(BySelector target) {
