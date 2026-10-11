@@ -13,8 +13,8 @@ import androidx.appcompat.app.AlertDialog;
 
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
-import org.chromium.chrome.browser.download.DownloadUtils;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
+import org.chromium.components.browser_ui.util.DownloadUtils;
 import org.chromium.components.offline_items_collection.ContentId;
 import org.chromium.components.offline_items_collection.LaunchLocation;
 import org.chromium.components.offline_items_collection.LegacyHelpers;
