@@ -10,6 +10,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.os.Build;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inspector.WindowInspector;
+
 import androidx.core.view.OneShotPreDrawListener;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -26,11 +31,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.chromium.base.ThreadUtils;
+import org.chromium.base.test.util.ApplicationTestUtils;
 import org.chromium.base.test.util.CallbackHelper;
 import org.chromium.base.test.util.CommandLineFlags;
 import org.chromium.base.test.util.CriteriaHelper;
 import org.chromium.base.test.util.DoNotBatch;
 import org.chromium.base.test.util.Features.DisableFeatures;
+import org.chromium.base.test.util.MinAndroidSdkLevel;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
@@ -359,5 +366,79 @@ public class TvHomePageTest {
                 mDevice.hasObject(
                         By.text(mActivity.getString(R.string.brave_tv_home_recent_tabs))));
         assertTrue(mDevice.hasObject(By.desc(mActivity.getString(R.string.brave_tv_address))));
+    }
+
+    @Test
+    @MediumTest
+    public void recreatedHomeRestoresNativeTabAndDetachesOldView() {
+        int tabId = ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getId());
+        View oldView =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> mActivity.getActivityTab().getNativePage().getView());
+        mActivity = ApplicationTestUtils.recreateActivity(mActivity);
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab() != null
+                                && mActivity.getActivityTab().getId() == tabId
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertFalse(oldView.isAttachedToWindow());
+                    View newView = mActivity.getActivityTab().getNativePage().getView();
+                    assertTrue(newView != oldView);
+                    assertTrue(newView.isAttachedToWindow());
+                    assertFalse(mActivity.getActivityTab().isIncognito());
+                });
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        assertTrue(mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
+    }
+
+    @Test
+    @MediumTest
+    @MinAndroidSdkLevel(Build.VERSION_CODES.Q)
+    @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
+    public void privateHomeAndControlsKeepNativeWindowProtection() {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab().isIncognito()
+                                && mActivity.getActivityTab().getNativePage() instanceof TvHomePage
+                                && (mActivity.getWindow().getAttributes().flags
+                                                & WindowManager.LayoutParams.FLAG_SECURE)
+                                        != 0);
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_private_controls))));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    boolean dialogFound = false;
+                    for (View root : WindowInspector.getGlobalWindowViews()) {
+                        if (root == mActivity.getWindow().getDecorView() || !root.isShown())
+                            continue;
+                        WindowManager.LayoutParams attributes =
+                                (WindowManager.LayoutParams) root.getLayoutParams();
+                        assertTrue(
+                                (attributes.flags & WindowManager.LayoutParams.FLAG_SECURE) != 0);
+                        dialogFound = true;
+                    }
+                    assertTrue("Actual private dialog window required", dialogFound);
+                });
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getTabModelSelector().selectModel(false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        !mActivity.getActivityTab().isIncognito()
+                                && (mActivity.getWindow().getAttributes().flags
+                                                & WindowManager.LayoutParams.FLAG_SECURE)
+                                        == 0);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
+        assertFalse(
+                mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
     }
 }

@@ -27,6 +27,8 @@ import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /** Native viewport changes must cancel coordinate input without invalidating address input. */
 @RunWith(ChromeJUnit4ClassRunner.class)
 @CommandLineFlags.Add({ChromeSwitches.DISABLE_FIRST_RUN_EXPERIENCE})
@@ -96,5 +98,29 @@ public class TvBrowserSessionTest {
         } finally {
             ThreadUtils.runOnUiThreadBlocking(session::destroy);
         }
+    }
+
+    @Test
+    @MediumTest
+    public void destroyedSessionStopsObservingNativeNavigation() {
+        AtomicInteger changes = new AtomicInteger();
+        int before =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> {
+                            TvBrowserSession session =
+                                    new TvBrowserSession(mActivity, changes::incrementAndGet);
+                            TvBrowserSession.Context context;
+                            try {
+                                context = session.capture();
+                                assertTrue(session.isCurrentDocument(context));
+                            } finally {
+                                session.destroy();
+                            }
+                            assertFalse(session.isCurrentDocument(context));
+                            assertFalse(session.isCurrent(context));
+                            return changes.get();
+                        });
+        mActivityTestRule.loadUrl("data:text/html,TV%20disposed%20observer%20fixture");
+        ThreadUtils.runOnUiThreadBlocking(() -> assertEquals(before, changes.get()));
     }
 }
