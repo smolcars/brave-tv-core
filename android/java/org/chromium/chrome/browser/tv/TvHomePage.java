@@ -352,6 +352,7 @@ public final class TvHomePage extends BasicNativePage {
         }
     }
 
+    /** UI thread only. Returns false for a stale Home; otherwise schedules Settings focus. */
     boolean focusSettings() {
         if (!isCurrentHome()) return false;
         mSettingsAction.requestFocus();

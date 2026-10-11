@@ -204,12 +204,7 @@ public class TvHomePageTest {
         }
     }
 
-    @Test
-    @MediumTest
-    public void homeSettingsBackRestoresHomeInvoker() {
-        TvHomePage home =
-                ThreadUtils.runOnUiThreadBlocking(
-                        () -> (TvHomePage) mActivity.getActivityTab().getNativePage());
+    private void openSettingsFromHome() {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         mDevice.pressDPadDown();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
@@ -219,6 +214,15 @@ public class TvHomePageTest {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+    }
+
+    @Test
+    @MediumTest
+    public void homeSettingsBackRestoresHomeInvoker() {
+        TvHomePage home =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> (TvHomePage) mActivity.getActivityTab().getNativePage());
+        openSettingsFromHome();
         mDevice.pressBack();
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
@@ -229,15 +233,7 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     public void nestedClearDataBackRetainsHomeSettingsInvoker() {
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
-        mDevice.pressDPadDown();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
-        mDevice.pressDPadRight();
-        mDevice.pressDPadRight();
-        mDevice.pressDPadRight();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
-        mDevice.pressDPadCenter();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+        openSettingsFromHome();
         mDevice.pressDPadDown();
         waitForFocus(By.desc(mActivity.getString(R.string.content_filters_title)));
         mDevice.pressDPadDown();
@@ -268,6 +264,31 @@ public class TvHomePageTest {
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
         assertFalse(
                 mDevice.hasObject(By.desc(mActivity.getString(R.string.brave_tv_search_engine))));
+    }
+
+    @Test
+    @MediumTest
+    public void settingsEntryRejectsNormalHomeAfterPrivateSelection() {
+        TvHomePage normalHome =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> (TvHomePage) mActivity.getActivityTab().getNativePage());
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab().isIncognito()
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    Tab privateTab = mActivity.getActivityTab();
+                    Object privateHome = privateTab.getNativePage();
+                    mActivity.showTvSettings(normalHome);
+                    assertTrue(mActivity.getTabModelSelector().isIncognitoSelected());
+                    assertTrue(mActivity.getActivityTab() == privateTab);
+                    assertTrue(privateTab.getNativePage() == privateHome);
+                });
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
     }
 
     @Test

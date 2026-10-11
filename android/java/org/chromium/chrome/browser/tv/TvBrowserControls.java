@@ -1218,12 +1218,17 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         showSettings(null);
     }
 
+    /**
+     * UI thread only. Null returns to Controls; an exact selected Home restores Settings focus.
+     * Stale owners are rejected, and valid Home focus is scheduled after dialog dismissal.
+     */
     public void showSettings(@Nullable TvHomePage home) {
         if (!isAlive()) return;
         Tab tab = mActivity.getActivityTab();
-        if (tab == null || !canAccessTabs(tab.isIncognito())) return;
-        TvBrowserSession.Context context = mSession.capture();
+        if (tab == null) return;
         if (home != null && tab.getNativePage() != home) return;
+        if (!canAccessTabs(tab.isIncognito())) return;
+        TvBrowserSession.Context context = mSession.capture();
         Runnable onReturn =
                 home == null
                         ? this::returnToControls
