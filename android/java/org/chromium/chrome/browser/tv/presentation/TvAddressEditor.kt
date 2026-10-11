@@ -114,9 +114,9 @@ object TvAddressEditor {
                     InterceptPlatformTextInput(interceptor = remember {
                         PlatformTextInputInterceptor { request, next ->
                             next.startInputMethod(object : PlatformTextInputMethodRequest {
-                                override fun createInputConnection(outAttrs: EditorInfo): InputConnection {
-                                    val connection = request.createInputConnection(outAttrs)
-                                    outAttrs.imeOptions = outAttrs.imeOptions or
+                                override fun createInputConnection(outAttributes: EditorInfo): InputConnection {
+                                    val connection = request.createInputConnection(outAttributes)
+                                    outAttributes.imeOptions = outAttributes.imeOptions or
                                         EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING or
                                         EditorInfo.IME_FLAG_NO_EXTRACT_UI or EditorInfo.IME_FLAG_NO_FULLSCREEN
                                     return connection
