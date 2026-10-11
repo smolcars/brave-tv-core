@@ -100,7 +100,9 @@ object TvPresentation {
     }
 
     sealed interface PanelEntry
-    class Description(val text: String) : PanelEntry
+    class Description(text: String) : PanelEntry {
+        var text by mutableStateOf(text)
+    }
     class ActionRow(val actions: List<Action>) : PanelEntry
     class NativeContent(val view: View, val heightDp: Int) : PanelEntry
 
@@ -323,7 +325,7 @@ object TvPresentation {
     }
 
     /** UI thread only. Entries are complete before creation; native dialog owns their lifetime.
-     * The context owns lifecycle/saved state. Only actions may update while shown. */
+     * The context owns lifecycle/saved state. Actions and descriptions may update while shown. */
     @JvmStatic
     fun panel(
         context: Context, title: String, subtitle: String, backHint: String,

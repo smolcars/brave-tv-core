@@ -42,6 +42,8 @@ import org.chromium.chrome.browser.bookmarks.BookmarkModel;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataBridge;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
 import org.chromium.chrome.browser.browsing_data.TimePeriod;
+import org.chromium.chrome.browser.download.DownloadManagerService;
+import org.chromium.chrome.browser.download.items.OfflineContentAggregatorFactory;
 import org.chromium.chrome.browser.omnibox.suggestions.AutocompleteController;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
 import org.chromium.chrome.browser.preferences.Pref;
@@ -95,6 +97,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
+    private @Nullable TvDownloadsPanel mDownloadsPanel;
     private @Nullable TvFilterPanel mFilterPanel;
     private @Nullable TvMediaPanel mMediaPanel;
     private final @Nullable ModalDialogManager mModalDialogs;
@@ -448,7 +451,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void showControls(boolean restoreFocus) {
         if (!isAlive()) return;
-        if (mHistoryPanel != null || mFilterPanel != null || mMediaPanel != null) dismissDialog();
+        if (mHistoryPanel != null
+                || mDownloadsPanel != null
+                || mFilterPanel != null
+                || mMediaPanel != null) dismissDialog();
         detachCursor();
         if (mDialog != null && mDialog.isShowing()) return;
         Tab tab = mActivity.getActivityTab();
@@ -522,6 +528,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPhoneRemote.invalidate();
         if (!isAlive()) return;
         TvBrowserSession.Context addressContext = mAddressContext;
+        if (mDownloadsPanel != null) mDownloadsPanel.onBrowserStateChanged();
         if (addressContext != null) {
             TvBrowserSession.Context current = mSession.capture();
             // Capture can synchronously notify an ownership change and dismiss this editor.
@@ -578,6 +585,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         addComposeControl(actions, R.string.brave_tv_bookmarks, tab != null, context);
         addComposeControl(
                 actions, R.string.brave_tv_history, tab != null && !tab.isIncognito(), context);
+        addComposeControl(
+                actions, R.string.brave_tv_downloads, tab != null && !tab.isIncognito(), context);
         addComposeControl(actions, R.string.brave_tv_shields, isWebTab(tab), context);
         addComposeControl(actions, R.string.brave_tv_settings, true, context);
         addComposeControl(actions, R.string.brave_tv_scroll, currentPage() != null, context);
@@ -619,6 +628,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mControlsView = null;
         mControlsTab = null;
         mOnDataCleared = null;
+        if (mDownloadsPanel != null) {
+            mDownloadsPanel.destroy();
+            mDownloadsPanel = null;
+        }
         if (mMediaPanel != null) {
             mMediaPanel.destroy();
             mMediaPanel = null;
@@ -1511,6 +1524,20 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             if (tab == null || tab.isDestroyed() || tab.isIncognito()) return;
             mHistoryPanel = new TvHistoryPanel(mActivity, tab, this::returnToControls);
             mHistoryPanel.show();
+        } else if (action == R.string.brave_tv_downloads) {
+            Tab tab = mActivity.getActivityTab();
+            if (tab == null || tab.isDestroyed() || tab.isIncognito()) return;
+            mDownloadsPanel =
+                    new TvDownloadsPanel(
+                            mActivity,
+                            mSession,
+                            OfflineContentAggregatorFactory.get(),
+                            item ->
+                                    DownloadManagerService.getDownloadManagerService()
+                                            .removeDownload(
+                                                    item.id.id, null, item.externallyRemoved),
+                            this::returnToControls);
+            mDownloadsPanel.show();
         } else if (action == R.string.brave_tv_settings) {
             showSettings();
         } else if (action == R.string.brave_tv_playback) {

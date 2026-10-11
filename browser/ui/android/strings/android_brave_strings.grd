@@ -3971,6 +3971,31 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_OPEN_BOOKMARK" desc="TV button to open the selected saved webpage in the current tab.">Open bookmark</message>
     <message name="IDS_BRAVE_TV_REMOVE_BOOKMARK" desc="TV button to remove the selected saved webpage from bookmarks.">Remove bookmark</message>
     <message name="IDS_BRAVE_TV_REMOVE_BOOKMARK_QUESTION" desc="Title of the TV confirmation panel for deleting one bookmark.">Remove this bookmark?</message>
+    <message name="IDS_BRAVE_TV_DOWNLOADS" desc="TV button and panel title for normal browser downloads.">Downloads</message>
+    <message name="IDS_BRAVE_TV_LOADING_DOWNLOADS" desc="TV status while querying existing native downloads.">Loading downloads…</message>
+    <message name="IDS_BRAVE_TV_EMPTY_DOWNLOADS" desc="TV description when there are no normal browser downloads.">No downloads yet</message>
+    <message name="IDS_BRAVE_TV_PREVIOUS_DOWNLOADS" desc="TV button for the preceding page of downloads.">Previous downloads</message>
+    <message name="IDS_BRAVE_TV_MORE_DOWNLOADS" desc="TV button for the next page of downloads.">More downloads</message>
+    <message name="IDS_BRAVE_TV_REFRESH_DOWNLOADS" desc="TV button to refresh download entries after additions or removals.">Refresh downloads</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_MISSING" desc="TV status when another app has removed a downloaded file.">File is missing</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_BLOCKED" desc="TV status for a dangerous download; this panel cannot approve it.">Blocked by download protection</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_COMPLETE" desc="TV status for a completed native download.">Complete</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_IN_PROGRESS" desc="TV status for a native download currently receiving bytes.">Downloading</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_PAUSED" desc="TV status for a paused native download.">Paused</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_PENDING" desc="TV status for a download waiting for its native prerequisites.">Waiting</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_CANCELLED" desc="TV status for a native download that was cancelled.">Cancelled</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_FAILED" desc="TV status for an interrupted or failed native download.">Download interrupted or failed</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_UNAVAILABLE" desc="TV recovery description when a selected download no longer exists or is inaccessible.">This download is no longer available. Refresh to see current downloads.</message>
+    <message name="IDS_BRAVE_TV_DOWNLOAD_CHANGED" desc="TV error when a native download changed before a requested action.">This download changed. Choose an available action.</message>
+    <message name="IDS_BRAVE_TV_OPEN_DOWNLOAD" desc="TV button to open a completed safe file through the native download owner.">Open file</message>
+    <message name="IDS_BRAVE_TV_PAUSE_DOWNLOAD" desc="TV button to pause an active download.">Pause download</message>
+    <message name="IDS_BRAVE_TV_RESUME_DOWNLOAD" desc="TV button to resume a paused or interrupted resumable download.">Resume download</message>
+    <message name="IDS_BRAVE_TV_CANCEL_DOWNLOAD" desc="TV button and confirmation title for stopping an active download.">Cancel download</message>
+    <message name="IDS_BRAVE_TV_REMOVE_DOWNLOAD" desc="TV button and confirmation title for removing a completed download entry without deleting its file.">Remove from list</message>
+    <message name="IDS_BRAVE_TV_DELETE_DOWNLOAD" desc="TV button and confirmation title for deleting a downloaded file and its entry.">Delete file</message>
+    <message name="IDS_BRAVE_TV_REMOVE_DOWNLOAD_SCOPE" desc="TV confirmation description; removing this entry keeps its downloaded file.">Remove <ph name="TITLE">%s<ex>Example.pdf</ex></ph> from the downloads list. The file stays on this device.</message>
+    <message name="IDS_BRAVE_TV_DELETE_DOWNLOAD_SCOPE" desc="TV confirmation description warning that native file deletion also removes its download entry.">Delete <ph name="TITLE">%s<ex>Example.pdf</ex></ph> from this device and the downloads list. This cannot be undone.</message>
+    <message name="IDS_BRAVE_TV_CANCEL_DOWNLOAD_SCOPE" desc="TV confirmation description for stopping one active download.">Stop downloading <ph name="TITLE">%s<ex>Example.pdf</ex></ph>. The incomplete download will not be opened.</message>
     <message name="IDS_BRAVE_TV_HISTORY" desc="TV button to open normal browsing history.">History</message>
     <message name="IDS_BRAVE_TV_LOADING_HISTORY" desc="TV history query in progress.">Loading history…</message>
     <message name="IDS_BRAVE_TV_EMPTY_HISTORY" desc="TV history list has no entries.">No browsing history</message>

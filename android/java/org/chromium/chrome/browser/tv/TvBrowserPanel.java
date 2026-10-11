@@ -46,9 +46,11 @@ final class TvBrowserPanel {
         return Math.round(value * mActivity.getResources().getDisplayMetrics().density);
     }
 
-    void addDescription(String text) {
+    TvPresentation.Description addDescription(String text) {
         mRow = null;
-        mEntries.add(new TvPresentation.Description(text));
+        TvPresentation.Description entry = new TvPresentation.Description(text);
+        mEntries.add(entry);
+        return entry;
     }
 
     TvPresentation.Action addAction(int label, boolean enabled, Runnable action) {
