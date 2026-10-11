@@ -75,6 +75,11 @@ public final class TvRemoteInput {
         mSelectPressed = false;
     }
 
+    /** Resume after native UI without reusing a held press or stale viewport bounds. */
+    public boolean resume() {
+        return mMode != Mode.CONTROLS && activate(mMode);
+    }
+
     public boolean onKey(Key key, boolean down, int repeat, boolean canceled) {
         if (mMode == Mode.CONTROLS || key == Key.OTHER) return false;
         if (mTarget.getWidth() <= 0 || mTarget.getHeight() <= 0) {

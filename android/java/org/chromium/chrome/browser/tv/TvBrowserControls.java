@@ -102,13 +102,20 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable TvMediaPanel mMediaPanel;
     private final @Nullable ModalDialogManager mModalDialogs;
     private @Nullable ContentView mModalReturnPage;
+    private @Nullable TvBrowserSession.Context mModalReturnContext;
     private final ModalDialogManager.ModalDialogManagerObserver mModalObserver =
             new ModalDialogManager.ModalDialogManagerObserver() {
                 @Override
                 public void onDialogShown(View dialogView) {
                     if (!isAlive()) return;
-                    mModalReturnPage = currentPage();
-                    detachCursor();
+                    if (mModalReturnPage == null) {
+                        mModalReturnPage = currentPage();
+                        if (mModalReturnPage != null) mModalReturnContext = mSession.capture();
+                    }
+                    mInput.cancelPress();
+                    mPressedContext = null;
+                    mCursorView.removeCallbacks(mHideCursor);
+                    mCursorView.setVisibility(View.INVISIBLE);
                     OneShotPreDrawListener.add(dialogView, () -> focusNativeDialog(dialogView));
                 }
 
@@ -265,8 +272,23 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 || mModalDialogs == null
                 || mModalDialogs.isShowing()) return;
         ContentView page = mModalReturnPage;
+        if (page == null) return;
+        TvBrowserSession.Context context = mModalReturnContext;
         mModalReturnPage = null;
-        if (page != null && page == currentPage() && page.isAttachedToWindow()) page.requestFocus();
+        mModalReturnContext = null;
+        if (page != currentPage()
+                || !page.isAttachedToWindow()
+                || !mSession.isCurrentDocument(context)
+                || (context != null
+                        && context.tab != null
+                        && context.tab.isIncognito()
+                        && mPrivateTabsLocked.getAsBoolean())) {
+            detachCursor();
+            return;
+        }
+        if (nativeUiOwnsInput(false)) return;
+        page.requestFocus();
+        if (mPage == page && !keyboardVisible()) mInput.resume();
     }
 
     private boolean keyboardVisible() {
@@ -387,6 +409,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPhoneRemote.stop();
         mSession.invalidate();
         mModalReturnPage = null;
+        mModalReturnContext = null;
         dismissDialog();
         detachCursor();
     }
@@ -1668,6 +1691,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPhoneRemote.stop();
         mDestroyed = true;
         mModalReturnPage = null;
+        mModalReturnContext = null;
         if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);
         mInput.cancelPress();
         mBackCallback.remove();
