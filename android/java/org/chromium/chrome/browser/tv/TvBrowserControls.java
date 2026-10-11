@@ -72,6 +72,7 @@ import org.chromium.components.search_engines.TemplateUrlService;
 import org.chromium.components.security_state.ConnectionSecurityLevel;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
+import org.chromium.content_public.browser.ImeAdapter;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.NavigationHandle;
 import org.chromium.content_public.browser.WebContents;
@@ -843,6 +844,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 || expectedContents.isDestroyed()
                 || keyboardVisible()
                 || nativeUiOwnsInput(false)) return;
+        ImeAdapter input = ImeAdapter.fromWebContents(expectedContents);
+        if (input != null && input.focusedNodeEditable()) return;
         detachCursor();
         TvBrowserPanel panel =
                 new TvBrowserPanel(

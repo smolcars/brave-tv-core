@@ -26,9 +26,12 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inspector.WindowInspector;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.Nullable;
 import androidx.core.view.OneShotPreDrawListener;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
@@ -78,6 +81,7 @@ import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
+import org.chromium.content_public.browser.ImeAdapter;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.test.util.DOMUtils;
@@ -1188,6 +1192,47 @@ public class TvHomePageTest {
         mActivityTestRule.loadUrl(URL);
         CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(unavailable));
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+    }
+
+    @Test
+    @MediumTest
+    public void unavailableExternalLinkDoesNotTakeFocusedEditorWithHiddenKeyboard()
+            throws Exception {
+        mActivityTestRule.loadUrl("data:text/html,<input id='editor' aria-label='TV native editor'>");
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(tab::getWebContents);
+        assertNotNull(contents);
+        assertTrue(DOMUtils.clickNode(contents, "editor"));
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    ImeAdapter input = ImeAdapter.fromWebContents(contents);
+                    return input != null && input.focusedNodeEditable();
+                });
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    InputMethodManager manager =
+                            mActivity.getSystemService(InputMethodManager.class);
+                    assertNotNull(manager);
+                    manager.hideSoftInputFromWindow(tab.getContentView().getWindowToken(), 0);
+                });
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    var insets = ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
+                    return insets != null && !insets.isVisible(WindowInsetsCompat.Type.ime());
+                });
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    ImeAdapter input = ImeAdapter.fromWebContents(contents);
+                    assertNotNull(input);
+                    assertTrue(input.focusedNodeEditable());
+                    mActivity.showTvUnavailableExternalLink(contents);
+                    assertSame(tab, mActivity.getActivityTab());
+                    assertSame(contents, tab.getWebContents());
+                    assertTrue(input.focusedNodeEditable());
+                    assertTrue(mActivity.hasWindowFocus());
+                });
+        assertFalse(
+                mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_link_unavailable))));
     }
 
     @Test
