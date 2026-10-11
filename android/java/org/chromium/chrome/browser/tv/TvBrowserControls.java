@@ -177,28 +177,35 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 new TabModelSelectorTabModelObserver(activity.getTabModelSelector()) {
                     @Override
                     public void didRemoveTabForClosure(Tab tab) {
-                        if (!tab.isIncognito()) {
-                            // Let the model finish closing/selecting before creating TV home.
-                            mActivity
-                                    .getWindow()
-                                    .getDecorView()
-                                    .post(TvBrowserControls.this::restoreEmptyHome);
-                        }
+                        boolean closedPrivateTab = tab.isIncognito();
+                        // Let the model finish closing/selecting before recovering TV home.
+                        mActivity
+                                .getWindow()
+                                .getDecorView()
+                                .post(() -> restoreUsableHome(closedPrivateTab));
                     }
                 };
         mSession = new TvBrowserSession(activity, this::browserStateChanged);
-        mActivity.getWindow().getDecorView().post(this::restoreEmptyHome);
+        mActivity.getWindow().getDecorView().post(() -> restoreUsableHome(false));
     }
 
-    private void restoreEmptyHome() {
+    private void restoreUsableHome(boolean closedPrivateTab) {
         if (!isAlive()
                 || !mActivity.hasWindowFocus()
                 || !mActivity.areTabModelsInitialized()
                 || mActivity.getTabModelSelector().isIncognitoSelected()
-                || mActivity.getTabModelSelector().getModel(false).getCount() != 0
                 || (mModalDialogs != null && mModalDialogs.isShowing())
                 || (mDialog != null && mDialog.isShowing())) return;
-        mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false);
+        if (mActivity.getTabModelSelector().getModel(false).getCount() == 0) {
+            mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false);
+        } else if (closedPrivateTab
+                && mActivity.getTabModelSelector().getModel(true).getCount() == 0) {
+            Tab current = mActivity.getActivityTab();
+            if (current != null
+                    && !current.isDestroyed()
+                    && !current.isIncognito()
+                    && current.getNativePage() instanceof TvHomePage home) home.focusAddress();
+        }
     }
 
     boolean isPageFullscreen() {
@@ -405,7 +412,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             mPressedContext = null;
         } else {
             restoreModalPageFocus();
-            restoreEmptyHome();
+            restoreUsableHome(false);
         }
     }
 
