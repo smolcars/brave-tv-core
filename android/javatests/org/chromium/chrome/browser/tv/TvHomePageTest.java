@@ -390,7 +390,7 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
-    public void dedicatedDpadFromVirtualKeyboardClicksOnce() {
+    public void dedicatedDpadFromVirtualKeyboardClicksOnce() throws Exception {
         mActivityTestRule.loadUrl(
                 "data:text/html,<style>button{position:fixed;inset:0}</style>"
                         + "<button onclick='this.textContent=\"Pointer clicks \"+"
