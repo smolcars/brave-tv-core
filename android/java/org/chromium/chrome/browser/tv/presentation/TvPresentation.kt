@@ -323,7 +323,9 @@ object TvPresentation {
     }
 
     /** UI thread only. Entries are complete before creation; native dialog owns their lifetime.
-     * The context owns lifecycle/saved state. Actions and descriptions may update while shown. */
+     * The context owns lifecycle/saved state. Actions and descriptions may update while shown.
+     * Restoration may focus a disabled preferred action; activation remains blocked.
+     * Ordinary entry selects the preferred enabled action, then the first enabled action. */
     @JvmStatic
     fun panel(
         context: Context, title: String, subtitle: String, backHint: String,
