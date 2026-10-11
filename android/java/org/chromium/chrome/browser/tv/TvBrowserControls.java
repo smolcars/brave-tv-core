@@ -1010,7 +1010,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void showBookmarks(
             TvBrowserSession.Context context, @Nullable BookmarkId folderId, int start) {
-        showBookmarks(context, folderId, start, null, R.string.brave_tv_save_bookmark);
+        showBookmarks(context, folderId, start, null, 0);
     }
 
     private void showBookmarks(
@@ -1061,7 +1061,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         int first = Math.max(0, Math.min(selected < 0 ? start : selected, children.size() - 1));
         first -= first % BOOKMARK_PAGE_SIZE;
         int end = Math.min(first + BOOKMARK_PAGE_SIZE, children.size());
-        int preferred = selected >= 0 ? selected + 1 : focusedAction;
+        int preferred =
+                selected >= 0
+                        ? selected + 1
+                        : focusedAction == 0 ? R.string.brave_tv_save_bookmark : focusedAction;
         TvBrowserPanel panel =
                 new TvBrowserPanel(
                         mActivity,
@@ -1072,6 +1075,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 ? mActivity.getString(R.string.brave_tv_empty_bookmarks)
                                 : "",
                         preferred);
+        if (focusedAction != 0) panel.restorePreferredFocus();
         List<TvPresentation.Action> actions = new ArrayList<>();
         actions.add(
                 panel.addAction(
@@ -1142,11 +1146,18 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     }
                 };
         model.addObserver(observer);
-        mBookmarkCleanup =
+        Runnable cleanup =
                 () -> {
                     model.removeObserver(observer);
                     owner.removeCallbacks(refresh);
                 };
+        mBookmarkCleanup = cleanup;
+        panel.setOnDismiss(
+                () -> {
+                    cleanup.run();
+                    if (mBookmarkCleanup == cleanup) mBookmarkCleanup = null;
+                    if (mDialog == dialog) mDialog = null;
+                });
     }
 
     private void saveBookmark(TvBrowserSession.Context context, BookmarkModel model) {

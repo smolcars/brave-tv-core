@@ -327,7 +327,7 @@ object TvPresentation {
     @JvmStatic
     fun panel(
         context: Context, title: String, subtitle: String, backHint: String,
-        entries: List<PanelEntry>, preferredKey: Int,
+        entries: List<PanelEntry>, preferredKey: Int, restorePreferredFocus: Boolean,
     ): View = view(context).apply {
         val actions = entries.filterIsInstance<ActionRow>().flatMap { it.actions }
         val metrics = context.resources.displayMetrics
@@ -366,8 +366,9 @@ object TvPresentation {
                 LaunchedEffect(Unit) {
                     withFrameNanos { }
                     // Native media state can disable an action before the first frame.
-                    val selected = actions.firstOrNull { it.key == preferredKey && it.enabled }
-                        ?: actions.firstOrNull { it.enabled }
+                    val selected = actions.firstOrNull {
+                        it.key == preferredKey && (it.enabled || restorePreferredFocus)
+                    } ?: actions.firstOrNull { it.enabled }
                     selected?.let { initialTargets.getValue(it).requestFocus() }
                 }
             }

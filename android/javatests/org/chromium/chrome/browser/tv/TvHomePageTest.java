@@ -629,6 +629,61 @@ public class TvHomePageTest {
                             mActivity.getString(
                                     R.string.brave_tv_bookmark_folder,
                                     "TV library fixture folder")));
+            mActivityTestRule.loadUrl(URL);
+            mDevice.pressBack();
+            CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> mBookmarks.setBookmarkTitle(items.get(0), "TV library after dismissal"));
+            ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_bookmarks)));
+            assertFalse(mDevice.hasObject(By.text("TV library fixture folder")));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> assertEquals(new GURL(URL), mActivity.getActivityTab().getUrl()));
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                    .setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, editing));
+        }
+    }
+
+    @Test
+    @MediumTest
+    public void bookmarkLibraryPreservesFocusedSaveWhenPolicyDisablesIt() {
+        String url = InstrumentationRegistry.getArguments().getString("tv_bookmark_fixture_url");
+        assertNotNull("Serve the owned bookmarks.html fixture and pass its URL", url);
+        assertEquals("http://10.0.2.2:18088/bookmarks.html", url);
+        mActivityTestRule.loadUrl(url);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("TV bookmark workflow fixture")));
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBookmarks);
+        BySelector save = By.desc(mActivity.getString(R.string.brave_tv_save_bookmark));
+        waitForFocus(save.enabled(true));
+        boolean editing =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () ->
+                                UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                        .getBoolean(Pref.EDIT_BOOKMARKS_ENABLED));
+        try {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                    .setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, false));
+            waitForFocus(save.enabled(false));
+            mDevice.pressDPadCenter();
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            assertTrue(
+                                    mBookmarks.getUserBookmarkIdForTab(mActivity.getActivityTab())
+                                            == null));
+            waitForFocus(save.enabled(false));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                    .setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, true));
+            waitForFocus(save.enabled(true));
+            mDevice.pressBack();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_bookmarks)));
         } finally {
             ThreadUtils.runOnUiThreadBlocking(
                     () ->
