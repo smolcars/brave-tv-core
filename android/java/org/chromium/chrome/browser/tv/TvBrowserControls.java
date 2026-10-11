@@ -828,7 +828,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         }
     }
 
-    /** Explains a native external-navigation rejection without changing its decision. */
+    /**
+     * On the UI thread, explains native rejection for borrowed contents without changing navigation.
+     * Ignores stale, private, background and native-owned input. Disposes the notice and observer on
+     * navigation, renderer loss, contents change or activity pause/destruction.
+     */
     public void showUnavailableExternalLink(WebContents expectedContents) {
         if (!isAlive() || !mActivity.hasWindowFocus() || mDialog != null) return;
         Tab tab = mActivity.getActivityTab();

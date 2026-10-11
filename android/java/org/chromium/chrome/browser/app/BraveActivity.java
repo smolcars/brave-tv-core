@@ -396,6 +396,10 @@ public abstract class BraveActivity extends ChromeActivity
         if (mTvBrowserControls != null) mTvBrowserControls.showTabs();
     }
 
+    /**
+     * UI-thread TV-only notice for borrowed contents after native rejection. Ignores stale, private
+     * and security-owned pages; the TV controller disposes it on navigation or owner destruction.
+     */
     public void showTvUnavailableExternalLink(WebContents expectedContents) {
         if (mTvBrowserControls != null) {
             mTvBrowserControls.showUnavailableExternalLink(expectedContents);
