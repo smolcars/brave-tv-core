@@ -322,22 +322,27 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
     }
 
-    private boolean nativeUiOwnsInput(boolean backToControls) {
-        ContentView page = currentPage();
+    private boolean nativeSecurityOwnsInput() {
         Tab tab = mActivity.getActivityTab();
         WebContents contents = tab == null || tab.isDestroyed() ? null : tab.getWebContents();
-        boolean dangerous =
-                contents != null
+        return mScrimVisible.get()
+                || (contents != null
                         && !contents.isDestroyed()
-                        && SecurityStateModel.isContentDangerous(contents);
+                        && SecurityStateModel.isContentDangerous(contents))
+                || (mActivity.getModalDialogManager() != null
+                        && mActivity.getModalDialogManager().isShowing());
+    }
+
+    private boolean nativeUiOwnsInput(boolean backToControls) {
+        if (nativeSecurityOwnsInput()) return true;
+        ContentView page = currentPage();
+        Tab tab = mActivity.getActivityTab();
         boolean idleNewTabPage =
                 backToControls
                         && tab != null
                         && tab.isNativePage()
                         && UrlUtilities.isNtpUrl(tab.getUrl());
-        if ((page == null && !idleNewTabPage) || mScrimVisible.get() || dangerous) return true;
-        if (mActivity.getModalDialogManager() != null
-                && mActivity.getModalDialogManager().isShowing()) return true;
+        if (page == null && !idleNewTabPage) return true;
         View focus = mActivity.getCurrentFocus();
         // Native dialog dismissal can return focus to Chromium's content host.
         if (focus != null
@@ -469,7 +474,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 || tab.isIncognito()
                 || !mActivity.areTabModelsInitialized()
                 || mActivity.getTabModelSelector().isIncognitoSelected()) return "tv";
-        if (mDialog != null && mDialog.isShowing()) return "controls";
+        if (nativeSecurityOwnsInput()) return "tv";
+        if (mDialog != null && mDialog.isShowing()) {
+            Window window = mDialog.getWindow();
+            return window != null && window.getDecorView().hasWindowFocus() ? "controls" : "tv";
+        }
         // Private and native security owners share guidance without exposing their state.
         if (!mActivity.hasWindowFocus()
                 || nativeUiOwnsInput(true)

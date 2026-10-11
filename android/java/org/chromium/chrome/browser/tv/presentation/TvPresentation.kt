@@ -391,7 +391,9 @@ object TvPresentation {
         }
     }
 
-    /** Nonmodal connection status; D-pad Disconnect remains in native browser controls. */
+    /** UI thread only. Context must own lifecycle/saved state; caller must dispose this view.
+     * Does not request keyboard focus. Pointer/accessibility activation runs open on the UI
+     * thread; D-pad Disconnect remains in native browser controls. */
     @JvmStatic
     fun connectionBadge(context: Context, label: String, open: Runnable): View = view(context).apply {
         isFocusable = false
