@@ -58,6 +58,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LifecycleOwner
@@ -69,6 +70,7 @@ import androidx.tv.material3.Border
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.LocalContentColor
+import androidx.tv.material3.LocalTextStyle
 import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
 
@@ -383,7 +385,14 @@ object TvPresentation {
                 primary = accent, onPrimary = backgroundColor, background = backgroundColor,
                 onBackground = text, surface = surface, onSurface = text,
             ),
-            content = { CompositionLocalProvider(LocalContentColor provides text, content = content) },
+            content = {
+                CompositionLocalProvider(
+                    LocalContentColor provides text,
+                    LocalTextStyle provides LocalTextStyle.current.copy(
+                        textDirection = TextDirection.Content),
+                    content = content,
+                )
+            },
         )
     }
 
