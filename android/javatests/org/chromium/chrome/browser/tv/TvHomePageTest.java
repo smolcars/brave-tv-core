@@ -916,7 +916,7 @@ public class TvHomePageTest {
                 int[] dataTypes,
                 int timePeriod,
                 String[] excludedDomains,
-                String @Nullable [] ignoredDomains) {
+                @Nullable String[] ignoredDomains) {
             ThreadUtils.assertOnUiThread();
             assertSame(mProfile, profile);
             assertFalse(profile.isOffTheRecord());
