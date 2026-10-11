@@ -577,14 +577,19 @@ public class TvHomePageTest {
                             return mBookmarks.getBookmarkById(parent).getTitle();
                         });
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBookmarks);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
         focusDown(By.desc(mActivity.getString(R.string.brave_tv_bookmark_folder, parentTitle)));
         mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text(parentTitle)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_parent_folder)));
         focusDown(
                 By.desc(
                         mActivity.getString(
                                 R.string.brave_tv_bookmark_folder, "TV library fixture folder")));
         mDevice.pressDPadCenter();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_save_bookmark)));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("TV library fixture folder")));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_parent_folder)));
         return items;
     }
 
@@ -596,6 +601,43 @@ public class TvHomePageTest {
             mDevice.waitForIdle();
         }
         waitForFocus(target);
+    }
+
+    @Test
+    @MediumTest
+    public void compactPageInfoUsesNativeOriginAndReturnsToSamePage() {
+        String url =
+                mActivityTestRule.getTestServer().getURL("/chrome/test/data/android/simple.html");
+        mActivityTestRule.loadUrl(url);
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_reload)));
+        mDevice.pressDPadRight();
+        mDevice.pressDPadRight();
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_controls)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_history)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.menu_page_info)));
+        mDevice.pressDPadCenter();
+        BySelector nativeInfo = By.res(mActivity.getPackageName(), "page_info_url_wrapper");
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(nativeInfo));
+        assertTrue(mDevice.hasObject(By.textContains("127.0.0.1")));
+        assertTrue(
+                mDevice.hasObject(By.res(mActivity.getPackageName(), "page_info_connection_row")));
+        mDevice.pressBack();
+        CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(nativeInfo));
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertTrue(mActivity.getActivityTab() == original);
+                    assertEquals(new GURL(url), original.getUrl());
+                });
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.menu_page_info)));
     }
 
     private void openSettingsFromHome() {

@@ -629,6 +629,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         addComposeControl(
                 actions, R.string.brave_tv_downloads, tab != null && !tab.isIncognito(), context);
         addComposeControl(actions, R.string.brave_tv_shields, isWebTab(tab), context);
+        addComposeControl(actions, R.string.menu_page_info, isWebTab(tab), context);
         addComposeControl(actions, R.string.brave_tv_settings, true, context);
         addComposeControl(actions, R.string.brave_tv_scroll, currentPage() != null, context);
         addComposeControl(
@@ -1558,6 +1559,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             showTabs(tab != null && tab.isIncognito(), 0);
         } else if (action == R.string.brave_tv_shields) {
             showShields();
+        } else if (action == R.string.menu_page_info) {
+            if (isWebTab(mActivity.getActivityTab())) {
+                mActivity.onMenuOrKeyboardAction(R.id.info_menu_id, false);
+            }
         } else if (action == R.string.brave_tv_bookmarks) {
             showBookmarks();
         } else if (action == R.string.brave_tv_history) {
