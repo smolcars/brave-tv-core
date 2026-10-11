@@ -5,6 +5,7 @@
 
 package org.chromium.chrome.browser.tv;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -36,6 +37,7 @@ import org.chromium.base.ThreadUtils;
 import org.chromium.base.test.util.ApplicationTestUtils;
 import org.chromium.base.test.util.CallbackHelper;
 import org.chromium.base.test.util.CommandLineFlags;
+import org.chromium.base.test.util.Criteria;
 import org.chromium.base.test.util.CriteriaHelper;
 import org.chromium.base.test.util.DoNotBatch;
 import org.chromium.base.test.util.Features.DisableFeatures;
@@ -46,6 +48,7 @@ import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
+import org.chromium.chrome.browser.layouts.LayoutType;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.browser.tab.TvBrowserControlsVisibilityDelegate;
@@ -214,6 +217,19 @@ public class TvHomePageTest {
                                 && (mActivity.getWindow().getAttributes().flags
                                                 & WindowManager.LayoutParams.FLAG_SECURE)
                                         == 0);
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    Criteria.checkThat(
+                            "Final private closure must return to browsing, not cover normal Home",
+                            mActivity.getLayoutManager().getActiveLayoutType(),
+                            is(LayoutType.BROWSING));
+                    Criteria.checkThat(
+                            mActivity.getActivityTab().getNativePage() instanceof TvHomePage,
+                            is(true));
+                    Criteria.checkThat(
+                            mActivity.getActivityTab().getNativePage().getView().isShown(),
+                            is(true));
+                });
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         assertTrue(mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
         assertFalse(
