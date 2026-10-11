@@ -75,7 +75,11 @@ public final class TvRemoteInput {
         mSelectPressed = false;
     }
 
-    /** Resume after native UI without reusing a held press or stale viewport bounds. */
+    /**
+     * Resume page input after native UI, canceling held OK and clamping to the current viewport.
+     *
+     * @return True on success; false, with state unchanged, in controls mode or with no viewport.
+     */
     public boolean resume() {
         return mMode != Mode.CONTROLS && activate(mMode);
     }
