@@ -148,10 +148,10 @@ public class TvHomePageTest {
         CriteriaHelper.pollUiThread(
                 () -> mActivity.getBrowserControlsManager().getContentOffset() == 0);
         CriteriaHelper.pollUiThread(
-                () ->
-                        !mActivity
-                                .findViewById(R.id.control_container)
-                                .getGlobalVisibleRect(new Rect()));
+                () -> {
+                    View toolbar = mActivity.findViewById(R.id.control_container);
+                    return !toolbar.isShown() || !toolbar.getGlobalVisibleRect(new Rect());
+                });
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     assertTrue(mActivity.isTelevision());
