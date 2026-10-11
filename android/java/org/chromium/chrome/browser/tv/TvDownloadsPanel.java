@@ -8,6 +8,7 @@ package org.chromium.chrome.browser.tv;
 import android.text.format.Formatter;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 
 import org.chromium.chrome.R;
@@ -30,9 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-/** Bounded normal-download presentation; the existing provider owns storage and opening. */
+/** UI-thread presentation; the existing provider owns normal-download storage and opening. */
 final class TvDownloadsPanel implements OfflineContentProvider.Observer {
-    private static final int PAGE_SIZE = 8;
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    static final int PAGE_SIZE = 8;
 
     private final BraveActivity mActivity;
     private final TvBrowserSession mSession;
@@ -50,6 +52,11 @@ final class TvDownloadsPanel implements OfflineContentProvider.Observer {
     private int mRequest;
     private boolean mDestroyed;
 
+    /**
+     * Registers with a provider whose callbacks run on the UI thread. The caller owns the session
+     * and must destroy this panel on close, pause or owner change. removeHistory removes only the
+     * native record, preserving its file; onClose must dispose the panel before restoring focus.
+     */
     TvDownloadsPanel(
             BraveActivity activity,
             TvBrowserSession session,

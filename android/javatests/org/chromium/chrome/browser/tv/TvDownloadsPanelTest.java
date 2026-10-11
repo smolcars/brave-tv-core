@@ -210,8 +210,8 @@ public class TvDownloadsPanelTest {
     public void pagingExcludesPrivateAndProgressKeepsFocus() {
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
-                    for (int i = 0; i < 9; i++) mItems.add(item(i));
-                    OfflineItem privateItem = item(10);
+                    for (int i = 0; i <= TvDownloadsPanel.PAGE_SIZE; i++) mItems.add(item(i));
+                    OfflineItem privateItem = item(TvDownloadsPanel.PAGE_SIZE + 1);
                     privateItem.isOffTheRecord = true;
                     privateItem.title = "Private file must stay hidden";
                     privateItem.creationTimeMs = 2000;
@@ -220,7 +220,9 @@ public class TvDownloadsPanelTest {
                 });
         focus(By.descStartsWith("TV file 0\n"));
         assertFalse(mDevice.hasObject(By.descStartsWith("Private file")));
-        assertFalse(mDevice.hasObject(By.descStartsWith("TV file 8\n")));
+        assertFalse(
+                mDevice.hasObject(
+                        By.descStartsWith("TV file " + TvDownloadsPanel.PAGE_SIZE + "\n")));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     mItems.get(0).receivedBytes = 987;
@@ -228,7 +230,7 @@ public class TvDownloadsPanelTest {
                 });
         focus(By.descStartsWith("TV file 0\n"));
         click(label(R.string.brave_tv_more_downloads));
-        focus(By.descStartsWith("TV file 8\n"));
+        focus(By.descStartsWith("TV file " + TvDownloadsPanel.PAGE_SIZE + "\n"));
         assertFalse(mDevice.hasObject(By.descStartsWith("TV file 0\n")));
         assertFalse(mDevice.hasObject(By.descStartsWith("Private file")));
     }
