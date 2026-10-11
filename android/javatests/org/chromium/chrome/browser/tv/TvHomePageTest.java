@@ -34,6 +34,7 @@ import org.junit.runner.RunWith;
 
 import org.chromium.base.Callback;
 import org.chromium.base.ThreadUtils;
+import org.chromium.base.Token;
 import org.chromium.base.test.util.ApplicationTestUtils;
 import org.chromium.base.test.util.CallbackHelper;
 import org.chromium.base.test.util.CommandLineFlags;
@@ -80,6 +81,7 @@ public class TvHomePageTest {
     private BraveActivity mActivity;
     private BookmarkModel mBookmarks;
     private UiDevice mDevice;
+    private Token mClosingGroupId;
 
     @Before
     public void setUp() throws Exception {
@@ -203,6 +205,7 @@ public class TvHomePageTest {
                     assertEquals(1, model.getCount());
                     assertEquals(1, model.getTabGroupCount());
                     assertNotNull(original.getTabGroupId());
+                    assertEquals(mClosingGroupId, original.getTabGroupId());
                     assertEquals(new GURL(URL), original.getUrl());
                 });
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
@@ -214,7 +217,11 @@ public class TvHomePageTest {
                         By.text(mActivity.getString(R.string.close_from_group_dialog_title))));
         mDevice.pressDPadCenter();
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
-        ThreadUtils.runOnUiThreadBlocking(() -> assertTrue(mActivity.getActivityTab() == original));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertTrue(mActivity.getActivityTab() == original);
+                    assertEquals(mClosingGroupId, original.getTabGroupId());
+                });
     }
 
     @Test
@@ -246,7 +253,8 @@ public class TvHomePageTest {
                     TabModel model = mActivity.getTabModelSelector().getModel(false);
                     assertEquals(1, model.getCount());
                     model.createSingleTabGroup(original);
-                    assertNotNull(original.getTabGroupId());
+                    mClosingGroupId = original.getTabGroupId();
+                    assertNotNull(mClosingGroupId);
                     assertEquals(1, model.getTabGroupCount());
                     mActivity.onMenuOrKeyboardAction(R.id.close_tab, false);
                 });
@@ -488,16 +496,25 @@ public class TvHomePageTest {
     @MediumTest
     public void bookmarkLibraryPagesAndOpensNativeSavedPage() {
         openOwnedBookmarkFolder();
-        assertFalse(mDevice.hasObject(By.desc("TV library fixture 8")));
+        String finalTitle = "TV library fixture " + TvBrowserControls.BOOKMARK_PAGE_SIZE;
+        assertFalse(mDevice.hasObject(By.desc(finalTitle)));
         focusDown(By.desc(mActivity.getString(R.string.brave_tv_more_bookmarks)));
         mDevice.pressDPadCenter();
-        focusDown(By.desc("TV library fixture 8"));
+        focusDown(By.desc(finalTitle));
         assertFalse(mDevice.hasObject(By.desc("TV library fixture 0")));
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
         mDevice.pressDPadCenter();
         CriteriaHelper.pollUiThread(
-                () -> mActivity.getActivityTab().getUrl().equals(new GURL(URL + "#library8")));
+                () ->
+                        mActivity
+                                .getActivityTab()
+                                .getUrl()
+                                .equals(
+                                        new GURL(
+                                                URL
+                                                        + "#library"
+                                                        + TvBrowserControls.BOOKMARK_PAGE_SIZE)));
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
     }
 
@@ -546,7 +563,7 @@ public class TvHomePageTest {
                                     mBookmarks.addFolder(parent, 0, "TV library fixture folder");
                             assertNotNull(folder);
                             mOwnedBookmarks.add(folder);
-                            for (int i = 0; i < 9; i++) {
+                            for (int i = 0; i <= TvBrowserControls.BOOKMARK_PAGE_SIZE; i++) {
                                 BookmarkId id =
                                         mBookmarks.addBookmark(
                                                 folder,

@@ -76,6 +76,8 @@ import java.util.function.BooleanSupplier;
 
 /** TV-only adapter around the existing browser UI and the active Chromium content view. */
 public final class TvBrowserControls implements TvRemoteInput.Target {
+    static final int BOOKMARK_PAGE_SIZE = 8;
+
     private final BraveActivity mActivity;
     private final BackPressManager mBackPressManager;
     private final NonNullObservableSupplier<Boolean> mScrimVisible;
@@ -1052,7 +1054,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         panel.addAction(R.string.brave_tv_parent_folder, !atRoot, back);
         panel.addAction(R.string.brave_tv_controls, true, this::returnToControls);
         int first = Math.max(0, Math.min(start, Math.max(0, children.size() - 1)));
-        int end = Math.min(first + 8, children.size());
+        int end = Math.min(first + BOOKMARK_PAGE_SIZE, children.size());
         for (int i = first; i < end; i++) {
             BookmarkId childId = children.get(i);
             BookmarkItem item = model.getBookmarkById(childId);
@@ -1068,7 +1070,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         panel.addAction(
                 R.string.brave_tv_previous_bookmarks,
                 first > 0,
-                () -> showBookmarks(context, id, Math.max(0, first - 8)));
+                () -> showBookmarks(context, id, Math.max(0, first - BOOKMARK_PAGE_SIZE)));
         panel.addAction(
                 R.string.brave_tv_more_bookmarks,
                 end < children.size(),
