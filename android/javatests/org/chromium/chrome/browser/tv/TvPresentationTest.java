@@ -111,6 +111,20 @@ public class TvPresentationTest {
         return mDevice.findObject(By.desc(label));
     }
 
+    private void visibleWithEdgeSpace(String label) {
+        int bottom =
+                mDevice.getDisplayHeight()
+                        - Math.round(12 * mActivity.getResources().getDisplayMetrics().density);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> {
+                    UiObject2 target = mDevice.findObject(By.desc(label));
+                    return target != null
+                            && target.isFocused()
+                            && target.getVisibleBounds().height() > 0
+                            && target.getVisibleBounds().bottom <= bottom;
+                });
+    }
+
     @Test
     @MediumTest
     public void narrowHomeShortcutsKeepFocusAndCallbacks() {
@@ -195,6 +209,39 @@ public class TvPresentationTest {
         focused("Downloads");
         mDevice.pressBack();
         focused("More controls");
+        visibleWithEdgeSpace("More controls");
         assertTrue(ThreadUtils.runOnUiThreadBlocking(mDialog::isShowing));
+    }
+
+    @Test
+    @MediumTest
+    public void longPanelTitleKeepsConservativeActionsReachable() {
+        AtomicInteger cancels = new AtomicInteger();
+        AtomicInteger deletes = new AtomicInteger();
+        String cancel = mActivity.getString(R.string.cancel);
+        String delete = mActivity.getString(R.string.brave_tv_delete_download);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    TvBrowserPanel panel =
+                            new TvBrowserPanel(
+                                    mActivity,
+                                    "Long synthetic title العربية 日本語 ".repeat(20),
+                                    "Synthetic item only",
+                                    R.string.cancel);
+                    panel.addAction(R.string.cancel, true, cancels::incrementAndGet);
+                    panel.addAction(
+                            R.string.brave_tv_delete_download, true, deletes::incrementAndGet);
+                    mDialog = panel.show(() -> {});
+                });
+        focused(cancel);
+        visibleWithEdgeSpace(cancel);
+        mDevice.pressDPadRight();
+        focused(delete);
+        visibleWithEdgeSpace(delete);
+        mDevice.pressDPadLeft();
+        focused(cancel);
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(() -> cancels.get() == 1);
+        assertEquals(0, deletes.get());
     }
 }
