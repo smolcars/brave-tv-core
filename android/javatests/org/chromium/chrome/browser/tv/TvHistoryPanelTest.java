@@ -94,9 +94,7 @@ public class TvHistoryPanelTest {
         showHistory();
         waitForFocus(row(VISIT_COUNT));
         for (int page = 1; page < PAGE_COUNT; page++) {
-            focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_history)));
-            mDevice.pressDPadRight();
-            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_history)));
+            focusMoreHistory();
             mDevice.pressDPadCenter();
             waitForFocus(row(VISIT_COUNT - page * TvHistoryPanel.PAGE_SIZE));
         }
@@ -192,6 +190,22 @@ public class TvHistoryPanelTest {
                     UiObject2 item = mDevice.findObject(target);
                     return item != null && item.isFocused();
                 });
+    }
+
+    private void focusMoreHistory() {
+        BySelector more = By.desc(mActivity.getString(R.string.brave_tv_more_history));
+        BySelector previous = By.desc(mActivity.getString(R.string.brave_tv_previous_history));
+        for (int i = 0; i < 12; i++) {
+            if (mDevice.hasObject(more.focused(true))) return;
+            if (mDevice.hasObject(previous.focused(true))) {
+                mDevice.pressDPadRight();
+                waitForFocus(more);
+                return;
+            }
+            mDevice.pressDPadDown();
+            mDevice.waitForIdle();
+        }
+        waitForFocus(more);
     }
 
     private void focusDown(BySelector target) {
