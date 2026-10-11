@@ -83,6 +83,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final TvBrowserSession mSession;
     private @Nullable View mControlsView;
     private @Nullable TvAddressEditor.State mAddressState;
+    private @Nullable TvBrowserSession.Context mAddressContext;
     private @Nullable Tab mControlsTab;
     private boolean mControlsUpdatePosted;
     private final Cursor mCursor;
@@ -519,6 +520,20 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mInput.cancelPress();
         mPressedContext = null;
         mPhoneRemote.invalidate();
+        TvBrowserSession.Context addressContext = mAddressContext;
+        if (addressContext != null) {
+            TvBrowserSession.Context current = mSession.capture();
+            // Capture can synchronously notify an ownership change and dismiss this editor.
+            if (mAddressContext == addressContext) {
+                if (current.tab != addressContext.tab
+                        || current.contents != addressContext.contents) {
+                    dismissDialog();
+                } else if (mAddressState != null && !mSession.isCurrent(addressContext)) {
+                    mAddressState.setError(mActivity.getString(R.string.brave_tv_address_changed));
+                    mAddressState.setSuggestions(List.of());
+                }
+            }
+        }
         if (mControlsUpdatePosted || !isAlive()) return;
         mControlsUpdatePosted = true;
         mActivity
@@ -599,6 +614,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void dismissDialog() {
         mAddressState = null;
+        mAddressContext = null;
         mControlsView = null;
         mControlsTab = null;
         mOnDataCleared = null;
@@ -675,9 +691,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         TvBrowserSession.Context context = mSession.capture();
         String initial = tab.isNativePage() ? "" : context.url;
         TvAddressEditor.State state =
-                new TvAddressEditor.State(initial.length() <= 8192 ? initial : "");
+                new TvAddressEditor.State(
+                        initial.length() <= TvAddressEditor.MAX_TEXT_LENGTH ? initial : "");
         mAddressState = state;
-        if (initial.length() > 8192) {
+        mAddressContext = context;
+        if (initial.length() > TvAddressEditor.MAX_TEXT_LENGTH) {
             state.setError(mActivity.getString(R.string.brave_tv_address_too_long));
         }
         var service = TemplateUrlServiceFactory.getForProfile(tab.getProfile());
@@ -707,7 +725,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         input -> updateAddressSuggestions(context, state, input),
                         input -> submitAddress(context, state, input),
                         this::returnToPage);
-        updateAddressSuggestions(context, state, initial);
         AlertDialog dialog =
                 new AlertDialog.Builder(mActivity)
                         .setView(content)
@@ -718,7 +735,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     if (mDialog == dialog) {
                         mDialog = null;
                         mAddressState = null;
+                        mAddressContext = null;
                     }
+                    state.clear();
                     TvPresentation.dispose(content);
                 });
         dialog.setCanceledOnTouchOutside(false);
@@ -750,7 +769,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             BookmarkModel model =
                     BookmarkModel.getForProfile(tab.getProfile().getOriginalProfile());
             if (model.isBookmarkModelLoaded()) {
-                for (BookmarkId id : model.searchBookmarks(input.trim(), 6)) {
+                for (BookmarkId id :
+                        model.searchBookmarks(input.trim(), TvAddressEditor.MAX_SUGGESTIONS)) {
                     BookmarkItem item = model.getBookmarkById(id);
                     if (item == null || item.isFolder()) continue;
                     String url = item.getUrl().getSpec();
@@ -787,7 +807,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             return;
         }
         String text = input.trim();
-        if (text.isEmpty() || text.length() > 8192 || text.chars().anyMatch(c -> c < 32)) {
+        if (text.isEmpty()
+                || text.length() > TvAddressEditor.MAX_TEXT_LENGTH
+                || text.chars().anyMatch(c -> c < 32)) {
             state.setError(mActivity.getString(R.string.brave_tv_address_invalid));
             return;
         }
