@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 
 import org.chromium.base.Callback;
 import org.chromium.cc.input.BrowserControlsState;
+import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.components.browser_ui.util.BrowserControlsVisibilityDelegate;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.content_public.browser.ImeAdapter;
@@ -51,6 +52,30 @@ public final class TvBrowserControlsVisibilityDelegate
                                 && mAppVisibility.get() == BrowserControlsState.SHOWN)
                 ? BrowserControlsState.SHOWN
                 : BrowserControlsState.HIDDEN;
+    }
+
+    @Override
+    protected void updateVisibilityConstraints() {
+        super.updateVisibilityConstraints();
+        if (mAppVisibility == null
+                || !hasObservers()
+                || super.get() != BrowserControlsState.HIDDEN
+                || mTab.isDestroyed()
+                || !mTab.isNativePage()) return;
+        var window = mTab.getWindowAndroid();
+        if (window == null) return;
+        var activity = window.getActivity().get();
+        if (!(activity instanceof BraveActivity browser)
+                || browser.isFinishing()
+                || browser.isDestroyed()
+                || browser.getActivityTab() != mTab) return;
+        var manager = browser.getBrowserControlsManager();
+        if (manager == null
+                || TabBrowserControlsConstraintsHelper.getConstraints(mTab)
+                        != BrowserControlsState.HIDDEN) return;
+        // Native pages have no renderer-driven offset callback. Apply the native manager's
+        // HIDDEN positions after our app-show observer releases its visibility constraint.
+        manager.showAndroidControls(false);
     }
 
     @Override

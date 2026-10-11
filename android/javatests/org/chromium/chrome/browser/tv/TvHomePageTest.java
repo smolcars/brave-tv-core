@@ -10,6 +10,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.graphics.Rect;
 import android.os.Build;
 import android.view.View;
 import android.view.WindowManager;
@@ -142,14 +143,26 @@ public class TvHomePageTest {
         CriteriaHelper.pollUiThread(
                 () ->
                         TabBrowserControlsConstraintsHelper.getConstraints(
-                                                mActivity.getActivityTab())
-                                        == BrowserControlsState.HIDDEN
-                                && mActivity.getBrowserControlsManager().getContentOffset() == 0
-                                && !mActivity.findViewById(R.id.control_container).isShown());
+                                        mActivity.getActivityTab())
+                                == BrowserControlsState.HIDDEN);
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.getBrowserControlsManager().getContentOffset() == 0);
+        CriteriaHelper.pollUiThread(
+                () ->
+                        !mActivity
+                                .findViewById(R.id.control_container)
+                                .getGlobalVisibleRect(new Rect()));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     assertTrue(mActivity.isTelevision());
                     assertFalse(mActivity.getFullscreenManager().getPersistentFullscreenMode());
+                    if (mActivity.getActivityTab().getNativePage() instanceof TvHomePage home) {
+                        Rect bounds = new Rect();
+                        assertTrue(home.getView().getGlobalVisibleRect(bounds));
+                        assertEquals(0, bounds.top);
+                        assertEquals(
+                                mActivity.getWindow().getDecorView().getHeight(), bounds.bottom);
+                    }
                 });
     }
 
