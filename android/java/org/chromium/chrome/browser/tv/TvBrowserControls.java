@@ -1019,6 +1019,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         }
         int pageStart = first;
         int fallbackIndex = selected >= 0 ? selected : first;
+        int restoredTabId = selectedTab == null ? focusedTabId : selectedTab.getId();
         actions.add(
                 panel.addAction(
                         R.string.brave_tv_previous,
@@ -1051,7 +1052,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         showTabs(incognito, pageStart, Tab.INVALID_TAB_ID, key);
                         return;
                     }
-                    showTabs(incognito, fallbackIndex, focusedTabId, focusedAction);
+                    showTabs(incognito, fallbackIndex, restoredTabId, focusedAction);
                 };
         Runnable changed =
                 () -> {
@@ -1242,6 +1243,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         }
         int pageStart = first;
         int fallbackIndex = selected >= 0 ? selected : first;
+        BookmarkId restoredId = selected >= 0 ? children.get(selected) : focusedId;
         List<BookmarkId> visibleIds = List.copyOf(children.subList(first, end));
         actions.add(
                 panel.addAction(
@@ -1276,7 +1278,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 key);
                         return;
                     }
-                    showBookmarks(context, id, fallbackIndex, focusedId, preferred);
+                    showBookmarks(context, id, fallbackIndex, restoredId, preferred);
                 };
         BookmarkModelObserver observer =
                 new BookmarkModelObserver() {
