@@ -394,6 +394,21 @@ public abstract class BraveActivity extends ChromeActivity
         if (mTvBrowserControls != null) mTvBrowserControls.showTabs();
     }
 
+    /** Consulted before the tabbed activity consumes native menu/keyboard commands. */
+    public boolean maybeHandleTvMenuAction(int id) {
+        if (mTvBrowserControls == null) return false;
+        if (id == R.id.focus_url_bar) {
+            mTvBrowserControls.showAddress();
+        } else if (id == R.id.show_menu) {
+            mTvBrowserControls.showControls();
+        } else if (id == R.id.preferences_id) {
+            mTvBrowserControls.showSettings();
+        } else {
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -509,20 +524,7 @@ public abstract class BraveActivity extends ChromeActivity
             boolean fromMenu,
             @Nullable Bundle menuItemData,
             @Nullable MotionEventInfo triggeringMotion) {
-        if (mTvBrowserControls != null) {
-            if (id == R.id.focus_url_bar) {
-                mTvBrowserControls.showAddress();
-                return true;
-            }
-            if (id == R.id.show_menu) {
-                mTvBrowserControls.showControls();
-                return true;
-            }
-            if (id == R.id.preferences_id) {
-                mTvBrowserControls.showSettings();
-                return true;
-            }
-        }
+        if (maybeHandleTvMenuAction(id)) return true;
         final Tab currentTab = getActivityTab();
         // Handle items replaced by Brave.
         if (id == R.id.reload_menu_id) {
