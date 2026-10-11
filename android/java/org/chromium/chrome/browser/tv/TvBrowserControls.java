@@ -69,6 +69,7 @@ import org.chromium.components.embedder_support.view.ContentView;
 import org.chromium.components.omnibox.AutocompleteMatch;
 import org.chromium.components.search_engines.TemplateUrl;
 import org.chromium.components.search_engines.TemplateUrlService;
+import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
@@ -323,12 +324,17 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private boolean nativeUiOwnsInput(boolean backToControls) {
         ContentView page = currentPage();
         Tab tab = mActivity.getActivityTab();
+        WebContents contents = tab == null || tab.isDestroyed() ? null : tab.getWebContents();
+        boolean dangerous =
+                contents != null
+                        && !contents.isDestroyed()
+                        && SecurityStateModel.isContentDangerous(contents);
         boolean idleNewTabPage =
                 backToControls
                         && tab != null
                         && tab.isNativePage()
                         && UrlUtilities.isNtpUrl(tab.getUrl());
-        if ((page == null && !idleNewTabPage) || mScrimVisible.get()) return true;
+        if ((page == null && !idleNewTabPage) || mScrimVisible.get() || dangerous) return true;
         if (mActivity.getModalDialogManager() != null
                 && mActivity.getModalDialogManager().isShowing()) return true;
         View focus = mActivity.getCurrentFocus();
@@ -362,7 +368,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         InputDevice device = event.getDevice();
         if (!event.hasNoModifiers()
                 || (device != null
-                        && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC)
+                        && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
+                        && !event.isFromSource(InputDevice.SOURCE_DPAD))
                 || keyboardVisible()
                 || nativeUiOwnsInput(false)) {
             mInput.cancelPress();
