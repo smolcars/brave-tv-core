@@ -16,7 +16,7 @@ const parents={};
 const button=(label,act,extra='')=>`<button data-act="${act}" ${extra}>${label}</button>`;
 function move(next,restore=false){
 savedFocus[route]=focus;
-if(!restore)parents[next]=route;route=next;focus=0;editing=false;draw();
+if(!restore&&next!==route&&!['home','page'].includes(next))parents[next]=route;route=next;focus=0;editing=false;draw();
 if(restore&&savedFocus[route]!==undefined)focusItem(savedFocus[route]);
 else if(route==='controls')focusItem([...screen.querySelectorAll('button')].findIndex(x=>x.dataset.act==='address'));
 }
@@ -50,7 +50,7 @@ if(route==='confirm')content=`<h1>Clear selected data?</h1><p>Only the chosen no
 screen.innerHTML=content;screen.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>act(b.dataset.act));focusItem(focus);document.querySelector('#state').textContent=`Prototype state: ${variant} · ${route} · ${tabs.length} normal tabs · fullscreen ${fullscreen} · ${route==='confirm'?'Cancel initially focused':'one input owner'}`;
 }
 function act(a){if(a.startsWith('select:')){selected=+a.split(':')[1];move('page');return}if(a==='fullscreen'){fullscreen=!fullscreen;move('page');return}if(a==='clear'){screen.querySelector('input').value='';editing=true;focusItem(0);return}if(a==='empty'){empty=!empty;draw();return}if(a==='favorites'){empty=false;draw();return}if(a==='new'){tabs.push('New tab');selected=tabs.length-1;move('home');return}if(a==='close'||a==='final'){if(a==='final')tabs=[];else tabs.splice(selected,1);selected=Math.max(0,Math.min(selected,tabs.length-1));if(!tabs.length){tabs=['A quiet place to start'];selected=0;move('home')}else draw();return}if(a==='backpage'){move('controls');return}if(a==='back'){back();return}move(a)}
-function back(){if(fullscreen){fullscreen=false;move('page')}else if(route==='page')move('controls');else move(parents[route]||'home',true)}
+function back(){if(fullscreen){fullscreen=false;move('page')}else if(route==='page'||route==='home')move('controls');else move(parents[route]||'home',true)}
 document.addEventListener('keydown',e=>{const b=[...screen.querySelectorAll('button:not(:disabled),input')];if(e.key==='Escape'||e.key==='Backspace'&&!editing){e.preventDefault();if(editing){editing=false;focusItem(0);return}back();return}if(editing){if(e.key==='Enter'){e.preventDefault();editing=false;move('page')}else if(e.key==='ArrowDown'){e.preventDefault();editing=false;focusItem(1)}return}if(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(e.key)){e.preventDefault();directionalFocus(e.key)}if(e.key==='Enter'){e.preventDefault();if(b[focus]?.tagName==='INPUT'){editing=true;b[focus].focus()}else b[focus]?.click()}});
 for(const v of ['sage','amber'])document.querySelector('#'+v).onclick=()=>{variant=v;document.querySelectorAll('.switch button').forEach(b=>b.setAttribute('aria-pressed',b.id===v));draw()};draw();
 </script></html>
