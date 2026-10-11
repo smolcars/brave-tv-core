@@ -105,7 +105,11 @@ public final class TvTextInput {
         return mVersion;
     }
 
-    /** Whole-field replacement does not depend on the current composition range. */
+    /**
+     * Advances on eligibility, text or selection changes, excluding composition-only updates. Use
+     * only for whole-field replacement with current browser/field identity and a ready, eligible
+     * field.
+     */
     public long replacementVersion() {
         return mReplacementVersion;
     }
