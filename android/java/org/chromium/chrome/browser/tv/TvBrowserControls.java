@@ -520,11 +520,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mInput.cancelPress();
         mPressedContext = null;
         mPhoneRemote.invalidate();
+        if (!isAlive()) return;
         TvBrowserSession.Context addressContext = mAddressContext;
         if (addressContext != null) {
             TvBrowserSession.Context current = mSession.capture();
             // Capture can synchronously notify an ownership change and dismiss this editor.
-            if (mAddressContext == addressContext) {
+            if (isAlive() && mAddressContext == addressContext) {
                 if (current.tab != addressContext.tab
                         || current.contents != addressContext.contents) {
                     dismissDialog();
