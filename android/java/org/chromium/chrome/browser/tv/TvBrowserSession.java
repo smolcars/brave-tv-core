@@ -31,6 +31,7 @@ final class TvBrowserSession {
         final @Nullable Tab tab;
         final @Nullable WebContents contents;
         final long generation;
+        final long documentGeneration;
         final long revision;
         final String url;
         final int width;
@@ -41,6 +42,7 @@ final class TvBrowserSession {
                 @Nullable Tab tab,
                 @Nullable WebContents contents,
                 long generation,
+                long documentGeneration,
                 long revision,
                 int width,
                 int height,
@@ -48,6 +50,7 @@ final class TvBrowserSession {
             this.tab = tab;
             this.contents = contents;
             this.generation = generation;
+            this.documentGeneration = documentGeneration;
             this.revision = revision;
             this.url = tab == null ? "" : tab.getUrl().getSpec();
             this.width = width;
@@ -64,12 +67,13 @@ final class TvBrowserSession {
     private @Nullable WebContentsObserver mContentsObserver;
     private @Nullable View mViewport;
     private long mGeneration = 1;
+    private long mDocumentGeneration = 1;
     private long mRevision = 1;
     private boolean mDestroyed;
     private final View.OnLayoutChangeListener mLayoutObserver =
             (view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
                 if (left != oldLeft || top != oldTop || right != oldRight || bottom != oldBottom) {
-                    invalidate();
+                    invalidateViewport();
                 }
             };
 
@@ -125,6 +129,13 @@ final class TvBrowserSession {
     }
 
     void invalidate() {
+        ThreadUtils.assertOnUiThread();
+        if (mDestroyed) return;
+        mDocumentGeneration++;
+        invalidateViewport();
+    }
+
+    private void invalidateViewport() {
         ThreadUtils.assertOnUiThread();
         if (mDestroyed) return;
         mGeneration++;
@@ -190,6 +201,7 @@ final class TvBrowserSession {
                 mTab,
                 mContents,
                 mGeneration,
+                mDocumentGeneration,
                 mRevision,
                 mViewport == null ? 0 : mViewport.getWidth(),
                 mViewport == null ? 0 : mViewport.getHeight(),
@@ -202,12 +214,26 @@ final class TvBrowserSession {
             return false;
         }
         Context current = capture();
-        return expected.tab == current.tab
-                && expected.contents == current.contents
+        return isCurrentDocument(expected, current)
                 && expected.generation == current.generation
                 && expected.width == current.width
                 && expected.height == current.height
-                && expected.offset == current.offset
+                && expected.offset == current.offset;
+    }
+
+    /** Address input has no page coordinates; showing its IME may resize the same document. */
+    boolean isCurrentDocument(@Nullable Context expected) {
+        ThreadUtils.assertOnUiThread();
+        if (expected == null || mDestroyed || mActivity.isFinishing() || mActivity.isDestroyed()) {
+            return false;
+        }
+        return isCurrentDocument(expected, capture());
+    }
+
+    private boolean isCurrentDocument(Context expected, Context current) {
+        return expected.tab == current.tab
+                && expected.contents == current.contents
+                && expected.documentGeneration == current.documentGeneration
                 && (current.contents == null || !current.contents.isDestroyed());
     }
 

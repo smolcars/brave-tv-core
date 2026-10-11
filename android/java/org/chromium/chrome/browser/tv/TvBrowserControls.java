@@ -529,7 +529,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 if (current.tab != addressContext.tab
                         || current.contents != addressContext.contents) {
                     dismissDialog();
-                } else if (mAddressState != null && !mSession.isCurrent(addressContext)) {
+                } else if (mAddressState != null && !mSession.isCurrentDocument(addressContext)) {
                     mAddressState.setError(mActivity.getString(R.string.brave_tv_address_changed));
                     mAddressState.setSuggestions(List.of());
                 }
@@ -768,7 +768,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (mAddressState != state) return;
         List<TvPresentation.Action> suggestions = new ArrayList<>();
         Tab tab = context.tab;
-        if (tab != null && tabContextValid(context)) {
+        if (tab != null && addressContextValid(context)) {
             BookmarkModel model =
                     BookmarkModel.getForProfile(tab.getProfile().getOriginalProfile());
             if (model.isBookmarkModelLoaded()) {
@@ -782,7 +782,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                     item.getTitle() + "\n" + item.getUrlForDisplay(),
                                     true,
                                     () -> {
-                                        if (!tabContextValid(context)) {
+                                        if (!addressContextValid(context)) {
                                             state.setError(
                                                     mActivity.getString(
                                                             R.string.brave_tv_address_changed));
@@ -805,7 +805,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private void submitAddress(
             TvBrowserSession.Context context, TvAddressEditor.State state, String input) {
         if (mAddressState != state || mDialog == null || !mDialog.isShowing()) return;
-        if (!tabContextValid(context)) {
+        if (!addressContextValid(context)) {
             state.setError(mActivity.getString(R.string.brave_tv_address_changed));
             return;
         }
@@ -824,7 +824,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             state.setError(mActivity.getString(R.string.brave_tv_address_invalid));
             return;
         }
-        if (mAddressState != state || !mSession.isCurrent(context)) {
+        if (mAddressState != state || !mSession.isCurrentDocument(context)) {
             state.setError(mActivity.getString(R.string.brave_tv_address_changed));
             return;
         }
@@ -922,6 +922,16 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 && tab == mActivity.getActivityTab()
                 && !tab.isDestroyed()
                 && mSession.isCurrent(context)
+                && canAccessTabs(tab.isIncognito());
+    }
+
+    private boolean addressContextValid(TvBrowserSession.Context context) {
+        Tab tab = context.tab;
+        return tab != null
+                && isAlive()
+                && tab == mActivity.getActivityTab()
+                && !tab.isDestroyed()
+                && mSession.isCurrentDocument(context)
                 && canAccessTabs(tab.isIncognito());
     }
 
