@@ -3,14 +3,12 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package org.chromium.chrome.browser.tv;
+package org.chromium.chrome.browser.tab;
 
 import androidx.annotation.Nullable;
 
 import org.chromium.base.Callback;
 import org.chromium.cc.input.BrowserControlsState;
-import org.chromium.chrome.browser.tab.Tab;
-import org.chromium.chrome.browser.tab.TabStateBrowserControlsVisibilityDelegate;
 import org.chromium.components.browser_ui.util.BrowserControlsVisibilityDelegate;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.content_public.browser.ImeAdapter;
@@ -47,7 +45,7 @@ public final class TvBrowserControlsVisibilityDelegate
                         && SecurityStateModel.isContentDangerous(contents);
         return dangerous
                         || tab.isShowingErrorPage()
-                        || tab.isRendererUnresponsive()
+                        || mTab.isRendererUnresponsive()
                         || (input != null && input.focusedNodeEditable())
                         || (mAppVisibility != null
                                 && mAppVisibility.get() == BrowserControlsState.SHOWN)

@@ -5,6 +5,6 @@ diff --git a/chrome/android/java/src/org/chromium/chrome/browser/TabbedModeTabDe
      public BrowserControlsVisibilityDelegate createBrowserControlsVisibilityDelegate(Tab tab) {
          return new ComposedBrowserControlsVisibilityDelegate(
 -                new TabStateBrowserControlsVisibilityDelegate(tab),
-+                mActivity instanceof org.chromium.chrome.browser.app.BraveActivity && ((org.chromium.chrome.browser.app.BraveActivity) mActivity).isTelevision() ? new org.chromium.chrome.browser.tv.TvBrowserControlsVisibilityDelegate(tab, mAppBrowserControlsVisibilityDelegate) : new TabStateBrowserControlsVisibilityDelegate(tab),
++                mActivity instanceof org.chromium.chrome.browser.app.BraveActivity && ((org.chromium.chrome.browser.app.BraveActivity) mActivity).isTelevision() ? new org.chromium.chrome.browser.tab.TvBrowserControlsVisibilityDelegate(tab, mAppBrowserControlsVisibilityDelegate) : new TabStateBrowserControlsVisibilityDelegate(tab),
                  mAppBrowserControlsVisibilityDelegate);
      }
