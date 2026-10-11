@@ -727,7 +727,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mLastAction = action == R.string.brave_tv_stop ? R.string.brave_tv_reload : action;
         dismissDialog();
         // The page can navigate or a tab can close while the native panel is open.
-        if (!mSession.isCurrent(context)) {
+        boolean current =
+                action == R.string.brave_tv_pointer || action == R.string.brave_tv_scroll
+                        ? mSession.isCurrent(context)
+                        : mSession.isCurrentDocument(context);
+        if (!current) {
             showControls();
             return;
         }
@@ -1014,6 +1018,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             }));
         }
         int pageStart = first;
+        int fallbackIndex = selected >= 0 ? selected : first;
         actions.add(
                 panel.addAction(
                         R.string.brave_tv_previous,
@@ -1046,7 +1051,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         showTabs(incognito, pageStart, Tab.INVALID_TAB_ID, key);
                         return;
                     }
-                    showTabs(incognito, pageStart, focusedTabId, focusedAction);
+                    showTabs(incognito, fallbackIndex, focusedTabId, focusedAction);
                 };
         Runnable changed =
                 () -> {
@@ -1236,6 +1241,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             () -> showBookmark(context, model, childId, id, index)));
         }
         int pageStart = first;
+        int fallbackIndex = selected >= 0 ? selected : first;
         List<BookmarkId> visibleIds = List.copyOf(children.subList(first, end));
         actions.add(
                 panel.addAction(
@@ -1270,7 +1276,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 key);
                         return;
                     }
-                    showBookmarks(context, id, pageStart, focusedId, preferred);
+                    showBookmarks(context, id, fallbackIndex, focusedId, preferred);
                 };
         BookmarkModelObserver observer =
                 new BookmarkModelObserver() {

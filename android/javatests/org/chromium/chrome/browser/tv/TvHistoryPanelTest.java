@@ -56,7 +56,6 @@ public class TvHistoryPanelTest {
     private BraveActivity mActivity;
     private UiDevice mDevice;
     private Tab mTab;
-    private TvHistoryPanel mPanel;
     private String mOwnedPrefix;
 
     @Before
@@ -73,28 +72,18 @@ public class TvHistoryPanelTest {
 
     @After
     public void tearDown() throws Exception {
-        if (mPanel != null) ThreadUtils.runOnUiThreadBlocking(mPanel::destroy);
+        if (mActivity != null) ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
         if (mOwnedPrefix != null) remove(queryOwnedVisits());
     }
 
     @Test
     @MediumTest
     public void nativeBatchPagingFocusRemovalAndPolicy() throws Exception {
-        String fixture = InstrumentationRegistry.getArguments().getString("tv_history_fixture_url");
-        assertNotNull("Serve the owned history.html fixture and pass its URL", fixture);
-        assertEquals("http://10.0.2.2:18088/history.html", fixture);
-        mOwnedPrefix = fixture + "?run=" + System.nanoTime() + "&page=";
-        for (int i = 1; i <= VISIT_COUNT; i++) {
-            mActivityTestRule.loadUrl(mOwnedPrefix + i);
-            String title = "TV history pagination " + i;
-            CriteriaHelper.pollUiThread(() -> mTab.getTitle().equals(title));
-        }
-        List<HistoryItem> visits = queryOwnedVisits();
-        assertEquals(VISIT_COUNT, visits.size());
+        List<HistoryItem> visits = seedVisits(VISIT_COUNT);
         showHistory();
         waitForFocus(row(VISIT_COUNT));
         for (int page = 1; page < PAGE_COUNT; page++) {
-            focusMoreHistory();
+            focusMoreHistory(VISIT_COUNT - (page - 1) * TvHistoryPanel.PAGE_SIZE);
             mDevice.pressDPadCenter();
             waitForFocus(row(VISIT_COUNT - page * TvHistoryPanel.PAGE_SIZE));
         }
@@ -103,7 +92,7 @@ public class TvHistoryPanelTest {
         mDevice.pressBack();
         waitForFocus(row(TvHistoryPanel.PAGE_SIZE));
         for (int page = PAGE_COUNT - 1; page >= PAGE_COUNT - 3; page--) {
-            focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_history)));
+            focusPreviousHistory(VISIT_COUNT - page * TvHistoryPanel.PAGE_SIZE);
             mDevice.pressDPadCenter();
             waitForFocus(row(VISIT_COUNT - (page - 1) * TvHistoryPanel.PAGE_SIZE));
         }
@@ -172,12 +161,46 @@ public class TvHistoryPanelTest {
         }
     }
 
+    @Test
+    @MediumTest
+    public void firstPageUsesRealControlsAndRemoteFocus() throws Exception {
+        seedVisits(TvHistoryPanel.PAGE_SIZE + 1);
+        showHistory();
+        waitForFocus(row(TvHistoryPanel.PAGE_SIZE + 1));
+        focusMoreHistory(TvHistoryPanel.PAGE_SIZE + 1);
+        mDevice.pressDPadCenter();
+        waitForFocus(row(1));
+    }
+
+    private List<HistoryItem> seedVisits(int count) throws Exception {
+        String fixture = InstrumentationRegistry.getArguments().getString("tv_history_fixture_url");
+        assertNotNull("Serve the owned history.html fixture and pass its URL", fixture);
+        assertEquals("http://10.0.2.2:18088/history.html", fixture);
+        mOwnedPrefix = fixture + "?run=" + System.nanoTime() + "&page=";
+        for (int i = 1; i <= count; i++) {
+            mActivityTestRule.loadUrl(mOwnedPrefix + i);
+            String title = "TV history pagination " + i;
+            CriteriaHelper.pollUiThread(() -> mTab.getTitle().equals(title));
+        }
+        List<HistoryItem> visits = queryOwnedVisits();
+        assertEquals(count, visits.size());
+        return visits;
+    }
+
     private void showHistory() {
-        ThreadUtils.runOnUiThreadBlocking(
-                () -> {
-                    mPanel = new TvHistoryPanel(mActivity, mTab, mActivity::showTvBrowserControls);
-                    mPanel.show();
-                });
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_reload)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_tabs)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_bookmarks)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_controls)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_history)));
+        mDevice.pressDPadCenter();
     }
 
     private BySelector row(int number) {
@@ -192,20 +215,19 @@ public class TvHistoryPanelTest {
                 });
     }
 
-    private void focusMoreHistory() {
-        focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_history)));
+    private void focusMoreHistory(int first) {
+        focusPreviousHistory(first);
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_history)));
     }
 
-    private void focusDown(BySelector target) {
-        for (int i = 0; i < 12; i++) {
-            UiObject2 item = mDevice.findObject(target);
-            if (item != null && item.isFocused()) return;
+    private void focusPreviousHistory(int first) {
+        for (int i = 1; i < TvHistoryPanel.PAGE_SIZE; i++) {
             mDevice.pressDPadDown();
-            mDevice.waitForIdle();
+            waitForFocus(row(first - i));
         }
-        waitForFocus(target);
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_previous_history)));
     }
 
     private List<HistoryItem> queryOwnedVisits() throws Exception {
