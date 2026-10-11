@@ -13,6 +13,7 @@ import static org.junit.Assert.assertTrue;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
@@ -132,9 +133,8 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     public void savedPageOpensThroughNativeHome() {
-        UiObject2 saved = mDevice.findObject(By.descStartsWith(TITLE + "0\n"));
-        assertNotNull(saved);
-        saved.click();
+        focusFirstFavorite();
+        mDevice.pressDPadCenter();
         CriteriaHelper.pollUiThread(
                 () -> mActivity.getActivityTab().getUrl().equals(new GURL(URL + "#0")));
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
@@ -143,29 +143,26 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     public void removingFocusedFavoriteRestoresAddress() {
-        CriteriaHelper.pollInstrumentationThread(
-                () -> {
-                    UiObject2 address =
-                            mDevice.findObject(
-                                    By.desc(mActivity.getString(R.string.brave_tv_address)));
-                    return address != null && address.isFocused();
-                });
-        mDevice.pressDPadDown();
-        mDevice.pressDPadDown();
-        CriteriaHelper.pollInstrumentationThread(
-                () -> {
-                    UiObject2 saved = mDevice.findObject(By.descStartsWith(TITLE + "0\n"));
-                    return saved != null && saved.isFocused();
-                });
+        focusFirstFavorite();
         ThreadUtils.runOnUiThreadBlocking(() -> mBookmarks.deleteBookmark(mOwnedBookmarks.get(0)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        assertFalse(mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
+    }
+
+    private void focusFirstFavorite() {
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.descStartsWith(TITLE + "0\n"));
+    }
+
+    private void waitForFocus(BySelector target) {
         CriteriaHelper.pollInstrumentationThread(
                 () -> {
-                    UiObject2 address =
-                            mDevice.findObject(
-                                    By.desc(mActivity.getString(R.string.brave_tv_address)));
-                    return address != null && address.isFocused();
+                    UiObject2 control = mDevice.findObject(target);
+                    return control != null && control.isFocused();
                 });
-        assertFalse(mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
     }
 
     @Test
@@ -176,9 +173,8 @@ public class TvHomePageTest {
         int count =
                 ThreadUtils.runOnUiThreadBlocking(
                         () -> mActivity.getTabModelSelector().getModel(false).getCount());
-        UiObject2 recent = mDevice.findObject(By.descStartsWith("TV recent fixture\n"));
-        assertNotNull(recent);
-        recent.click();
+        waitForFocus(By.descStartsWith("TV recent fixture\n"));
+        mDevice.pressDPadCenter();
         CriteriaHelper.pollUiThread(() -> mActivity.getActivityTab().getId() == recentId);
         ThreadUtils.runOnUiThreadBlocking(
                 () ->
@@ -194,11 +190,10 @@ public class TvHomePageTest {
                 () -> mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false));
         CriteriaHelper.pollUiThread(
                 () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
-        UiObject2 scroll = mDevice.findObject(By.scrollable(true));
-        assertNotNull(scroll);
-        scroll.scroll(Direction.DOWN, 0.8f);
-        CriteriaHelper.pollInstrumentationThread(
-                () -> mDevice.hasObject(By.descStartsWith("TV recent fixture\n")));
+        focusFirstFavorite();
+        mDevice.pressDPadDown();
+        mDevice.pressDPadDown();
+        waitForFocus(By.descStartsWith("TV recent fixture\n"));
         return recent;
     }
 
@@ -212,6 +207,7 @@ public class TvHomePageTest {
         TabModel model =
                 ThreadUtils.runOnUiThreadBlocking(
                         () -> mActivity.getTabModelSelector().getModel(false));
+        mDevice.waitForIdle();
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     assertTrue(model.supportsPendingClosures());
@@ -222,6 +218,10 @@ public class TvHomePageTest {
                     assertTrue(model.isClosurePending(recent.getId()));
                     assertTrue(mActivity.getActivityTab().getNativePage() == home);
                 });
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        UiObject2 scroll = mDevice.findObject(By.scrollable(true));
+        assertNotNull(scroll);
+        scroll.scroll(Direction.DOWN, 0.8f);
         CriteriaHelper.pollInstrumentationThread(
                 () ->
                         mDevice.hasObject(
@@ -235,7 +235,7 @@ public class TvHomePageTest {
                     assertFalse(model.isClosurePending(recent.getId()));
                     assertTrue(mActivity.getActivityTab().getNativePage() == home);
                 });
-        UiObject2 scroll = mDevice.findObject(By.scrollable(true));
+        scroll = mDevice.findObject(By.scrollable(true));
         assertNotNull(scroll);
         scroll.scroll(Direction.DOWN, 0.8f);
         CriteriaHelper.pollInstrumentationThread(

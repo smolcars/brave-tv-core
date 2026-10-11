@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -194,6 +195,7 @@ object TvPresentation {
         setContent {
             Theme {
                 val initial = remember { FocusRequester() }
+                val shortcuts = remember { FocusRequester() }
                 Column(
                     Modifier.fillMaxSize()
                         .background(Brush.linearGradient(listOf(Color(0xFF222827), backgroundColor)))
@@ -205,10 +207,14 @@ object TvPresentation {
                         modifier = Modifier.semantics { heading() })
                     Text(subtitle, color = secondary, fontSize = 18.sp)
                     ActionButton(actions.first(),
-                        Modifier.fillMaxWidth().focusRequester(initial))
+                        Modifier.fillMaxWidth().focusRequester(initial).focusProperties {
+                            if (actions.size > 1) down = shortcuts
+                        })
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        actions.drop(1).forEach {
-                            ActionButton(it, Modifier.weight(1f), quiet = true)
+                        actions.drop(1).forEachIndexed { index, action ->
+                            ActionButton(action, Modifier.weight(1f).then(
+                                if (index == 0) Modifier.focusRequester(shortcuts)
+                                else Modifier), quiet = true)
                         }
                     }
                     if (state.showSections) {
