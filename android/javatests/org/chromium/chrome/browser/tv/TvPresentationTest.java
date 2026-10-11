@@ -181,7 +181,9 @@ public class TvPresentationTest {
     @MediumTest
     public void connectionBadgePreservesPageFocusAndDisposes() {
         AtomicInteger opens = new AtomicInteger();
-        View page = mActivity.getActivityTab().getContentView();
+        View page =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> mActivity.getActivityTab().getContentView());
         assertNotNull(page);
         String label = mActivity.getString(R.string.brave_tv_phone_connected);
         ThreadUtils.runOnUiThreadBlocking(
