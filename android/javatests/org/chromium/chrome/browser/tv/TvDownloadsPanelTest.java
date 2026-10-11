@@ -8,12 +8,17 @@ package org.chromium.chrome.browser.tv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+
+import android.text.format.Formatter;
+import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -209,6 +214,90 @@ public class TvDownloadsPanelTest {
             focus(label(resource));
         }
         mDevice.pressDPadCenter();
+    }
+
+    private boolean hasPaneTitle(AccessibilityNodeInfo node, String title) {
+        if (node == null) return false;
+        if (title.equals(String.valueOf(node.getPaneTitle()))) return true;
+        for (int i = 0; i < node.getChildCount(); i++) {
+            if (hasPaneTitle(node.getChild(i), title)) return true;
+        }
+        return false;
+    }
+
+    private void announcedText(String text) {
+        CriteriaHelper.pollInstrumentationThread(
+                () -> {
+                    AccessibilityNodeInfo root =
+                            InstrumentationRegistry.getInstrumentation()
+                                    .getUiAutomation()
+                                    .getRootInActiveWindow();
+                    return root != null
+                            && root.findAccessibilityNodeInfosByText(text).stream()
+                                    .anyMatch(
+                                            node ->
+                                                    node.getLiveRegion()
+                                                            == View
+                                                                    .ACCESSIBILITY_LIVE_REGION_POLITE);
+                });
+    }
+
+    @Test
+    @MediumTest
+    public void loadingAndEmptyExposePaneAndAnnouncedState() {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    mHoldQuery = true;
+                    mPanel.show();
+                    assertNotNull(mPendingQuery);
+                });
+        focus(label(R.string.brave_tv_controls));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        hasPaneTitle(
+                                InstrumentationRegistry.getInstrumentation()
+                                        .getUiAutomation()
+                                        .getRootInActiveWindow(),
+                                mActivity.getString(R.string.brave_tv_downloads)));
+        announcedText(mActivity.getString(R.string.brave_tv_loading_downloads));
+        ThreadUtils.runOnUiThreadBlocking(() -> mPendingQuery.onResult(new ArrayList<>()));
+        focus(label(R.string.brave_tv_refresh_downloads));
+        announcedText(mActivity.getString(R.string.brave_tv_empty_downloads));
+        mDevice.pressDPadUp();
+        focus(label(R.string.brave_tv_previous_downloads));
+        assertFalse(mDevice.findObject(label(R.string.brave_tv_previous_downloads)).isEnabled());
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+    }
+
+    @Test
+    @MediumTest
+    public void detailStatusIsAnnouncedAndDisabledActionRestoresSafeFocus() {
+        showOne();
+        announcedText(mActivity.getString(R.string.brave_tv_download_complete));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    mItems.get(0).receivedBytes = 987;
+                    mItems.get(0).state = OfflineItemState.PAUSED;
+                    mItems.get(0).isResumable = true;
+                    mPanel.onItemUpdated(mItems.get(0), new UpdateDelta());
+                });
+        announcedText(mActivity.getString(R.string.brave_tv_download_paused));
+        focus(label(R.string.brave_tv_downloads));
+        assertTrue(mDevice.findObject(label(R.string.brave_tv_resume_download)).isEnabled());
+        List<AccessibilityNodeInfo> progress =
+                InstrumentationRegistry.getInstrumentation()
+                        .getUiAutomation()
+                        .getRootInActiveWindow()
+                        .findAccessibilityNodeInfosByText(
+                                Formatter.formatShortFileSize(mActivity, 987));
+        assertFalse(progress.isEmpty());
+        assertTrue(
+                progress.stream()
+                        .allMatch(
+                                node ->
+                                        node.getLiveRegion()
+                                                == View.ACCESSIBILITY_LIVE_REGION_NONE));
     }
 
     @Test

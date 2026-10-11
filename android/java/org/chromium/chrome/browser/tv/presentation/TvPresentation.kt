@@ -52,6 +52,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.ComposeView
@@ -100,7 +101,7 @@ object TvPresentation {
     }
 
     sealed interface PanelEntry
-    class Description(text: String) : PanelEntry {
+    class Description(text: String, val announceChanges: Boolean) : PanelEntry {
         var text by mutableStateOf(text)
     }
     class ActionRow(val actions: List<Action>) : PanelEntry
@@ -289,6 +290,7 @@ object TvPresentation {
                     else visible.firstOrNull { it.enabled }
                 Column(
                     Modifier.fillMaxWidth().background(backgroundColor)
+                        .semantics { paneTitle = title }
                         .verticalScroll(rememberScrollState()).padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
@@ -338,16 +340,20 @@ object TvPresentation {
             Theme {
                 val initialTargets = remember { actions.associateWith { FocusRequester() } }
                 Column(Modifier.fillMaxWidth().heightIn(max = maxHeight)
-                    .background(backgroundColor).padding(24.dp),
+                    .background(backgroundColor).padding(24.dp).semantics { paneTitle = title },
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(title, fontSize = 26.sp, fontWeight = FontWeight.Medium,
                         modifier = Modifier.semantics { heading() })
                     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (subtitle.isNotEmpty()) Text(subtitle, color = secondary, fontSize = 16.sp)
+                        if (subtitle.isNotEmpty()) Text(subtitle, color = secondary, fontSize = 16.sp,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                         entries.forEach { entry ->
                             when (entry) {
-                                is Description -> Text(entry.text, color = secondary, fontSize = 16.sp)
+                                is Description -> Text(entry.text, color = secondary, fontSize = 16.sp,
+                                    modifier = Modifier.semantics {
+                                        if (entry.announceChanges) liveRegion = LiveRegionMode.Polite
+                                    })
                                 is NativeContent -> AndroidView(factory = { entry.view },
                                     modifier = Modifier.fillMaxWidth().height(entry.heightDp.dp))
                                 is ActionRow -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

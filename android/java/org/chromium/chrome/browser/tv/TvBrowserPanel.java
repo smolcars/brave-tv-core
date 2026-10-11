@@ -47,8 +47,12 @@ final class TvBrowserPanel {
     }
 
     TvPresentation.Description addDescription(String text) {
+        return addDescription(text, false);
+    }
+
+    TvPresentation.Description addDescription(String text, boolean announceChanges) {
         mRow = null;
-        TvPresentation.Description entry = new TvPresentation.Description(text);
+        TvPresentation.Description entry = new TvPresentation.Description(text, announceChanges);
         mEntries.add(entry);
         return entry;
     }

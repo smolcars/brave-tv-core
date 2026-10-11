@@ -47,6 +47,7 @@ final class TvDownloadsPanel implements OfflineContentProvider.Observer {
     private @Nullable AlertDialog mDialog;
     private @Nullable ContentId mSelected;
     private @Nullable TvPresentation.Description mStatus;
+    private @Nullable TvPresentation.Description mProgress;
     private @Nullable TvPresentation.Action mRefreshAction;
     private int mStart;
     private int mRequest;
@@ -100,6 +101,7 @@ final class TvDownloadsPanel implements OfflineContentProvider.Observer {
         mDetailActions.clear();
         mSelected = null;
         mStatus = null;
+        mProgress = null;
         mRefreshAction = null;
     }
 
@@ -114,6 +116,7 @@ final class TvDownloadsPanel implements OfflineContentProvider.Observer {
         mDetailActions.clear();
         mSelected = null;
         mStatus = null;
+        mProgress = null;
         mRefreshAction = null;
         TvBrowserPanel panel =
                 new TvBrowserPanel(
@@ -192,7 +195,7 @@ final class TvDownloadsPanel implements OfflineContentProvider.Observer {
         show(panel, mOnClose);
     }
 
-    private String status(OfflineItem item) {
+    private String statusLabel(OfflineItem item) {
         if (item.externallyRemoved) return mActivity.getString(R.string.brave_tv_download_missing);
         if (isDangerous(item)) return mActivity.getString(R.string.brave_tv_download_blocked);
         int label =
@@ -204,9 +207,15 @@ final class TvDownloadsPanel implements OfflineContentProvider.Observer {
                     case OfflineItemState.CANCELLED -> R.string.brave_tv_download_cancelled;
                     default -> R.string.brave_tv_download_failed;
                 };
-        return mActivity.getString(label)
-                + " · "
-                + Formatter.formatShortFileSize(mActivity, Math.max(0, item.receivedBytes));
+        return mActivity.getString(label);
+    }
+
+    private String progress(OfflineItem item) {
+        return Formatter.formatShortFileSize(mActivity, Math.max(0, item.receivedBytes));
+    }
+
+    private String status(OfflineItem item) {
+        return statusLabel(item) + " · " + progress(item);
     }
 
     private String summary(OfflineItem item) {
@@ -275,7 +284,9 @@ final class TvDownloadsPanel implements OfflineContentProvider.Observer {
         mSelected = item.id;
         TvBrowserPanel panel =
                 new TvBrowserPanel(mActivity, item.title, error, R.string.brave_tv_open_download);
-        mStatus = panel.addDescription(status(item));
+        // Announce state transitions without speaking every received-byte update.
+        mStatus = panel.addDescription(statusLabel(item), true);
+        mProgress = panel.addDescription(progress(item));
         for (int action :
                 new int[] {
                     R.string.brave_tv_open_download,
@@ -387,7 +398,8 @@ final class TvDownloadsPanel implements OfflineContentProvider.Observer {
         TvPresentation.Action row = mRows.get(item.id);
         if (row != null) row.setLabel(summary(item));
         if (!item.id.equals(mSelected)) return;
-        if (mStatus != null) mStatus.setText(status(item));
+        if (mStatus != null) mStatus.setText(statusLabel(item));
+        if (mProgress != null) mProgress.setText(progress(item));
         for (Map.Entry<Integer, TvPresentation.Action> entry : mDetailActions.entrySet()) {
             boolean enabled = available(entry.getKey(), item);
             TvPresentation.Action action = entry.getValue();
