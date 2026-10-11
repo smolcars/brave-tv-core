@@ -12,6 +12,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -56,10 +57,13 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LifecycleOwner
@@ -217,12 +221,10 @@ object TvPresentation {
                         Modifier.fillMaxWidth().focusRequester(initial).focusProperties {
                             if (actions.size > 1) down = shortcuts
                         })
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        actions.drop(1).forEachIndexed { index, action ->
-                            ActionButton(action, Modifier.weight(1f).then(
-                                if (index == 0) Modifier.focusRequester(shortcuts)
-                                else Modifier), quiet = true)
-                        }
+                    ActionRows(actions.drop(1), 4, 16.dp) { action, modifier ->
+                        ActionButton(action, modifier.then(
+                            if (action === actions.getOrNull(1)) Modifier.focusRequester(shortcuts)
+                            else Modifier), quiet = true)
                     }
                     if (state.showSections) {
                         HomeSection(state.favoritesTitle,
@@ -232,8 +234,8 @@ object TvPresentation {
                     }
                     Text(attribution, color = secondary, fontSize = 14.sp,
                         modifier = Modifier.padding(top = 16.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        links.forEach { ActionButton(it, quiet = true) }
+                    ActionRows(links, links.size, 16.dp) { action, modifier ->
+                        ActionButton(action, modifier, quiet = true)
                     }
                 }
                 LaunchedEffect(state.focusRequest) {
@@ -251,13 +253,8 @@ object TvPresentation {
                 modifier = Modifier.semantics { heading() })
             if (actions.isEmpty()) Text(emptyLabel, color = secondary, fontSize = 16.sp,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-            actions.chunked(columns).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    row.forEach { action ->
-                        key(action) { ActionButton(action, Modifier.weight(1f)) }
-                    }
-                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
-                }
+            ActionRows(actions, columns, 16.dp) { action, modifier ->
+                ActionButton(action, modifier)
             }
         }
     }
@@ -297,17 +294,11 @@ object TvPresentation {
                     Text(title, fontSize = 24.sp, fontWeight = FontWeight.Medium,
                         modifier = Modifier.semantics { heading() })
                     if (state.subtitle.isNotEmpty()) Text(state.subtitle, color = secondary,
-                        fontSize = 16.sp, maxLines = 2)
-                    visible.chunked(4).forEach { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            row.forEach { action ->
-                                key(action.key) {
-                                    ActionButton(action, Modifier.weight(1f).then(
-                                        if (action === selected) Modifier.focusRequester(initial)
-                                        else Modifier))
-                                }
-                            }
-                        }
+                        fontSize = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    ActionRows(visible, 4, 12.dp) { action, modifier ->
+                        ActionButton(action, modifier.then(
+                            if (action === selected) Modifier.focusRequester(initial)
+                            else Modifier))
                     }
                 }
                 LaunchedEffect(state.expanded) {
@@ -356,13 +347,10 @@ object TvPresentation {
                                     })
                                 is NativeContent -> AndroidView(factory = { entry.view },
                                     modifier = Modifier.fillMaxWidth().height(entry.heightDp.dp))
-                                is ActionRow -> Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    entry.actions.forEach { action ->
-                                        key(action) {
-                                            ActionButton(action, Modifier.weight(1f)
-                                                .focusRequester(initialTargets.getValue(action)))
-                                        }
-                                    }
+                                is ActionRow -> ActionRows(entry.actions, entry.actions.size, 12.dp) {
+                                    action, modifier ->
+                                    ActionButton(action, modifier
+                                        .focusRequester(initialTargets.getValue(action)))
                                 }
                             }
                         }
@@ -405,6 +393,31 @@ object TvPresentation {
     }
 
     @Composable
+    private fun ActionRows(
+        actions: List<Action>, maxColumns: Int, spacing: Dp,
+        content: @Composable (Action, Modifier) -> Unit,
+    ) {
+        if (actions.isEmpty()) return
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val minimumWidth = 140.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
+            val columns = ((maxWidth + spacing) / (minimumWidth + spacing)).toInt()
+                .coerceIn(1, maxColumns)
+            Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+                actions.chunked(columns).forEach { row ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                        row.forEach { action ->
+                            key(if (action.key != 0) action.key else action) {
+                                content(action, Modifier.weight(1f))
+                            }
+                        }
+                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
     internal fun ActionButton(action: Action, modifier: Modifier = Modifier, quiet: Boolean = false) {
         var hasFocus by remember { mutableStateOf(false) }
         val requested = remember { FocusRequester() }
@@ -444,7 +457,7 @@ object TvPresentation {
                     colorFilter = ColorFilter.tint(LocalContentColor.current))
                 Spacer(Modifier.width(10.dp))
             }
-            Text(action.label, fontSize = 18.sp, maxLines = 2,
+            Text(action.label, fontSize = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(vertical = 8.dp))
         }
     }
