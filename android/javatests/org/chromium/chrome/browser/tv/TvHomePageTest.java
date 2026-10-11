@@ -697,7 +697,7 @@ public class TvHomePageTest {
         mDevice.pressDPadCenter();
         CriteriaHelper.pollUiThread(
                 () ->
-                        original.getUrl().equals(new GURL("chrome://credits"))
+                        original.getUrl().equals(new GURL(TvBrowserControls.LICENSES_URL))
                                 && !original.isLoading());
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
@@ -709,7 +709,7 @@ public class TvHomePageTest {
                 JavaScriptUtils.executeJavaScriptAndWaitForResult(
                         original.getWebContents(),
                         "document.querySelectorAll('a').length > 10 &&"
-                            + " /copyright/i.test(document.body.textContent)"));
+                                + " /copyright/i.test(document.body.textContent)"));
         mDevice.pressBack();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
     }

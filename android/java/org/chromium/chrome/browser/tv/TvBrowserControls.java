@@ -79,6 +79,8 @@ import java.util.function.BooleanSupplier;
 /** TV-only adapter around the existing browser UI and the active Chromium content view. */
 public final class TvBrowserControls implements TvRemoteInput.Target {
     static final int BOOKMARK_PAGE_SIZE = 8;
+    static final String PROJECT_SOURCE_URL = "https://github.com/smolcars/brave-tv";
+    static final String LICENSES_URL = "chrome://credits";
 
     private final BraveActivity mActivity;
     private final BackPressManager mBackPressManager;
@@ -1369,11 +1371,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         panel.addAction(
                 R.string.brave_tv_source,
                 true,
-                () -> openAboutDestination(context, "https://github.com/smolcars/brave-tv"));
+                () -> openAboutDestination(context, PROJECT_SOURCE_URL));
         panel.addAction(
                 R.string.brave_tv_licenses,
                 true,
-                () -> openAboutDestination(context, "chrome://credits"));
+                () -> openAboutDestination(context, LICENSES_URL));
         Runnable back = () -> showSettings(context, onReturn);
         panel.addAction(R.string.brave_tv_settings, true, back);
         mDialog = panel.show(back);

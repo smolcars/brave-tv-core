@@ -138,10 +138,8 @@ public final class TvHomePage extends BasicNativePage {
             links.add(action(R.string.brave_tv_phone, activity::showTvPhoneRemote));
         }
         links.add(
-                action(
-                        R.string.brave_tv_source,
-                        () -> open("https://github.com/smolcars/brave-tv")));
-        links.add(action(R.string.brave_tv_licenses, () -> open("chrome://credits")));
+                action(R.string.brave_tv_source, () -> open(TvBrowserControls.PROJECT_SOURCE_URL)));
+        links.add(action(R.string.brave_tv_licenses, () -> open(TvBrowserControls.LICENSES_URL)));
         mSettingsAction = action(R.string.brave_tv_settings, () -> activity.showTvSettings(this));
         mContent =
                 TvPresentation.home(
