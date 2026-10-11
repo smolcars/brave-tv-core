@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
@@ -43,6 +45,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -64,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.LifecycleOwner
@@ -334,6 +339,7 @@ object TvPresentation {
                     .background(backgroundColor).padding(24.dp).semantics { paneTitle = title },
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(title, fontSize = 26.sp, fontWeight = FontWeight.Medium,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.semantics { heading() })
                     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -420,7 +426,17 @@ object TvPresentation {
     @Composable
     internal fun ActionButton(action: Action, modifier: Modifier = Modifier, quiet: Boolean = false) {
         var hasFocus by remember { mutableStateOf(false) }
+        var size by remember { mutableStateOf(IntSize.Zero) }
         val requested = remember { FocusRequester() }
+        val visible = remember { BringIntoViewRequester() }
+        val focusSpace = with(LocalDensity.current) { 24.dp.toPx() }
+        LaunchedEffect(hasFocus, size) {
+            if (hasFocus && size != IntSize.Zero) {
+                withFrameNanos { }
+                visible.bringIntoView(Rect(0f, -focusSpace,
+                    size.width.toFloat(), size.height + focusSpace))
+            }
+        }
         LaunchedEffect(action.focusRequest) {
             if (action.focusRequest > 0 && action.enabled) {
                 withFrameNanos { }
@@ -430,7 +446,8 @@ object TvPresentation {
         Button(
             onClick = { action.run.run() },
             enabled = action.enabled,
-            modifier = modifier.focusRequester(requested).onFocusChanged {
+            modifier = modifier.bringIntoViewRequester(visible).onSizeChanged { size = it }
+                .focusRequester(requested).onFocusChanged {
                 hasFocus = it.isFocused
                 action.focused = it.isFocused
             }.clearAndSetSemantics {

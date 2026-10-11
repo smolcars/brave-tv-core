@@ -91,6 +91,7 @@ public class TvPresentationTest {
         mDialog.show();
         var window = mDialog.getWindow();
         assertNotNull(window);
+        window.setBackgroundDrawableResource(android.R.color.transparent);
         var resources = mActivity.getResources();
         var metrics = resources.getDisplayMetrics();
         // Two readable columns at either baseline or enlarged system text size.
