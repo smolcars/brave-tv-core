@@ -47,6 +47,9 @@ import java.util.List;
 @CommandLineFlags.Add({ChromeSwitches.DISABLE_FIRST_RUN_EXPERIENCE})
 @DoNotBatch(reason = "Creates and removes only uniquely identified native history visits.")
 public class TvHistoryPanelTest {
+    private static final int VISIT_COUNT = 160;
+    private static final int PAGE_COUNT = VISIT_COUNT / TvHistoryPanel.PAGE_SIZE;
+
     @Rule
     public ChromeTabbedActivityTestRule mActivityTestRule = new ChromeTabbedActivityTestRule();
 
@@ -81,45 +84,42 @@ public class TvHistoryPanelTest {
         assertNotNull("Serve the owned history.html fixture and pass its URL", fixture);
         assertEquals("http://10.0.2.2:18088/history.html", fixture);
         mOwnedPrefix = fixture + "?run=" + System.nanoTime() + "&page=";
-        for (int i = 1; i <= 160; i++) {
+        for (int i = 1; i <= VISIT_COUNT; i++) {
             mActivityTestRule.loadUrl(mOwnedPrefix + i);
             String title = "TV history pagination " + i;
             CriteriaHelper.pollUiThread(() -> mTab.getTitle().equals(title));
         }
         List<HistoryItem> visits = queryOwnedVisits();
-        assertEquals(160, visits.size());
+        assertEquals(VISIT_COUNT, visits.size());
         showHistory();
-        waitForFocus(row(160));
-        for (int page = 1; page < 20; page++) {
-            if (page > 1) {
-                focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_history)));
-                mDevice.pressDPadRight();
-                waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_history)));
-            } else {
-                focusDown(By.desc(mActivity.getString(R.string.brave_tv_more_history)));
-            }
+        waitForFocus(row(VISIT_COUNT));
+        for (int page = 1; page < PAGE_COUNT; page++) {
+            focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_history)));
+            mDevice.pressDPadRight();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_history)));
             mDevice.pressDPadCenter();
-            waitForFocus(row(160 - page * 8));
+            waitForFocus(row(VISIT_COUNT - page * TvHistoryPanel.PAGE_SIZE));
         }
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_history)));
         mDevice.pressBack();
-        waitForFocus(row(8));
-        for (int page = 19; page >= 17; page--) {
+        waitForFocus(row(TvHistoryPanel.PAGE_SIZE));
+        for (int page = PAGE_COUNT - 1; page >= PAGE_COUNT - 3; page--) {
             focusDown(By.desc(mActivity.getString(R.string.brave_tv_previous_history)));
             mDevice.pressDPadCenter();
-            waitForFocus(row(160 - (page - 1) * 8));
+            waitForFocus(row(VISIT_COUNT - (page - 1) * TvHistoryPanel.PAGE_SIZE));
         }
+        int selected = VISIT_COUNT - (PAGE_COUNT - 4) * TvHistoryPanel.PAGE_SIZE - 1;
         mDevice.pressDPadDown();
-        waitForFocus(row(31));
+        waitForFocus(row(selected));
         remove(
                 List.of(
                         visits.stream()
-                                .filter(i -> i.getTitle().endsWith(" 33"))
+                                .filter(i -> i.getTitle().endsWith(" " + (selected + 2)))
                                 .findFirst()
                                 .get()));
-        CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(row(32)));
-        waitForFocus(row(31));
+        CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(row(selected + 1)));
+        waitForFocus(row(selected));
         boolean allowed =
                 ThreadUtils.runOnUiThreadBlocking(
                         () ->
@@ -137,7 +137,7 @@ public class TvHistoryPanelTest {
                                     By.desc(mActivity.getString(R.string.brave_tv_remove_history)))
                             .isEnabled());
             mDevice.pressBack();
-            waitForFocus(row(31));
+            waitForFocus(row(selected));
             ThreadUtils.runOnUiThreadBlocking(
                     () ->
                             UserPrefs.get(mTab.getProfile())
@@ -150,7 +150,7 @@ public class TvHistoryPanelTest {
             waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
             mDevice.pressDPadCenter();
             waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_history)));
-            assertEquals(159, queryOwnedVisits().size());
+            assertEquals(VISIT_COUNT - 1, queryOwnedVisits().size());
             mDevice.pressDPadRight();
             waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_history)));
             mDevice.pressDPadCenter();
@@ -158,12 +158,13 @@ public class TvHistoryPanelTest {
             mDevice.pressDPadRight();
             waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_history)));
             mDevice.pressDPadCenter();
-            waitForFocus(row(30));
-            assertEquals(158, queryOwnedVisits().size());
+            waitForFocus(row(selected - 1));
+            assertEquals(VISIT_COUNT - 2, queryOwnedVisits().size());
             mDevice.pressDPadCenter();
             waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_history)));
             mDevice.pressDPadCenter();
-            CriteriaHelper.pollUiThread(() -> mTab.getUrl().getSpec().equals(mOwnedPrefix + 30));
+            CriteriaHelper.pollUiThread(
+                    () -> mTab.getUrl().getSpec().equals(mOwnedPrefix + (selected - 1)));
             CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
         } finally {
             ThreadUtils.runOnUiThreadBlocking(

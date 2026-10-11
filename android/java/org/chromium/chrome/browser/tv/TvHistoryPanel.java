@@ -26,7 +26,7 @@ import java.util.List;
 
 /** Owns a normal-session history query and its native TV dialogs. */
 final class TvHistoryPanel implements HistoryProvider.BrowsingHistoryObserver {
-    private static final int PAGE_SIZE = 8;
+    static final int PAGE_SIZE = 8;
 
     private final BraveActivity mActivity;
     private final Tab mTab;
