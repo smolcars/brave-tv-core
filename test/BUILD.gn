@@ -1696,6 +1696,7 @@ if (is_android) {
       "//brave/android/javatests/org/chromium/chrome/browser/toolbar/BraveBottomBarToolbarTest.java",
       "//brave/android/javatests/org/chromium/chrome/browser/toolbar/BraveToolbarManagerTest.java",
       "//brave/android/javatests/org/chromium/chrome/browser/tv/TvBrowserSessionTest.java",
+      "//brave/android/javatests/org/chromium/chrome/browser/tv/TvHomePageTest.java",
     ]
 
     deps = [

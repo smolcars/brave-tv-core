@@ -103,8 +103,38 @@ object TvPresentation {
         var preferredKey by mutableStateOf(preferred)
     }
 
-    private class HomeState {
-        var focusRequest by mutableStateOf(0)
+    /** Bounded presentation state; the attached native Home owns model observations. */
+    class HomeState(
+        val showSections: Boolean,
+        val favoritesTitle: String,
+        val favoritesEmpty: String,
+        val recentTitle: String,
+        val recentEmpty: String,
+        val loadingLabel: String,
+    ) {
+        internal var focusRequest by mutableStateOf(0)
+        internal var favorites by mutableStateOf<List<Action>>(emptyList())
+        internal var recentTabs by mutableStateOf<List<Action>>(emptyList())
+        internal var loadingFavorites by mutableStateOf(true)
+
+        fun setFavorites(actions: List<Action>, loading: Boolean) {
+            require(actions.size <= 6 && (showSections || actions.isEmpty()))
+            if (favorites != actions) restoreSectionFocus(favorites, actions)
+            favorites = actions
+            loadingFavorites = loading
+        }
+
+        fun setRecentTabs(actions: List<Action>) {
+            require(actions.size <= 4 && (showSections || actions.isEmpty()))
+            if (recentTabs != actions) restoreSectionFocus(recentTabs, actions)
+            recentTabs = actions
+        }
+
+        private fun restoreSectionFocus(previous: List<Action>, next: List<Action>) {
+            previous.firstOrNull { it.hasFocus() }?.let {
+                if (it in next) it.requestFocus() else focusRequest++
+            }
+        }
     }
 
     /** UI thread only, for a factory-created home view. Schedules Address focus in composition. */
@@ -148,9 +178,9 @@ object TvPresentation {
         attribution: String,
         actions: List<Action>,
         links: List<Action>,
+        state: HomeState,
     ): View = view(context).apply {
         require(actions.isNotEmpty() && actions.first().enabled)
-        val state = HomeState()
         tag = state
         setContent {
             Theme {
@@ -165,21 +195,45 @@ object TvPresentation {
                     Text(title, fontSize = 36.sp, fontWeight = FontWeight.Medium,
                         modifier = Modifier.semantics { heading() })
                     Text(subtitle, color = secondary, fontSize = 18.sp)
-                    actions.firstOrNull()?.let {
-                        ActionButton(it, Modifier.fillMaxWidth().focusRequester(initial))
-                    }
+                    ActionButton(actions.first(),
+                        Modifier.fillMaxWidth().focusRequester(initial))
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        actions.drop(1).forEach { ActionButton(it, Modifier.weight(1f)) }
+                        actions.drop(1).forEach {
+                            ActionButton(it, Modifier.weight(1f), quiet = true)
+                        }
+                    }
+                    if (state.showSections) {
+                        HomeSection(state.favoritesTitle,
+                            if (state.loadingFavorites) state.loadingLabel else state.favoritesEmpty,
+                            state.favorites, 3)
+                        HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 2)
                     }
                     Text(attribution, color = secondary, fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 48.dp))
+                        modifier = Modifier.padding(top = 16.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        links.forEach { ActionButton(it) }
+                        links.forEach { ActionButton(it, quiet = true) }
                     }
                 }
                 LaunchedEffect(state.focusRequest) {
                     withFrameNanos { }
                     initial.requestFocus()
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun HomeSection(title: String, emptyLabel: String, actions: List<Action>, columns: Int) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Medium,
+                modifier = Modifier.semantics { heading() })
+            if (actions.isEmpty()) Text(emptyLabel, color = secondary, fontSize = 16.sp)
+            actions.chunked(columns).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    row.forEach { action ->
+                        key(action) { ActionButton(action, Modifier.weight(1f)) }
+                    }
+                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -316,7 +370,7 @@ object TvPresentation {
     }
 
     @Composable
-    internal fun ActionButton(action: Action, modifier: Modifier = Modifier) {
+    internal fun ActionButton(action: Action, modifier: Modifier = Modifier, quiet: Boolean = false) {
         var hasFocus by remember { mutableStateOf(false) }
         val requested = remember { FocusRequester() }
         LaunchedEffect(action.focusRequest) {
@@ -345,7 +399,7 @@ object TvPresentation {
             border = ButtonDefaults.border(focusedBorder = Border(BorderStroke(2.dp, text))),
             scale = ButtonDefaults.scale(focusedScale = 1.02f),
             colors = ButtonDefaults.colors(
-                containerColor = surface, contentColor = text,
+                containerColor = if (quiet) Color.Transparent else surface, contentColor = text,
                 focusedContainerColor = accent, focusedContentColor = backgroundColor,
             ),
         ) {

@@ -3958,6 +3958,10 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_NEXT" desc="TV button for the next page of browser tabs.">More tabs</message>
     <message name="IDS_BRAVE_TV_BOOKMARKS" desc="TV button to open saved browser bookmarks.">Bookmarks</message>
     <message name="IDS_BRAVE_TV_LOADING_BOOKMARKS" desc="Status text while the TV bookmark panel waits for saved bookmarks.">Loading bookmarks…</message>
+    <message name="IDS_BRAVE_TV_HOME_FAVORITES" desc="Section heading for saved pages from the default bookmark folder on normal TV Home.">Favorites</message>
+    <message name="IDS_BRAVE_TV_HOME_EMPTY_FAVORITES" desc="Empty-state description beneath Favorites on normal TV Home.">Save a page from browser controls to see it here.</message>
+    <message name="IDS_BRAVE_TV_HOME_RECENT_TABS" desc="Section heading for existing recently used normal tabs on TV Home.">Continue browsing</message>
+    <message name="IDS_BRAVE_TV_HOME_EMPTY_RECENT_TABS" desc="Empty-state description when TV Home has no other normal web tabs.">Your open pages will appear here.</message>
     <message name="IDS_BRAVE_TV_EMPTY_BOOKMARKS" desc="Description of an empty folder in the TV bookmark panel.">No bookmarks in this folder</message>
     <message name="IDS_BRAVE_TV_SAVE_BOOKMARK" desc="TV button to save the current webpage as a bookmark.">Bookmark this page</message>
     <message name="IDS_BRAVE_TV_PARENT_FOLDER" desc="TV button to move up one bookmark folder.">Parent folder</message>
