@@ -728,7 +728,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         dismissDialog();
         // The page can navigate or a tab can close while the native panel is open.
         boolean current =
-                action == R.string.brave_tv_pointer || action == R.string.brave_tv_scroll
+                (action == R.string.brave_tv_pointer || action == R.string.brave_tv_scroll)
                         ? mSession.isCurrent(context)
                         : mSession.isCurrentDocument(context);
         if (!current) {
