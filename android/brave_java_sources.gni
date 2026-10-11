@@ -448,6 +448,7 @@ brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/toolbar/top/BraveToolbarLayoutImpl.java",
   "../../brave/android/java/org/chromium/chrome/browser/toolbar/top/BraveTopToolbarCoordinator.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserControls.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserControlsVisibilityDelegate.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserSession.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvDownloadsPanel.java",

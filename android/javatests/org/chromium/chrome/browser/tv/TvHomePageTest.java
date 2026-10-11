@@ -153,6 +153,48 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void nativeAppShowingRequestOverridesCompactTvControls() {
+        assertTelevisionViewport();
+        int token =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () ->
+                                mActivity
+                                        .getBrowserControlsManager()
+                                        .getBrowserVisibilityDelegate()
+                                        .showControlsPersistent());
+        try {
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            TabBrowserControlsConstraintsHelper.getConstraints(
+                                            mActivity.getActivityTab())
+                                    == BrowserControlsState.SHOWN);
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            mActivity
+                                    .getBrowserControlsManager()
+                                    .getBrowserVisibilityDelegate()
+                                    .releasePersistentShowingToken(token));
+        }
+        assertTelevisionViewport();
+    }
+
+    @Test
+    @MediumTest
+    public void nativeEditableVisibilityRecoversAfterNavigation() {
+        mActivityTestRule.loadUrl("data:text/html,<input autofocus aria-label='TV native editor'>");
+        CriteriaHelper.pollUiThread(
+                () ->
+                        TabBrowserControlsConstraintsHelper.getConstraints(
+                                        mActivity.getActivityTab())
+                                == BrowserControlsState.SHOWN);
+        mActivityTestRule.loadUrl(URL);
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
+        assertTelevisionViewport();
+    }
+
+    @Test
+    @MediumTest
     public void homePreviewsSixSavedPages() {
         assertFalse(
                 mDevice.hasObject(
