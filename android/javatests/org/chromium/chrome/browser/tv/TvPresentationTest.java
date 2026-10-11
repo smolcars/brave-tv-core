@@ -12,6 +12,7 @@ import static org.junit.Assert.assertTrue;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AlertDialog;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -78,6 +79,15 @@ public class TvPresentationTest {
         mDialog = new AlertDialog.Builder(mActivity).setView(content).create();
         mDialog.setOnDismissListener(ignored -> TvPresentation.dispose(content));
         mDialog.setOnKeyListener((dialog, key, event) -> TvPresentation.back(content, event));
+        AlertDialog dialog = mDialog;
+        dialog.getOnBackPressedDispatcher()
+                .addCallback(
+                        new OnBackPressedCallback(true) {
+                            @Override
+                            public void handleOnBackPressed() {
+                                if (!TvPresentation.collapseControls(content)) dialog.cancel();
+                            }
+                        });
         mDialog.show();
         var window = mDialog.getWindow();
         assertNotNull(window);
