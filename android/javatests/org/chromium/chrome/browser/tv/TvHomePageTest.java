@@ -68,6 +68,11 @@ public class TvHomePageTest {
         mActivityTestRule.startMainActivityOnBlankPage();
         mActivity = (BraveActivity) (Object) mActivityTestRule.getActivity();
         mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        // TV startup opens controls for about:blank. Home must own the test window.
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
         mBookmarks =
                 ThreadUtils.runOnUiThreadBlocking(
                         () -> BookmarkModel.getForProfile(mActivity.getActivityTab().getProfile()));
