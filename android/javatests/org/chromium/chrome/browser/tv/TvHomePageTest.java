@@ -192,6 +192,77 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void cancelFinalGroupedTabPreservesOriginalPageAndGroup() {
+        Tab original = openFinalGroupedTabConfirmation();
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    TabModel model = mActivity.getTabModelSelector().getModel(false);
+                    assertTrue(mActivity.getActivityTab() == original);
+                    assertEquals(1, model.getCount());
+                    assertEquals(1, model.getTabGroupCount());
+                    assertNotNull(original.getTabGroupId());
+                    assertEquals(new GURL(URL), original.getUrl());
+                });
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.close_tab, false));
+        waitForFocus(By.text(mActivity.getString(R.string.cancel)));
+        assertTrue(
+                mDevice.hasObject(
+                        By.text(mActivity.getString(R.string.close_from_group_dialog_title))));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        ThreadUtils.runOnUiThreadBlocking(() -> assertTrue(mActivity.getActivityTab() == original));
+    }
+
+    @Test
+    @MediumTest
+    public void deleteFinalGroupedTabCreatesUsableHome() {
+        Tab original = openFinalGroupedTabConfirmation();
+        mDevice.pressDPadRight();
+        waitForFocus(By.text(mActivity.getString(R.string.delete_tab_group_action)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    TabModel model = mActivity.getTabModelSelector().getModel(false);
+                    return model.getCount() == 1
+                            && model.getTabGroupCount() == 0
+                            && model.getTabById(original.getId()) == null
+                            && mActivity.getActivityTab() != null
+                            && mActivity.getActivityTab().getNativePage() instanceof TvHomePage;
+                });
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        assertTrue(mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
+    }
+
+    private Tab openFinalGroupedTabConfirmation() {
+        mActivityTestRule.loadUrl(URL);
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    TabModel model = mActivity.getTabModelSelector().getModel(false);
+                    assertEquals(1, model.getCount());
+                    model.createSingleTabGroup(original);
+                    assertNotNull(original.getTabGroupId());
+                    assertEquals(1, model.getTabGroupCount());
+                    mActivity.onMenuOrKeyboardAction(R.id.close_tab, false);
+                });
+        waitForFocus(By.text(mActivity.getString(R.string.cancel)));
+        assertTrue(
+                mDevice.hasObject(
+                        By.text(mActivity.getString(R.string.close_from_group_dialog_title))));
+        mDevice.pressDPadRight();
+        waitForFocus(By.text(mActivity.getString(R.string.delete_tab_group_action)));
+        mDevice.pressDPadLeft();
+        waitForFocus(By.text(mActivity.getString(R.string.cancel)));
+        return original;
+    }
+
+    @Test
+    @MediumTest
     public void televisionTabAnimationPolicySurvivesAccessibilityChanges() {
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
@@ -411,6 +482,103 @@ public class TvHomePageTest {
                     UiObject2 control = mDevice.findObject(target);
                     return control != null && control.isFocused();
                 });
+    }
+
+    @Test
+    @MediumTest
+    public void bookmarkLibraryPagesAndOpensNativeSavedPage() {
+        openOwnedBookmarkFolder();
+        assertFalse(mDevice.hasObject(By.desc("TV library fixture 8")));
+        focusDown(By.desc(mActivity.getString(R.string.brave_tv_more_bookmarks)));
+        mDevice.pressDPadCenter();
+        focusDown(By.desc("TV library fixture 8"));
+        assertFalse(mDevice.hasObject(By.desc("TV library fixture 0")));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.getActivityTab().getUrl().equals(new GURL(URL + "#library8")));
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
+    }
+
+    @Test
+    @MediumTest
+    public void bookmarkRemovalCancelPreservesThenConfirmRemovesOnlySelectedPage() {
+        List<BookmarkId> items = openOwnedBookmarkFolder();
+        focusDown(By.desc("TV library fixture 0"));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_bookmark)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_open_bookmark)));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> assertTrue(mBookmarks.doesBookmarkExist(items.get(0))));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_bookmark)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_remove_bookmark)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(() -> !mBookmarks.doesBookmarkExist(items.get(0)));
+        focusDown(By.desc("TV library fixture 1"));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    for (int i = 1; i < items.size(); i++) {
+                        assertTrue(mBookmarks.doesBookmarkExist(items.get(i)));
+                    }
+                    for (int i = 0; i <= TvPresentation.MAX_HOME_FAVORITES; i++) {
+                        assertTrue(mBookmarks.doesBookmarkExist(mOwnedBookmarks.get(i)));
+                    }
+                });
+    }
+
+    private List<BookmarkId> openOwnedBookmarkFolder() {
+        List<BookmarkId> items = new ArrayList<>();
+        String parentTitle =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> {
+                            BookmarkId parent = mBookmarks.getDefaultBookmarkFolder();
+                            BookmarkId folder =
+                                    mBookmarks.addFolder(parent, 0, "TV library fixture folder");
+                            assertNotNull(folder);
+                            mOwnedBookmarks.add(folder);
+                            for (int i = 0; i < 9; i++) {
+                                BookmarkId id =
+                                        mBookmarks.addBookmark(
+                                                folder,
+                                                i,
+                                                "TV library fixture " + i,
+                                                new GURL(URL + "#library" + i));
+                                assertNotNull(id);
+                                items.add(id);
+                                mOwnedBookmarks.add(id);
+                            }
+                            return mBookmarks.getBookmarkById(parent).getTitle();
+                        });
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBookmarks);
+        focusDown(By.desc(mActivity.getString(R.string.brave_tv_bookmark_folder, parentTitle)));
+        mDevice.pressDPadCenter();
+        focusDown(
+                By.desc(
+                        mActivity.getString(
+                                R.string.brave_tv_bookmark_folder, "TV library fixture folder")));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_save_bookmark)));
+        return items;
+    }
+
+    private void focusDown(BySelector target) {
+        for (int i = 0; i < 24; i++) {
+            UiObject2 control = mDevice.findObject(target);
+            if (control != null && control.isFocused()) return;
+            mDevice.pressDPadDown();
+            mDevice.waitForIdle();
+        }
+        waitForFocus(target);
     }
 
     private void openSettingsFromHome() {
