@@ -53,6 +53,7 @@ import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
 import org.chromium.chrome.browser.search_engines.settings.BraveSearchEngineAdapter;
+import org.chromium.chrome.browser.tab.SadTab;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabObserver;
 import org.chromium.chrome.browser.tabmodel.TabModel;
@@ -380,9 +381,25 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 || (device != null
                         && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
                         && !event.isFromSource(InputDevice.SOURCE_DPAD))
-                || keyboardVisible()
-                || nativeUiOwnsInput(false)) {
+                || keyboardVisible()) {
             mInput.cancelPress();
+            return false;
+        }
+        if (nativeUiOwnsInput(false)) {
+            mInput.cancelPress();
+            View focus = mActivity.getCurrentFocus();
+            if (!nativeSecurityOwnsInput()
+                    && SadTab.isShowing(mActivity.getActivityTab())
+                    && event.getAction() == KeyEvent.ACTION_DOWN
+                    && event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN
+                    && focus != null
+                    && focus.getId() == R.id.sad_tab_message) {
+                // The help span consumes Down; move to the existing native recovery action.
+                View recovery = mActivity.findViewById(R.id.sad_tab_button);
+                if (recovery != null && recovery.isShown() && recovery.isEnabled()) {
+                    return recovery.requestFocus();
+                }
+            }
             return false;
         }
         TvRemoteInput.Key key;

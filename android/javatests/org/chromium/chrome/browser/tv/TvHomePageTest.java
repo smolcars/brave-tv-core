@@ -68,6 +68,7 @@ import org.chromium.chrome.browser.layouts.LayoutType;
 import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.profiles.Profile;
+import org.chromium.chrome.browser.tab.SadTab;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.browser.tab.TabObserver;
@@ -86,6 +87,7 @@ import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.test.util.DOMUtils;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
+import org.chromium.content_public.browser.test.util.WebContentsUtils;
 import org.chromium.url.GURL;
 import org.junit.After;
 import org.junit.Before;
@@ -1146,6 +1148,36 @@ public class TvHomePageTest {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+    }
+
+    @Test
+    @MediumTest
+    public void nativeRendererCrashDpadReachesRecoveryAndPreservesTab() throws Exception {
+        mActivityTestRule.loadUrl(URL);
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(original::getWebContents);
+        assertNotNull(contents);
+        int count =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> mActivity.getTabModelSelector().getModel(false).getCount());
+        WebContentsUtils.crashTabAndWait(contents);
+        CriteriaHelper.pollUiThread(() -> SadTab.isShowing(original));
+        mDevice.pressDPadDown();
+        waitForFocus(By.res(mActivity.getPackageName(), "sad_tab_message"));
+        mDevice.pressDPadDown();
+        waitForFocus(By.res(mActivity.getPackageName(), "sad_tab_button"));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(() -> !SadTab.isShowing(original));
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(original, mActivity.getActivityTab());
+                    assertSame(contents, original.getWebContents());
+                    assertEquals(new GURL(URL), original.getUrl());
+                    assertEquals(count, mActivity.getTabModelSelector().getModel(false).getCount());
+                });
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
     }
 
     @Test
