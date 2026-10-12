@@ -76,6 +76,7 @@ import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.browser.tab.TabObserver;
 import org.chromium.chrome.browser.tab.TvBrowserControlsVisibilityDelegate;
 import org.chromium.chrome.browser.tabmodel.TabClosureParams;
+import org.chromium.chrome.browser.tab_ui.TabContentManager;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
@@ -97,6 +98,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -2062,6 +2064,85 @@ public class TvHomePageTest {
                 () -> mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
         assertFalse(
                 mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
+    }
+
+    @Test
+    @MediumTest
+    @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
+    public void privateHomeNativeThumbnailCacheDoesNotPersistPixels() throws Exception {
+        checkPrivateThumbnailCache(false);
+    }
+
+    @Test
+    @MediumTest
+    @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
+    public void privateWebNativeThumbnailCacheDoesNotPersistPixels() throws Exception {
+        checkPrivateThumbnailCache(true);
+    }
+
+    private void checkPrivateThumbnailCache(boolean webPage) throws Exception {
+        mActivityTestRule.loadUrl(URL);
+        Tab normal = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        TabContentManager manager =
+                ThreadUtils.runOnUiThreadBlocking(mActivity::getTabContentManager);
+        File normalJpeg = TabContentManager.getTabThumbnailFileJpeg(normal.getId());
+        ThreadUtils.runOnUiThreadBlocking(() -> manager.removeTabThumbnail(normal.getId()));
+        CriteriaHelper.pollInstrumentationThread(() -> !normalJpeg.exists());
+        ThreadUtils.runOnUiThreadBlocking(() -> manager.cacheTabThumbnail(normal));
+        CriteriaHelper.pollInstrumentationThread(normalJpeg::exists);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab().isIncognito()
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        if (webPage) mActivityTestRule.loadUrl(URL);
+        Tab privateTab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        int privateId = ThreadUtils.runOnUiThreadBlocking(privateTab::getId);
+        File privateJpeg = TabContentManager.getTabThumbnailFileJpeg(privateId);
+        File privateEtc = TabContentManager.getTabThumbnailFileEtc1(privateTab);
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        assertTrue(
+                                (mActivity.getWindow().getAttributes().flags
+                                                & WindowManager.LayoutParams.FLAG_SECURE)
+                                        != 0));
+        CallbackHelper cached = new CallbackHelper();
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        manager.cacheTabThumbnailWithCallback(
+                                privateTab,
+                                false,
+                                bitmap -> {
+                                    assertNull(bitmap);
+                                    cached.notifyCalled();
+                                }));
+        cached.waitForFirst();
+        CriteriaHelper.pollUiThread(() -> !manager.isTabCaptureInFlightForTesting(privateId));
+        assertFalse("Private JPEG must not be persisted", privateJpeg.exists());
+        assertFalse("Private ETC1 must not be persisted", privateEtc.exists());
+        mDevice.pressHome();
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    int state = ApplicationStatus.getStateForActivity(mActivity);
+                    return state == ActivityState.PAUSED || state == ActivityState.STOPPED;
+                });
+        CriteriaHelper.pollUiThread(() -> !manager.isTabCaptureInFlightForTesting(privateId));
+        assertFalse("Pause must not persist private JPEG", privateJpeg.exists());
+        assertFalse("Pause must not persist private ETC1", privateEtc.exists());
+        mActivityTestRule.resumeMainActivityFromLauncher();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(privateTab, mActivity.getActivityTab());
+                    assertTrue(privateTab.isIncognito());
+                    assertTrue(
+                            (mActivity.getWindow().getAttributes().flags
+                                            & WindowManager.LayoutParams.FLAG_SECURE)
+                                    != 0);
+                });
+        assertTrue("Normal cached page must be preserved", normalJpeg.exists());
     }
 
     @Test
