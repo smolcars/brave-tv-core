@@ -1215,13 +1215,13 @@ public class TvHomePageTest {
         }
         ThreadUtils.runOnUiThreadBlocking(
                 () -> mActivity.onMenuOrKeyboardAction(R.id.preferences_id, false));
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_data)));
         ThreadUtils.runOnUiThreadBlocking(
                 () ->
                         assertTrue(
                                 mActivity.onMenuOrKeyboardAction(
                                         R.id.open_history_menu_id, false)));
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_clear_data)));
         assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_history))));
     }
 
@@ -2038,12 +2038,28 @@ public class TvHomePageTest {
 
         mActivity = ApplicationTestUtils.recreateActivity(mActivity);
         CriteriaHelper.pollUiThread(
-                () ->
-                        mActivity.getActivityTab() != null
-                                && mActivity.getActivityTab().getId() == privateId
-                                && mActivity.getActivityTab().isIncognito()
-                                && mActivity.getActivityTab().getNativePage()
-                                        instanceof TvHomePage);
+                () -> {
+                    Tab restored = mActivity.getActivityTab();
+                    Criteria.checkThat(
+                            "[DEBUG-private-recreate] selected="
+                                    + (restored == null ? "none" : restored.getId())
+                                    + "; private="
+                                    + (restored != null && restored.isIncognito())
+                                    + "; TV Home="
+                                    + (restored != null
+                                            && restored.getNativePage() instanceof TvHomePage)
+                                    + "; expected="
+                                    + privateId
+                                    + "; native counts="
+                                    + mActivity.getTabModelSelector().getModel(false).getCount()
+                                    + "/"
+                                    + mActivity.getTabModelSelector().getModel(true).getCount(),
+                            restored != null
+                                    && restored.getId() == privateId
+                                    && restored.isIncognito()
+                                    && restored.getNativePage() instanceof TvHomePage,
+                            is(true));
+                });
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         assertFalse(mDevice.hasObject(By.text(draft)));
         ThreadUtils.runOnUiThreadBlocking(
