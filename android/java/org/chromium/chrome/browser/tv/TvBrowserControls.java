@@ -1013,9 +1013,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         mActivity,
                         mActivity.getString(R.string.brave_tv_file_picker),
                         mActivity.getString(R.string.brave_tv_file_picker_description),
-                        R.string.brave_tv_cancel);
+                        R.string.cancel);
         if (context.tab != null && context.tab.isIncognito()) panel.protectPrivateContent();
-        panel.addAction(R.string.brave_tv_cancel, true, this::returnToPage);
+        panel.addAction(R.string.cancel, true, this::returnToPage);
         panel.addAction(
                 R.string.brave_tv_file_picker_continue,
                 true,

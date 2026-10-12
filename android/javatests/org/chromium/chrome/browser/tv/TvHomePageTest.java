@@ -1462,7 +1462,7 @@ public class TvHomePageTest {
                         () -> mActivity.getTabModelSelector().getModel(false).getCount());
         for (int i = 0; i < 2; i++) {
             assertTrue(DOMUtils.clickNode(contents, "file"));
-            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+            waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
             assertTrue(
                     mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_file_picker))));
             if (i == 0) injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
@@ -1499,7 +1499,7 @@ public class TvHomePageTest {
                         assertTrue(
                                 mActivity.showTvFilePickerGuide(
                                         opened::notifyCalled, cancelled::notifyCalled)));
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_file_picker_continue)));
         injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
@@ -1513,7 +1513,7 @@ public class TvHomePageTest {
                         assertTrue(
                                 mActivity.showTvFilePickerGuide(
                                         opened::notifyCalled, cancelled::notifyCalled)));
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
         mActivityTestRule.loadUrl("data:text/html,<h1>TV%20picker%20replacement</h1>");
         cancelled.waitForCallback(0);
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
@@ -1526,7 +1526,7 @@ public class TvHomePageTest {
                         assertTrue(
                                 mActivity.showTvFilePickerGuide(
                                         opened::notifyCalled, cancelled::notifyCalled)));
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
         mDevice.pressHome();
         CriteriaHelper.pollUiThread(
                 () -> {
@@ -1552,7 +1552,7 @@ public class TvHomePageTest {
                         assertTrue(
                                 mActivity.showTvFilePickerGuide(
                                         opened::notifyCalled, cancelled::notifyCalled)));
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
         JavaScriptUtils.executeJavaScriptAndWaitForResult(
                 contents, "setTimeout(()=>alert('TV picker native modal'),0); true");
         cancelled.waitForCallback(0);
@@ -1588,7 +1588,7 @@ public class TvHomePageTest {
         WebContents contents = ThreadUtils.runOnUiThreadBlocking(tab::getWebContents);
         assertNotNull(contents);
         assertTrue(DOMUtils.clickNode(contents, "file"));
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        waitForFocus(By.desc(mActivity.getString(R.string.cancel)));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     View root = focusedNativeWindow();
