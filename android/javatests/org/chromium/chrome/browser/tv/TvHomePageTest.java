@@ -2069,18 +2069,18 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
-    public void privateHomeNativeThumbnailCacheDoesNotPersistPixels() throws Exception {
-        checkPrivateThumbnailCache(false);
+    public void privateHomeNativeJpegCacheDoesNotPersistPixels() throws Exception {
+        checkPrivateJpegCache(false);
     }
 
     @Test
     @MediumTest
     @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
-    public void privateWebNativeThumbnailCacheDoesNotPersistPixels() throws Exception {
-        checkPrivateThumbnailCache(true);
+    public void privateWebNativeJpegCacheDoesNotPersistPixels() throws Exception {
+        checkPrivateJpegCache(true);
     }
 
-    private void checkPrivateThumbnailCache(boolean webPage) throws Exception {
+    private void checkPrivateJpegCache(boolean webPage) throws Exception {
         mActivityTestRule.loadUrl(URL);
         Tab normal = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         TabContentManager manager =
@@ -2101,7 +2101,6 @@ public class TvHomePageTest {
         Tab privateTab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         int privateId = ThreadUtils.runOnUiThreadBlocking(privateTab::getId);
         File privateJpeg = TabContentManager.getTabThumbnailFileJpeg(privateId);
-        File privateEtc = TabContentManager.getTabThumbnailFileEtc1(privateTab);
         ThreadUtils.runOnUiThreadBlocking(
                 () ->
                         assertTrue(
@@ -2121,7 +2120,6 @@ public class TvHomePageTest {
         cached.waitForFirst();
         CriteriaHelper.pollUiThread(() -> !manager.isTabCaptureInFlightForTesting(privateId));
         assertFalse("Private JPEG must not be persisted", privateJpeg.exists());
-        assertFalse("Private ETC1 must not be persisted", privateEtc.exists());
         mDevice.pressHome();
         CriteriaHelper.pollUiThread(
                 () -> {
@@ -2130,7 +2128,6 @@ public class TvHomePageTest {
                 });
         CriteriaHelper.pollUiThread(() -> !manager.isTabCaptureInFlightForTesting(privateId));
         assertFalse("Pause must not persist private JPEG", privateJpeg.exists());
-        assertFalse("Pause must not persist private ETC1", privateEtc.exists());
         mActivityTestRule.resumeMainActivityFromLauncher();
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
         ThreadUtils.runOnUiThreadBlocking(
