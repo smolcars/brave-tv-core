@@ -2132,7 +2132,7 @@ public class TvHomePageTest {
                                     assertNull(bitmap);
                                     cached.notifyCalled();
                                 }));
-        cached.waitForFirst();
+        cached.waitForCallback(0);
         CriteriaHelper.pollUiThread(() -> !manager.isTabCaptureInFlightForTesting(privateId));
         assertFalse("Private JPEG must not be persisted", privateJpeg.exists());
         mDevice.pressHome();
