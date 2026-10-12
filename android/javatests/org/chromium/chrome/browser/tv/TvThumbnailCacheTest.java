@@ -88,8 +88,9 @@ public class TvThumbnailCacheTest {
             etcDirectory = etc.mkdir();
             assertTrue("Create only the owned ETC1 obstruction", etcDirectory);
             capture(manager, tab);
-            assertTrue(jpeg.isDirectory());
-            assertTrue(etc.isDirectory());
+            // Native failure cleanup removes these empty obstruction directories.
+            assertFalse(jpeg.exists());
+            assertFalse(etc.exists());
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
                         assertSame(tab, activity.getActivityTab());
@@ -104,10 +105,10 @@ public class TvThumbnailCacheTest {
                             contents, "performance.timeOrigin"));
         } finally {
             try {
-                if (etcDirectory)
+                if (etcDirectory && etc.exists())
                     assertTrue("Remove only the empty ETC1 obstruction", etc.delete());
             } finally {
-                if (jpegDirectory)
+                if (jpegDirectory && jpeg.exists())
                     assertTrue("Remove only the empty JPEG obstruction", jpeg.delete());
             }
         }
