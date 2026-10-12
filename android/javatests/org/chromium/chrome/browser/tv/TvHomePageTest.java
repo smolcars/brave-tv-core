@@ -2027,6 +2027,9 @@ public class TvHomePageTest {
                                 && mActivity.getActivityTab().getNativePage()
                                         instanceof TvHomePage);
         int privateId = ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getId());
+        mActivityTestRule.loadUrl(URL);
+        GURL privateUrl =
+                ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getUrl());
         ThreadUtils.runOnUiThreadBlocking(
                 () -> assertTrue(mActivity.onMenuOrKeyboardAction(R.id.focus_url_bar, false)));
         CriteriaHelper.pollInstrumentationThread(
@@ -2045,9 +2048,8 @@ public class TvHomePageTest {
                                     + (restored == null ? "none" : restored.getId())
                                     + "; private="
                                     + (restored != null && restored.isIncognito())
-                                    + "; TV Home="
-                                    + (restored != null
-                                            && restored.getNativePage() instanceof TvHomePage)
+                                    + "; native URL retained="
+                                    + (restored != null && privateUrl.equals(restored.getUrl()))
                                     + "; expected="
                                     + privateId
                                     + "; native counts="
@@ -2057,17 +2059,17 @@ public class TvHomePageTest {
                             restored != null
                                     && restored.getId() == privateId
                                     && restored.isIncognito()
-                                    && restored.getNativePage() instanceof TvHomePage,
+                                    && privateUrl.equals(restored.getUrl()),
                             is(true));
                 });
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        dismissNativeEntryToPage();
         assertFalse(mDevice.hasObject(By.text(draft)));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> assertTrue(mActivity.onMenuOrKeyboardAction(R.id.focus_url_bar, false)));
         CriteriaHelper.pollInstrumentationThread(
                 () -> {
                     UiObject2 editor = mDevice.findObject(By.clazz("android.widget.EditText"));
-                    return editor != null && TextUtils.isEmpty(editor.getText());
+                    return editor != null && privateUrl.getSpec().equals(editor.getText());
                 });
         dismissNativeEntryToPage();
         ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getTabModelSelector().selectModel(false));
