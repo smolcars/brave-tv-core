@@ -168,12 +168,14 @@ function disable(value) {
 }
 async function poll() {
   if (!token || busy || document.hidden) return
+  const credential = token
   busy = true
   try {
-    polling = post('/api', { token, op: 'state' })
-    render(await polling)
+    polling = post('/api', { token: credential, op: 'state' })
+    const result = await polling
+    if (token === credential) render(result)
   } catch {
-    disconnected()
+    if (token === credential) disconnected()
   } finally {
     busy = false
     polling = null
@@ -224,6 +226,7 @@ async function command(op, extra = {}) {
     )
       return false
   }
+  const credential = token
   busy = true
   if (op === 'edit' && (extra.edit === 'replace' || extra.edit === 'select')) {
     pendingEdit = {
@@ -235,17 +238,18 @@ async function command(op, extra = {}) {
   }
   try {
     const result = await post('/api', {
-      token,
+      token: credential,
       op,
       epoch,
       seq: ++seq,
       revision: state.revision,
       ...extra,
     })
+    if (token !== credential) return false
     render(result)
     return result.ok === true
   } catch {
-    disconnected()
+    if (token === credential) disconnected()
     return false
   } finally {
     busy = false
@@ -300,13 +304,11 @@ for (const b of document.querySelectorAll('[data-scroll]'))
 $('disconnect').onclick = async () => {
   const credential = token
   token = ''
-  resetInput()
-  disable(true)
-  status('Disconnected')
+  render({ error: 'revoked' })
+  $('disconnect').hidden = true
   try {
     await post('/api', { token: credential, op: 'disconnect' })
   } catch {}
-  $('disconnect').hidden = true
 }
 const pad = $('pad')
 pad.onpointerdown = (e) => {
