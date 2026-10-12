@@ -2099,6 +2099,21 @@ public class TvHomePageTest {
                                         instanceof TvHomePage);
         if (webPage) mActivityTestRule.loadUrl(URL);
         Tab privateTab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    View view =
+                            privateTab.getNativePage() == null
+                                    ? privateTab.getContentView()
+                                    : privateTab.getNativePage().getView();
+                    return mActivity.getActivityTab() == privateTab
+                            && mActivity.hasWindowFocus()
+                            && !privateTab.isHidden()
+                            && view != null
+                            && view.isAttachedToWindow()
+                            && view.isShown()
+                            && view.getWidth() > 0
+                            && view.getHeight() > 0;
+                });
         int privateId = ThreadUtils.runOnUiThreadBlocking(privateTab::getId);
         File privateJpeg = TabContentManager.getTabThumbnailFileJpeg(privateId);
         ThreadUtils.runOnUiThreadBlocking(
