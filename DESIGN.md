@@ -259,3 +259,6 @@ Pairing leads to explicit TV approval. Connected status is teal. Home replaces p
 - **Don't** imply phone playback commands, private-tab access, password editing, or secure transport that the companion does not support.
 - **Don't** replace truthful connection or disabled-state explanations with decorative status badges.
 - **Don't** add external fonts, raster dependencies, remote assets, or motion that ignores reduced-motion preference.
+
+When opaque native tab handles rotate, selection focus follows the current
+engine-selected row. Removed close controls return focus to New tab.

@@ -175,7 +175,13 @@ function render(result) {
           button.dataset.tab === focusedTab
           && button.dataset.action === focusedAction,
       )
-      ;(replacement || $('tabsView').querySelector('[data-op="new"]')).focus()
+      // Native handles can rotate when the active content owner changes.
+      const selected = tabs.querySelector('.tab-select[aria-current="page"]')
+      const target =
+        replacement
+        || (focusedAction === 'select' && selected)
+        || $('tabsView').querySelector('[data-op="new"]')
+      target.focus()
     }
   }
   const editable = state.editable
