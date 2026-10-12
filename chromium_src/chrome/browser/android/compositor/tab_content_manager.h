@@ -9,11 +9,11 @@
 // UI sequence only: this tab's JPEG tracker plus cache-wide compression/writes.
 // Disk deletion is separately awaited by the file-existence checks.
 #define IsTabCaptureInFlightForTesting(...)                        \
-  IsTabCaptureInFlightForTesting_ChromiumImpl(__VA_ARGS__);        \
-  bool IsTabCaptureInFlightForTesting(JNIEnv* env, int32_t id) {   \
+  IsTabCaptureInFlightForTesting(JNIEnv* env, int32_t id) {        \
     return IsTabCaptureInFlightForTesting_ChromiumImpl(env, id) || \
            thumbnail_cache_.HasPendingTasksForTesting();           \
-  }
+  }                                                             \
+  bool IsTabCaptureInFlightForTesting_ChromiumImpl(__VA_ARGS__)
 
 #include <chrome/browser/android/compositor/tab_content_manager.h>  // IWYU pragma: export
 
