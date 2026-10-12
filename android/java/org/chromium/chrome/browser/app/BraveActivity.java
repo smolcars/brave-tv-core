@@ -412,17 +412,7 @@ public abstract class BraveActivity extends ChromeActivity
 
     /** Consulted before the tabbed activity consumes native menu/keyboard commands. */
     public boolean maybeHandleTvMenuAction(int id) {
-        if (mTvBrowserControls == null) return false;
-        if (id == R.id.focus_url_bar) {
-            mTvBrowserControls.showAddress();
-        } else if (id == R.id.show_menu) {
-            mTvBrowserControls.showControls();
-        } else if (id == R.id.preferences_id) {
-            mTvBrowserControls.showSettings();
-        } else {
-            return false;
-        }
-        return true;
+        return mTvBrowserControls != null && mTvBrowserControls.handleMenuAction(id);
     }
 
     @Override
@@ -1885,6 +1875,10 @@ public abstract class BraveActivity extends ChromeActivity
     }
 
     public void openBraveContentFilteringSettings() {
+        if (isTelevision()) {
+            if (mTvBrowserControls != null) mTvBrowserControls.showFilterSettings();
+            return;
+        }
         SettingsNavigation settingsLauncher = SettingsNavigationFactory.createSettingsNavigation();
         settingsLauncher.startSettings(this, ContentFilteringFragment.class);
     }

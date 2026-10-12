@@ -539,6 +539,68 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         return false;
     }
 
+    /**
+     * UI-thread native menu/keyboard entry. Consumes recognized TV commands even when an existing
+     * native, private or background owner prevents opening; unknown commands retain native routing.
+     */
+    public boolean handleMenuAction(int id) {
+        int action;
+        if (id == R.id.focus_url_bar || id == R.id.focus_and_clear_url_bar) {
+            action = R.string.brave_tv_address;
+        } else if (id == R.id.show_menu) {
+            action = R.string.brave_tv_controls;
+        } else if (id == R.id.preferences_id) {
+            action = R.string.brave_tv_settings;
+        } else if (id == R.id.all_bookmarks_menu_id) {
+            action = R.string.brave_tv_bookmarks;
+        } else if (id == R.id.open_history_menu_id) {
+            action = R.string.brave_tv_history;
+        } else if (id == R.id.downloads_menu_id) {
+            action = R.string.brave_tv_downloads;
+        } else if (id == R.id.tab_search || id == R.id.tab_search_side_ui) {
+            action = R.string.brave_tv_tabs;
+        } else if (id == R.id.quick_delete_menu_id) {
+            action = R.string.brave_tv_clear_data;
+        } else if (id == R.id.about_chrome_menu_id) {
+            action = R.string.brave_tv_about;
+        } else {
+            return false;
+        }
+        if (!canOpenNativeEntry()) return true;
+        Tab tab = mActivity.getActivityTab();
+        if (tab == null || tab.isDestroyed()) return true;
+        if (tab.isIncognito()
+                && (action == R.string.brave_tv_history
+                        || action == R.string.brave_tv_downloads
+                        || action == R.string.brave_tv_clear_data)) return true;
+        dismissDialog();
+        detachCursor();
+        if (action == R.string.brave_tv_controls) {
+            showControls();
+        } else if (action == R.string.brave_tv_address) {
+            showAddress(id == R.id.focus_and_clear_url_bar);
+        } else if (action == R.string.brave_tv_about) {
+            showAbout(mSession.capture(), this::returnToControls);
+        } else if (action == R.string.brave_tv_clear_data) {
+            showClearData(mSession.capture(), false, this::returnToControls);
+        } else {
+            mLastAction = action;
+            performAction(action);
+        }
+        return true;
+    }
+
+    private boolean canOpenNativeEntry() {
+        if (!isAlive()
+                || !mActivity.hasWindowFocus()
+                || keyboardVisible()
+                || nativeSecurityOwnsInput()) return false;
+        Tab tab = mActivity.getActivityTab();
+        if (tab == null || tab.isDestroyed()) return false;
+        if (tab.isIncognito() && mPrivateTabsLocked.getAsBoolean()) return false;
+        return tab.getNativePage() instanceof TvHomePage || !nativeUiOwnsInput(false);
+    }
+
     @Override
     public void showControls() {
         showControls(false);
@@ -902,6 +964,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     /** Opens a TV editor without transferring native page or profile ownership. */
     public void showAddress() {
+        showAddress(false);
+    }
+
+    private void showAddress(boolean clear) {
         if (!isAlive()) return;
         Tab tab = mActivity.getActivityTab();
         if (tab == null || tab.isDestroyed() || !canAccessTabs(tab.isIncognito())) return;
@@ -909,7 +975,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         dismissDialog();
         detachCursor();
         TvBrowserSession.Context context = mSession.capture();
-        String initial = tab.isNativePage() ? "" : context.url;
+        String initial = clear || tab.isNativePage() ? "" : context.url;
         TvAddressEditor.State state =
                 new TvAddressEditor.State(
                         initial.length() <= TvAddressEditor.MAX_TEXT_LENGTH ? initial : "");
@@ -1635,6 +1701,25 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     /**
+     * UI-thread native filter-settings entry. Retains the selected tab and native/security owners;
+     * the borrowed native filter connection is disposed with the panel or controller.
+     */
+    public void showFilterSettings() {
+        if (!canOpenNativeEntry()) return;
+        showFilters(mSession.capture(), this::showSettings);
+    }
+
+    private void showFilters(TvBrowserSession.Context context, Runnable onReturn) {
+        Tab tab = context.tab;
+        if (tab == null || !tabContextValid(context)) return;
+        dismissDialog();
+        detachCursor();
+        mLastSettingsAction = R.string.content_filters_title;
+        mFilterPanel = new TvFilterPanel(mActivity, tab, onReturn);
+        mFilterPanel.show();
+    }
+
+    /**
      * UI thread only. Null returns to Controls; an exact selected Home restores Settings focus.
      * Stale owners are rejected, and valid Home focus is scheduled after dialog dismissal.
      */
@@ -1678,15 +1763,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         panel.addItem(
                         mActivity.getString(R.string.content_filters_title),
                         R.string.content_filters_title,
-                        () -> {
-                            if (!tabContextValid(context)) return;
-                            dismissDialog();
-                            mLastSettingsAction = R.string.content_filters_title;
-                            mFilterPanel =
-                                    new TvFilterPanel(
-                                            mActivity, tab, () -> showSettings(context, onReturn));
-                            mFilterPanel.show();
-                        })
+                        () -> showFilters(context, () -> showSettings(context, onReturn)))
                 .setIcon(R.drawable.ic_shield_done);
         if (!tab.isIncognito()) {
             panel.addItem(

@@ -20,6 +20,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
@@ -1148,6 +1149,167 @@ public class TvHomePageTest {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+    }
+
+    @Test
+    @MediumTest
+    @MinAndroidSdkLevel(Build.VERSION_CODES.Q)
+    public void nativeMenuRoutesUseSingleTvPanelAndRetainBrowserOwners() {
+        mActivityTestRule.loadUrl(URL);
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(original::getWebContents);
+        int count =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> mActivity.getTabModelSelector().getModel(false).getCount());
+        int[][] routes = {
+            {R.id.all_bookmarks_menu_id, R.string.brave_tv_bookmarks},
+            {R.id.open_history_menu_id, R.string.brave_tv_history},
+            {R.id.downloads_menu_id, R.string.brave_tv_downloads},
+            {R.id.tab_search, R.string.brave_tv_tabs},
+            {R.id.tab_search_side_ui, R.string.brave_tv_tabs},
+            {R.id.preferences_id, R.string.brave_tv_settings},
+            {R.id.about_chrome_menu_id, R.string.brave_tv_about},
+            {R.id.quick_delete_menu_id, R.string.brave_tv_clear_data}
+        };
+        for (int[] route : routes) {
+            CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+            assertTrue(
+                    ThreadUtils.runOnUiThreadBlocking(
+                            () -> mActivity.onMenuOrKeyboardAction(route[0], false)));
+            CriteriaHelper.pollInstrumentationThread(
+                    () -> mDevice.hasObject(By.text(mActivity.getString(route[1]))));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertSame(original, mActivity.getActivityTab());
+                        assertSame(contents, original.getWebContents());
+                        assertEquals(new GURL(URL), original.getUrl());
+                        assertEquals(
+                                count, mActivity.getTabModelSelector().getModel(false).getCount());
+                        int windows = 0;
+                        for (View window : WindowInspector.getGlobalWindowViews()) {
+                            if (window.isAttachedToWindow() && window.isShown()) windows++;
+                        }
+                        assertEquals("One Activity and one TV panel", 2, windows);
+                    });
+            dismissNativeEntryToPage();
+        }
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.preferences_id, false));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        assertTrue(
+                                mActivity.onMenuOrKeyboardAction(
+                                        R.id.open_history_menu_id, false)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_history))));
+    }
+
+    @Test
+    @MediumTest
+    public void nativeSearchAndTabCommandsUseTvHomeAndAddress() {
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        assertTrue(
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> original.getNativePage() instanceof TvHomePage));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> assertTrue(mActivity.onMenuOrKeyboardAction(R.id.tab_search_side_ui, false)));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_tabs))));
+        dismissNativeEntryToPage();
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        assertTrue(
+                                mActivity.onMenuOrKeyboardAction(
+                                        R.id.focus_and_clear_url_bar, false)));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.clazz("android.widget.EditText")));
+        assertFalse(mDevice.hasObject(By.res(mActivity.getPackageName(), "url_bar")));
+        dismissNativeEntryToPage();
+        ThreadUtils.runOnUiThreadBlocking(() -> assertSame(original, mActivity.getActivityTab()));
+
+        mActivityTestRule.loadUrl(URL);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(original::getWebContents);
+        int[] addressCommands = {R.id.focus_url_bar, R.id.focus_and_clear_url_bar};
+        for (int command : addressCommands) {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> assertTrue(mActivity.onMenuOrKeyboardAction(command, false)));
+            String expected = command == R.id.focus_url_bar ? URL : "";
+            CriteriaHelper.pollInstrumentationThread(
+                    () -> {
+                        UiObject2 editor = mDevice.findObject(By.clazz("android.widget.EditText"));
+                        return editor != null
+                                && (expected.isEmpty()
+                                        ? TextUtils.isEmpty(editor.getText())
+                                        : expected.equals(editor.getText()));
+                    });
+            dismissNativeEntryToPage();
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertSame(original, mActivity.getActivityTab());
+                        assertSame(contents, original.getWebContents());
+                        assertEquals(new GURL(URL), original.getUrl());
+                    });
+        }
+    }
+
+    private void dismissNativeEntryToPage() {
+        for (int i = 0; i < 4; i++) {
+            if (ThreadUtils.runOnUiThreadBlocking(mActivity::hasWindowFocus)) return;
+            mDevice.pressBack();
+        }
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+    }
+
+    @Test
+    @MediumTest
+    public void nativeAdblockUrlUsesTvFiltersAndReturnsToSettings() {
+        mActivityTestRule.loadUrl(URL);
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(original::getWebContents);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> original.loadUrl(new LoadUrlParams("chrome://adblock/")));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.content_filters_title))));
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.content_filters_title)));
+        assertTrue(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_settings))));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(original, mActivity.getActivityTab());
+                    assertSame(contents, original.getWebContents());
+                    assertEquals(new GURL(URL), original.getUrl());
+                });
+    }
+
+    @Test
+    @MediumTest
+    public void privateNativeLibraryCommandsAreConsumedWithoutChangingOwners() {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab().isIncognito()
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        for (int id :
+                new int[] {
+                    R.id.open_history_menu_id, R.id.downloads_menu_id, R.id.quick_delete_menu_id
+                }) {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertTrue(mActivity.onMenuOrKeyboardAction(id, false));
+                        assertSame(original, mActivity.getActivityTab());
+                        assertTrue(mActivity.hasWindowFocus());
+                        assertTrue(mActivity.getTabModelSelector().isIncognitoSelected());
+                    });
+        }
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_history))));
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_downloads))));
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_clear_data))));
     }
 
     @Test

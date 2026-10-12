@@ -8,7 +8,6 @@ package org.chromium.chrome.browser.externalnav;
 import android.content.Intent;
 
 import org.chromium.base.ContextUtils;
-import org.chromium.base.Log;
 import org.chromium.chrome.browser.BraveConstants;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.preferences.BravePrefServiceBridge;
@@ -24,7 +23,6 @@ import org.chromium.url.GURL;
  * Extends Chromium's ExternalNavigationHandler
  */
 public class BraveExternalNavigationHandler extends ExternalNavigationHandler {
-    private static final String TAG = "BraveUrlHandler";
     private final ExternalNavigationDelegate mNavigationDelegate;
 
     public BraveExternalNavigationHandler(ExternalNavigationDelegate delegate) {
@@ -36,12 +34,17 @@ public class BraveExternalNavigationHandler extends ExternalNavigationHandler {
     public OverrideUrlLoadingResult shouldOverrideUrlLoading(ExternalNavigationParams params) {
         String originalUrl = params.getUrl().getSpec();
         if (originalUrl.equalsIgnoreCase("chrome://adblock/")) {
-            try {
-                BraveActivity.getBraveActivity().openBraveContentFilteringSettings();
-            } catch (BraveActivity.BraveActivityNotFoundException e) {
-                Log.e(TAG, "adblock url " + e);
+            if (ContextUtils.activityFromContext(mNavigationDelegate.getContext())
+                    instanceof BraveActivity activity) {
+                if (!activity.isTelevision()
+                        || (activity.getActivityTab() != null
+                                && activity.getActivityTab().getWebContents()
+                                        == mNavigationDelegate.getWebContents())) {
+                    activity.openBraveContentFilteringSettings();
+                }
+                return OverrideUrlLoadingResult.forExternalIntent();
             }
-            return OverrideUrlLoadingResult.forExternalIntent();
+            return OverrideUrlLoadingResult.forNoOverride();
         }
         OverrideUrlLoadingResult result = super.shouldOverrideUrlLoading(params);
         if (result.getResultType() == OverrideUrlLoadingResultType.NO_OVERRIDE
