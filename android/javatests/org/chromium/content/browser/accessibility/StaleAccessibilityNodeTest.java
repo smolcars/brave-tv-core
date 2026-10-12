@@ -22,13 +22,12 @@ import org.chromium.base.ThreadUtils;
 import org.chromium.base.test.util.CommandLineFlags;
 import org.chromium.base.test.util.CriteriaHelper;
 import org.chromium.base.test.util.DoNotBatch;
-import org.chromium.base.test.util.UrlUtils;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.content_public.browser.WebContents;
-import org.chromium.content_public.browser.test.util.JavaScriptUtils;
+import org.chromium.content_public.browser.test.util.DOMUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,9 +59,10 @@ public class StaleAccessibilityNodeTest {
                                                 .getString(R.string.brave_tv_controls))));
         device.pressBack();
         CriteriaHelper.pollUiThread(mActivityTestRule.getActivity()::hasWindowFocus);
-        mActivityTestRule.loadUrl(
-                UrlUtils.encodeHtmlDataUri(
-                        "<button id='control'><span>Stale video control</span></button>"));
+        String fixture =
+                InstrumentationRegistry.getArguments().getString("tv_accessibility_fixture_url");
+        assertNotNull("Pass the controlled ordinary video fixture URL", fixture);
+        mActivityTestRule.loadUrl(fixture);
         WebContents contents =
                 ThreadUtils.runOnUiThreadBlocking(
                         () -> mActivityTestRule.getActivity().getActivityTab().getWebContents());
@@ -79,8 +79,8 @@ public class StaleAccessibilityNodeTest {
                     mControlId = findControl();
                     return mControlId != View.NO_ID;
                 });
-        JavaScriptUtils.executeJavaScriptAndWaitForResult(
-                contents, "document.getElementById('control').style.visibility='hidden'");
+        assertTrue(DOMUtils.clickNode(contents, "play"));
+        DOMUtils.waitForMediaPlay(contents, "video");
         CriteriaHelper.pollUiThread(
                 () ->
                         !WebContentsAccessibilityImplJni.get()
@@ -88,7 +88,9 @@ public class StaleAccessibilityNodeTest {
                                 && WebContentsAccessibilityImplJni.get()
                                                 .getAbsolutePositionForNode(
                                                         mAccessibility.mNativeObj, mControlId)
-                                        != null);
+                                        != null,
+                10000,
+                50);
     }
 
     @Test
@@ -146,7 +148,8 @@ public class StaleAccessibilityNodeTest {
             if (info == null) continue;
             boolean control =
                     TextUtils.equals("android.widget.Button", info.getClassName())
-                            && TextUtils.equals("Stale video control", info.getText());
+                            && (TextUtils.equals("mute", info.getText())
+                                    || TextUtils.equals("mute", info.getContentDescription()));
             info.recycle();
             if (control) return id;
             int[] children = mAccessibility.getChildIdsForTesting(id);
