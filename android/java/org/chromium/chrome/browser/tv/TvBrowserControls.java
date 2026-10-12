@@ -567,9 +567,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (mPage != page) {
             if (!attachCursor(page)) return;
         }
-        showPointer(x, y, TvRemoteInput.Mode.POINTER);
-        if (operation.equals("click")) click(x, y);
-        if (operation.equals("scroll")) scroll(x, y, dx, dy);
+        if (!mInput.positionPointer(x, y)) return;
+        if (operation.equals("click")) click(mCursor.x, mCursor.y);
+        if (operation.equals("scroll")) scroll(mCursor.x, mCursor.y, dx, dy);
     }
 
     private boolean canAccessTabs(boolean incognito) {

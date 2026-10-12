@@ -744,13 +744,16 @@ public class TvHomePageTest {
     public void nativeFullscreenExitPreservesDocumentAndCursor() throws Exception {
         mActivityTestRule.loadUrl(
                 "data:text/html,<style>button{position:fixed;inset:0;background:%23202124;"
-                        + "color:white}</style><button onclick='document.documentElement."
+                        + "color:white;display:flex;align-items:flex-start}</style>"
+                        + "<button onclick='document.documentElement."
                         + "requestFullscreen()'>Fullscreen cursor fixture</button>");
         Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         WebContents contents = ThreadUtils.runOnUiThreadBlocking(page::getWebContents);
         String fixtureUrl = ThreadUtils.runOnUiThreadBlocking(() -> page.getUrl().getSpec());
         String document =
                 JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "performance.timeOrigin");
+        CriteriaHelper.pollInstrumentationThread(
+                () -> fixtureCenterColor(page, fixtureUrl) == Color.rgb(32, 33, 36));
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         mDevice.pressDPadRight();

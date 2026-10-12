@@ -75,6 +75,19 @@ public final class TvRemoteInput {
         mSelectPressed = false;
     }
 
+    /** Share an external pointer position with subsequent physical input and viewport recovery. */
+    public boolean positionPointer(int x, int y) {
+        if (mTarget.getWidth() <= 0 || mTarget.getHeight() <= 0) return false;
+        mSelectPressed = false;
+        mMode = Mode.POINTER;
+        mX = x;
+        mY = y;
+        mPositioned = true;
+        clampPosition();
+        mTarget.showPointer(mX, mY, mMode);
+        return true;
+    }
+
     /**
      * Resume page input after native UI, canceling held OK and clamping to the current viewport.
      *
