@@ -406,6 +406,58 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void firstPageCursorActivationWhileLoadingClicksOnce() throws Exception {
+        // Owned slow document and explicit emulator reverse required; see tests/device/README.md.
+        String slow = "http://127.0.0.1:18084/slow.html";
+        Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(page::getWebContents);
+        ThreadUtils.runOnUiThreadBlocking(() -> page.loadUrl(new LoadUrlParams(slow)));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("Native loading click")));
+        CriteriaHelper.pollUiThread(() -> page.isLoading() && slow.equals(page.getUrl().getSpec()));
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(
+                () -> !mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    assertSame(page, mActivity.getActivityTab());
+                    assertSame(contents, page.getWebContents());
+                    return page.isLoading()
+                            && mActivity.hasWindowFocus()
+                            && page.getContentView().hasFocus();
+                });
+        CriteriaHelper.pollInstrumentationThread(
+                () -> fixtureCenterColor(page, slow) == Color.WHITE);
+        assertEquals(
+                "0",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        contents, "Number(document.querySelector('#clicks').textContent)"));
+        injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("1")));
+        assertEquals(
+                "true",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        contents,
+                        "document.querySelector('#clicks').textContent==='1'"
+                                + " && Math.abs(point[0]-point[2]/2)<2"
+                                + " && Math.abs(point[1]-point[3]/2)<2"));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(page, mActivity.getActivityTab());
+                    assertSame(contents, page.getWebContents());
+                    assertTrue(page.isLoading());
+                    page.stopLoading();
+                });
+        injectDpad(KeyEvent.KEYCODE_BACK);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
+    }
+
+    @Test
+    @MediumTest
     public void dedicatedDpadFromVirtualKeyboardClicksOnce() throws Exception {
         mActivityTestRule.loadUrl(
                 "data:text/html,<style>button{position:fixed;inset:0;background:%23202124;"
