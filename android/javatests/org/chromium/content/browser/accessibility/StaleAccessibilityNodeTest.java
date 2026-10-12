@@ -108,6 +108,13 @@ public class StaleAccessibilityNodeTest {
     private void assertIgnoredInfoRejected(boolean cached) {
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
+                    assertFalse(
+                            WebContentsAccessibilityImplJni.get()
+                                    .isNodeValid(mAccessibility.mNativeObj, mControlId));
+                    assertNotNull(
+                            WebContentsAccessibilityImplJni.get()
+                                    .getAbsolutePositionForNode(
+                                            mAccessibility.mNativeObj, mControlId));
                     AccessibilityNodeInfoCompat info =
                             AccessibilityNodeInfoCompat.obtain(
                                     mActivityTestRule

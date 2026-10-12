@@ -1,0 +1,19 @@
+diff --git a/content/browser/accessibility/web_contents_accessibility_android.cc b/content/browser/accessibility/web_contents_accessibility_android.cc
+--- a/content/browser/accessibility/web_contents_accessibility_android.cc
++++ b/content/browser/accessibility/web_contents_accessibility_android.cc
+@@ -1583,6 +1583,7 @@
+   if (!node) {
+     return false;
+   }
++  BRAVE_UPDATE_CACHED_ACCESSIBILITY_NODE_INFO
+ 
+   ScopedJavaLocalRef<jobject> wcai_obj = GetJavaObject(env);
+   if (wcai_obj.is_null()) {
+@@ -2098,6 +2099,7 @@
+   if (!node) {
+     return false;
+   }
++  BRAVE_POPULATE_ACCESSIBILITY_NODE_INFO
+ 
+   ScopedJavaLocalRef<jobject> wcai_obj = GetJavaObject(env);
+   if (wcai_obj.is_null()) {
