@@ -34,6 +34,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.color.MaterialColors;
 
 import org.chromium.base.BravePreferenceKeys;
+import org.chromium.base.Callback;
 import org.chromium.base.CallbackController;
 import org.chromium.base.PackageUtils;
 import org.chromium.base.supplier.NonNullObservableSupplier;
@@ -114,6 +115,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable Runnable mDialogCleanup;
     private @Nullable TvBrowserSession.Context mFilePickerContext;
+    private final Callback<Boolean> mFilePickerScrimObserver =
+            visible -> {
+                if (visible) cancelFilePickerGuide();
+            };
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
     private @Nullable TvDownloadsPanel mDownloadsPanel;
@@ -127,6 +132,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 @Override
                 public void onDialogShown(View dialogView) {
                     if (!isAlive()) return;
+                    cancelFilePickerGuide();
                     if (mModalReturnPage == null) {
                         mModalReturnPage = currentPage();
                         if (mModalReturnPage != null) mModalReturnContext = mSession.capture();
@@ -205,6 +211,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     }
                 };
         mSession = new TvBrowserSession(activity, this::browserStateChanged);
+        mScrimVisible.addSyncObserver(mFilePickerScrimObserver);
         mActivity.getWindow().getDecorView().post(() -> restoreUsableHome(false));
     }
 
@@ -964,6 +971,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     observer.observe(null);
                     mUnavailableLinkContents = null;
                 });
+    }
+
+    private void cancelFilePickerGuide() {
+        if (mFilePickerContext != null) dismissDialog();
     }
 
     private boolean canContinueFilePicker(TvBrowserSession.Context context) {
@@ -2257,6 +2268,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mModalReturnPage = null;
         mModalReturnContext = null;
         if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);
+        mScrimVisible.removeObserver(mFilePickerScrimObserver);
         mInput.cancelPress();
         mBackCallback.remove();
         mTabObserver.destroy();

@@ -1540,6 +1540,43 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void nativeModalCancelsFilePickerGuideAndOwnsFocus() throws Exception {
+        mActivityTestRule.loadUrl(URL);
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(tab::getWebContents);
+        assertNotNull(contents);
+        CallbackHelper opened = new CallbackHelper();
+        CallbackHelper cancelled = new CallbackHelper();
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        assertTrue(
+                                mActivity.showTvFilePickerGuide(
+                                        opened::notifyCalled, cancelled::notifyCalled)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                contents, "setTimeout(()=>alert('TV picker native modal'),0); true");
+        cancelled.waitForCallback(0);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.text("TV picker native modal")));
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_file_picker))));
+        waitForFocus(By.text("OK"));
+        assertEquals(0, opened.getCallCount());
+        assertEquals(1, cancelled.getCallCount());
+        mDevice.pressBack();
+        CriteriaHelper.pollInstrumentationThread(
+                () -> !mDevice.hasObject(By.text("TV picker native modal")));
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(tab, mActivity.getActivityTab());
+                    assertSame(contents, tab.getWebContents());
+                });
+        assertEquals(0, opened.getCallCount());
+        assertEquals(1, cancelled.getCallCount());
+    }
+
+    @Test
+    @MediumTest
     @MinAndroidSdkLevel(Build.VERSION_CODES.Q)
     @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
     public void nativePrivateFilePickerGuideKeepsProtectionAndPrivateOwner() throws Exception {
