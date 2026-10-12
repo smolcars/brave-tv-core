@@ -752,19 +752,10 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     public void nativeVideoFullscreenExitPreservesDocumentAndCursor() throws Exception {
-        String video = InstrumentationRegistry.getArguments().getString("tv_video_fixture_url");
-        assertEquals("http://127.0.0.1:18083/bbb-320x240-2video-2audio.mp4", video);
-        assertFullscreenCursorRecovery(
-                "data:text/html,<video id='video' loop src='"
-                        + video
-                        + "'></video><style>video{width:80px;height:60px}"
-                        + "button{position:fixed;inset:0;background:%23202124;"
-                        + "color:white;display:flex;align-items:flex-start}</style>"
-                        + "<button onclick='document.getElementById(\"video\").play();"
-                        + "document.getElementById(\"video\").requestFullscreen()'>"
-                        + "Video fullscreen cursor fixture</button>",
-                true,
-                false);
+        String url =
+                InstrumentationRegistry.getArguments().getString("tv_video_cursor_fixture_url");
+        assertEquals("http://127.0.0.1:18088/media.html?native-cursor", url);
+        assertFullscreenCursorRecovery(url, true, false);
     }
 
     @Test
