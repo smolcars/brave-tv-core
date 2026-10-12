@@ -744,9 +744,9 @@ public class TvHomePageTest {
         assertFullscreenCursorRecovery(
                 "data:text/html,<style>button{position:fixed;inset:0;background:%23202124;"
                         + "color:white;display:flex;align-items:flex-start}</style>"
-                        + "<button onclick='document.documentElement."
+                        + "<button id='fullscreen' onclick='document.documentElement."
                         + "requestFullscreen()'>Fullscreen cursor fixture</button>",
-                false);
+                false, false);
     }
 
     @Test
@@ -763,10 +763,23 @@ public class TvHomePageTest {
                         + "<button onclick='document.getElementById(\"video\").play();"
                         + "document.getElementById(\"video\").requestFullscreen()'>"
                         + "Video fullscreen cursor fixture</button>",
-                true);
+                true,
+                false);
     }
 
-    private void assertFullscreenCursorRecovery(String url, boolean video) throws Exception {
+    @Test
+    @MediumTest
+    public void nativeCursorFirstAttachedDuringFullscreenRestoresAfterExit() throws Exception {
+        assertFullscreenCursorRecovery(
+                "data:text/html,<style>button{position:fixed;inset:0;background:%23202124;"
+                        + "color:white;display:flex;align-items:flex-start}</style>"
+                        + "<button id='fullscreen' onclick='document.documentElement."
+                        + "requestFullscreen()'>First fullscreen cursor fixture</button>",
+                false, true);
+    }
+
+    private void assertFullscreenCursorRecovery(
+            String url, boolean video, boolean firstAttachmentInFullscreen) throws Exception {
         mActivityTestRule.loadUrl(url);
         Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         WebContents contents = ThreadUtils.runOnUiThreadBlocking(page::getWebContents);
@@ -780,6 +793,10 @@ public class TvHomePageTest {
                 ThreadUtils.runOnUiThreadBlocking(() -> new TvBrowserSession(mActivity, () -> {}));
         try {
             TvBrowserSession.Context context = ThreadUtils.runOnUiThreadBlocking(session::capture);
+            if (firstAttachmentInFullscreen) {
+                assertTrue(DOMUtils.clickNode(contents, "fullscreen"));
+                CriteriaHelper.pollUiThread(contents::isFullscreenForCurrentTab);
+            }
             ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
             waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
             mDevice.pressDPadRight();
@@ -787,7 +804,7 @@ public class TvHomePageTest {
             mDevice.pressDPadCenter();
             CriteriaHelper.pollUiThread(
                     () -> mActivity.hasWindowFocus() && page.getContentView().hasFocus());
-            injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+            if (!firstAttachmentInFullscreen) injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
             CriteriaHelper.pollUiThread(contents::isFullscreenForCurrentTab);
             if (video) DOMUtils.waitForMediaPlay(contents, "video");
             ThreadUtils.runOnUiThreadBlocking(

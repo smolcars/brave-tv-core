@@ -2292,6 +2292,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 parent.indexOfChild(page) + 1,
                 new ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (isPageFullscreen()) mFullscreenCursorContext = mSession.capture();
         return true;
     }
 
