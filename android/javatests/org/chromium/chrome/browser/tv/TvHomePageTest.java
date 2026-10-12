@@ -1447,6 +1447,134 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void nativeFilePickerGuideCancelAndBackPreserveDocument() throws Exception {
+        mActivityTestRule.loadUrl(
+                "data:text/html,<input id='file' type='file'><script>window.pickerCancels=0;"
+                    + "document.getElementById('file').oncancel=()=>window.pickerCancels++;</script>");
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(tab::getWebContents);
+        assertNotNull(contents);
+        String document =
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        contents, "performance.timeOrigin");
+        int count =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> mActivity.getTabModelSelector().getModel(false).getCount());
+        for (int i = 0; i < 2; i++) {
+            assertTrue(DOMUtils.clickNode(contents, "file"));
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+            assertTrue(
+                    mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_file_picker))));
+            if (i == 0) injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+            else mDevice.pressBack();
+            CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+            assertFalse(
+                    mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_file_picker))));
+            assertEquals(
+                    Integer.toString(i + 1),
+                    JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                            contents, "window.pickerCancels"));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertSame(tab, mActivity.getActivityTab());
+                        assertSame(contents, tab.getWebContents());
+                        assertEquals(
+                                count, mActivity.getTabModelSelector().getModel(false).getCount());
+                    });
+            assertEquals(
+                    document,
+                    JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                            contents, "performance.timeOrigin"));
+        }
+    }
+
+    @Test
+    @MediumTest
+    public void filePickerGuideCompletesOnceAndCancelsOnNavigationAndPause() throws Exception {
+        mActivityTestRule.loadUrl(URL);
+        CallbackHelper opened = new CallbackHelper();
+        CallbackHelper cancelled = new CallbackHelper();
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        assertTrue(
+                                mActivity.showTvFilePickerGuide(
+                                        opened::notifyCalled, cancelled::notifyCalled)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_file_picker_continue)));
+        injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+        opened.waitForCallback(0);
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        assertEquals(1, opened.getCallCount());
+        assertEquals(0, cancelled.getCallCount());
+
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        assertTrue(
+                                mActivity.showTvFilePickerGuide(
+                                        opened::notifyCalled, cancelled::notifyCalled)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        mActivityTestRule.loadUrl("data:text/html,<h1>TV%20picker%20replacement</h1>");
+        cancelled.waitForCallback(0);
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_file_picker))));
+        assertEquals(1, opened.getCallCount());
+        assertEquals(1, cancelled.getCallCount());
+
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        assertTrue(
+                                mActivity.showTvFilePickerGuide(
+                                        opened::notifyCalled, cancelled::notifyCalled)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        mDevice.pressHome();
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    int state = ApplicationStatus.getStateForActivity(mActivity);
+                    return state == ActivityState.PAUSED || state == ActivityState.STOPPED;
+                });
+        cancelled.waitForCallback(1);
+        assertEquals(1, opened.getCallCount());
+        assertEquals(2, cancelled.getCallCount());
+    }
+
+    @Test
+    @MediumTest
+    @MinAndroidSdkLevel(Build.VERSION_CODES.Q)
+    @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
+    public void nativePrivateFilePickerGuideKeepsProtectionAndPrivateOwner() throws Exception {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(() -> mActivity.getActivityTab().isIncognito());
+        mActivityTestRule.loadUrl("data:text/html,<input id='file' type='file'>");
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(tab::getWebContents);
+        assertNotNull(contents);
+        assertTrue(DOMUtils.clickNode(contents, "file"));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_cancel)));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    View root = focusedNativeWindow();
+                    assertNotNull(root);
+                    assertTrue(
+                            (((WindowManager.LayoutParams) root.getLayoutParams()).flags
+                                            & WindowManager.LayoutParams.FLAG_SECURE)
+                                    != 0);
+                });
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(tab, mActivity.getActivityTab());
+                    assertSame(contents, tab.getWebContents());
+                    assertTrue(tab.isIncognito());
+                    assertTrue(mActivity.getTabModelSelector().isIncognitoSelected());
+                });
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_file_picker))));
+    }
+
+    @Test
+    @MediumTest
     public void unavailableExternalLinkReturnsToSameDocumentAndDisposesOnNavigation()
             throws Exception {
         String url =

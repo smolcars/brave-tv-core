@@ -243,6 +243,7 @@ import org.chromium.content_public.browser.WebContents;
 import org.chromium.misc_metrics.mojom.MiscAndroidMetrics;
 import org.chromium.mojo.bindings.ConnectionErrorHandler;
 import org.chromium.mojo.system.MojoException;
+import org.chromium.ui.base.TvFilePickerGuide;
 import org.chromium.ui.widget.Toast;
 import org.chromium.url.GURL;
 
@@ -267,7 +268,8 @@ public abstract class BraveActivity extends ChromeActivity
                 QuickSearchEnginesCallback,
                 KeyboardVisibilityHelper.KeyboardVisibilityListener,
                 OnSharedPreferenceChangeListener,
-                FirstPartyStorageCleanerInterface {
+                FirstPartyStorageCleanerInterface,
+                TvFilePickerGuide.Host {
     public static final String BRAVE_WALLET_HOST = "wallet";
     public static final String BRAVE_WALLET_ORIGIN = "brave://wallet/";
     public static final String BRAVE_WALLET_URL = "brave://wallet/crypto/portfolio/assets";
@@ -394,6 +396,13 @@ public abstract class BraveActivity extends ChromeActivity
 
     public void showTvTabs() {
         if (mTvBrowserControls != null) mTvBrowserControls.showTabs();
+    }
+
+    @Override
+    public boolean showTvFilePickerGuide(Runnable openPicker, Runnable cancelPicker) {
+        if (mTvBrowserControls == null) return false;
+        mTvBrowserControls.showFilePickerGuide(openPicker, cancelPicker);
+        return true;
     }
 
     /**

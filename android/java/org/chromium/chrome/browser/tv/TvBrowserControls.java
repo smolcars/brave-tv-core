@@ -113,6 +113,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable AlertDialog mDialog;
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable Runnable mDialogCleanup;
+    private @Nullable TvBrowserSession.Context mFilePickerContext;
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
     private @Nullable TvDownloadsPanel mDownloadsPanel;
@@ -685,6 +686,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPressedContext = null;
         mPhoneRemote.invalidate();
         if (!isAlive()) return;
+        if (mFilePickerContext != null && !canContinueFilePicker(mFilePickerContext)) {
+            dismissDialog();
+        }
         if (mUnavailableLinkContents != null) {
             Tab tab = mActivity.getActivityTab();
             if (tab == null
@@ -909,9 +913,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     /**
-     * On the UI thread, explains native rejection for borrowed contents without changing navigation.
-     * Ignores stale, private, background and native-owned input. Disposes the notice and observer on
-     * navigation, renderer loss, contents change or activity pause/destruction.
+     * On the UI thread, explains native rejection for borrowed contents without changing
+     * navigation. Ignores stale, private, background and native-owned input. Disposes the notice
+     * and observer on navigation, renderer loss, contents change or activity pause/destruction.
      */
     public void showUnavailableExternalLink(WebContents expectedContents) {
         if (!isAlive() || !mActivity.hasWindowFocus() || mDialog != null) return;
@@ -960,6 +964,62 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     observer.observe(null);
                     mUnavailableLinkContents = null;
                 });
+    }
+
+    private boolean canContinueFilePicker(TvBrowserSession.Context context) {
+        Tab tab = context.tab;
+        return isAlive()
+                && mSession.isCurrentDocument(context)
+                && tab != null
+                && !tab.isDestroyed()
+                && context.contents != null
+                && !(tab.isIncognito() && mPrivateTabsLocked.getAsBoolean())
+                && !nativeSecurityOwnsInput();
+    }
+
+    /** Explains TV input limitations; selection and permissions remain with the native picker. */
+    public void showFilePickerGuide(Runnable openPicker, Runnable cancelPicker) {
+        TvBrowserSession.Context context = mSession.capture();
+        if (!canContinueFilePicker(context)
+                || !mActivity.hasWindowFocus()
+                || mDialog != null
+                || keyboardVisible()
+                || nativeUiOwnsInput(false)) {
+            cancelPicker.run();
+            return;
+        }
+        detachCursor();
+        boolean[] completed = {false};
+        Runnable cancel =
+                () -> {
+                    if (mFilePickerContext == context) mFilePickerContext = null;
+                    if (completed[0]) return;
+                    completed[0] = true;
+                    cancelPicker.run();
+                };
+        TvBrowserPanel panel =
+                new TvBrowserPanel(
+                        mActivity,
+                        mActivity.getString(R.string.brave_tv_file_picker),
+                        mActivity.getString(R.string.brave_tv_file_picker_description),
+                        R.string.brave_tv_cancel);
+        if (context.tab != null && context.tab.isIncognito()) panel.protectPrivateContent();
+        panel.addAction(R.string.brave_tv_cancel, true, this::returnToPage);
+        panel.addAction(
+                R.string.brave_tv_file_picker_continue,
+                true,
+                () -> {
+                    if (completed[0]) return;
+                    boolean current = canContinueFilePicker(context);
+                    completed[0] = true;
+                    dismissDialog();
+                    if (current) openPicker.run();
+                    else cancelPicker.run();
+                });
+        mFilePickerContext = context;
+        AlertDialog dialog = panel.show(this::returnToPage);
+        mDialog = dialog;
+        setDialogCleanup(panel, dialog, cancel);
     }
 
     /** Opens a TV editor without transferring native page or profile ownership. */

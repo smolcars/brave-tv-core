@@ -1,0 +1,19 @@
+diff --git a/ui/android/BUILD.gn b/ui/android/BUILD.gn
+--- a/ui/android/BUILD.gn
++++ b/ui/android/BUILD.gn
+@@ -2,6 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
++import("//brave/ui/android/java_sources.gni")
+ import("//build/buildflag_header.gni")
+ import("//build/config/android/rules.gni")
+ import("//build/rust/rust_executable.gni")
+@@ -695,6 +696,7 @@
+     ":java_enums_srcjar",
+     ":ui_android_jni_headers",
+   ]
++  sources += brave_ui_base_java_sources
+   resources_package = "org.chromium.ui"
+ }
+ 
