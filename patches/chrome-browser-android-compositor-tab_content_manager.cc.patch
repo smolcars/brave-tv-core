@@ -4,7 +4,7 @@ diff --git a/chrome/browser/android/compositor/tab_content_manager.cc b/chrome/b
 @@ -506,7 +506,7 @@
    thumbnail_cache_.SetCaptureMinRequestTimeForTesting(time_ms);
  }
- 
+
 -bool TabContentManager::IsTabCaptureInFlightForTesting(JNIEnv* env,
 +bool TabContentManager::IsTabCaptureInFlightForTesting_ChromiumImpl(JNIEnv* env,
                                                         int32_t tab_id) {

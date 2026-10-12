@@ -1,1 +1,1 @@
-{"schemaVersion":1,"patchChecksum":"de424482f6ac3543a3eb5499150ab21042cd29b0b930dc35e6967765f00c4d36","appliesTo":[{"path":"chrome/browser/android/compositor/tab_content_manager.cc","checksum":"809da2b241785ebd864feff243a20be6848520333112cf14365513d3f1532a2b"}]}
+{"schemaVersion":1,"patchChecksum":"8b0df3fb1dbbecdd3eb884f9929f972145b75b5f634b6c18c7d29a4b108e423f","appliesTo":[{"path":"chrome/browser/android/compositor/tab_content_manager.cc","checksum":"809da2b241785ebd864feff243a20be6848520333112cf14365513d3f1532a2b"}]}

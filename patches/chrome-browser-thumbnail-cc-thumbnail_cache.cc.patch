@@ -1,0 +1,26 @@
+diff --git a/chrome/browser/thumbnail/cc/thumbnail_cache.cc b/chrome/browser/thumbnail/cc/thumbnail_cache.cc
+--- a/chrome/browser/thumbnail/cc/thumbnail_cache.cc
++++ b/chrome/browser/thumbnail/cc/thumbnail_cache.cc
+@@ -347,6 +347,7 @@
+     const gfx::Size& content_size) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
++  BRAVE_THUMBNAIL_CACHE_WRITE_ETC1_THUMBNAIL_IF_NECESSARY
+   if (!compressed_data || write_tasks_count_ >= write_queue_max_size_) {
+     return;
+   }
+@@ -365,6 +366,7 @@
+     std::vector<uint8_t> compressed_data) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
++  BRAVE_THUMBNAIL_CACHE_WRITE_JPEG_THUMBNAIL_IF_NECESSARY
+   if (compressed_data.empty() || write_tasks_count_ >= write_queue_max_size_) {
+     if (tracker) {
+       tracker->MarkJpegFailed();
+@@ -389,5 +391,6 @@
+       base::BindOnce(&ThumbnailCache::WriteJpegThumbnailIfNecessary,
+                      weak_factory_.GetWeakPtr(), tab_id, std::move(tracker));
+
++  BRAVE_THUMBNAIL_CACHE_SAVE_AS_JPEG
+   jpeg_helper_.Compress(bitmap, std::move(post_jpeg_compression_task));
+ }

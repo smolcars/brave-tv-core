@@ -45,6 +45,8 @@ import androidx.test.uiautomator.UiObject2;
 import org.chromium.base.ActivityState;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.Callback;
+import org.chromium.base.task.PostTask;
+import org.chromium.base.task.TaskTraits;
 import org.chromium.base.PackageUtils;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.Token;
@@ -2064,6 +2066,54 @@ public class TvHomePageTest {
                 () -> mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
         assertFalse(
                 mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
+    }
+
+    @Test
+    @MediumTest
+    public void removedNativeCaptureDrainsCompressionAndDoesNotReappear() throws Exception {
+        mActivityTestRule.loadUrl(URL);
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        int id = ThreadUtils.runOnUiThreadBlocking(tab::getId);
+        TabContentManager manager =
+                ThreadUtils.runOnUiThreadBlocking(mActivity::getTabContentManager);
+        File jpeg = TabContentManager.getTabThumbnailFileJpeg(id);
+        File etc = TabContentManager.getTabThumbnailFileEtc1(tab);
+        ThreadUtils.runOnUiThreadBlocking(() -> manager.removeTabThumbnail(id));
+        CriteriaHelper.pollInstrumentationThread(() -> !jpeg.exists() && !etc.exists());
+        CallbackHelper removed = new CallbackHelper();
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        manager.cacheTabThumbnailWithCallback(
+                                tab,
+                                false,
+                                bitmap -> {
+                                    assertNull(bitmap);
+                                    // OnTabReadback delivers this callback before enqueuing
+                                    // compression replies.
+                                    PostTask.postTask(
+                                            TaskTraits.UI_DEFAULT,
+                                            () -> {
+                                                assertTrue(
+                                                        "Native compression must have started",
+                                                        manager.isTabCaptureInFlightForTesting(id));
+                                                manager.removeTabThumbnail(id);
+                                                assertTrue(
+                                                        "Removal must not hide pending compression",
+                                                        manager.isTabCaptureInFlightForTesting(id));
+                                                removed.notifyCalled();
+                                            });
+                                }));
+        removed.waitForCallback(0);
+        CriteriaHelper.pollUiThread(() -> !manager.isTabCaptureInFlightForTesting(id));
+        CriteriaHelper.pollInstrumentationThread(() -> !jpeg.exists() && !etc.exists());
+        ThreadUtils.runOnUiThreadBlocking(() -> manager.cacheTabThumbnail(tab));
+        CriteriaHelper.pollInstrumentationThread(jpeg::exists);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(tab, mActivity.getActivityTab());
+                    assertFalse(tab.isIncognito());
+                    assertEquals(new GURL(URL), tab.getUrl());
+                });
     }
 
     @Test

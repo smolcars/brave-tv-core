@@ -1,0 +1,1 @@
+{"schemaVersion":1,"patchChecksum":"bbaf32f7af5e78430d1c1823d55bc7ed5eba4f74536e381daa2cd04e2ae58a7d","appliesTo":[{"path":"chrome/browser/thumbnail/cc/thumbnail_cache.cc","checksum":"0244e7fc5db529003dbce7260bb8005c5c464dd5a49e0f733e348ac46465175f"}]}

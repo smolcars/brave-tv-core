@@ -6,11 +6,13 @@
 #ifndef BRAVE_CHROMIUM_SRC_CHROME_BROWSER_THUMBNAIL_CC_THUMBNAIL_CACHE_H_
 #define BRAVE_CHROMIUM_SRC_CHROME_BROWSER_THUMBNAIL_CC_THUMBNAIL_CACHE_H_
 
-#define SetCaptureMinRequestTimeForTesting(...)                      \
-  SetCaptureMinRequestTimeForTesting(__VA_ARGS__);                   \
-  bool HasPendingTasksForTesting() const {                           \
-    return compression_tasks_count_ != 0 || write_tasks_count_ != 0; \
-  }
+// UI sequence only. Observes JPEG/ETC1 compression and writes, not reads/deletes.
+#define SetCaptureMinRequestTimeForTesting(...)    \
+  SetCaptureMinRequestTimeForTesting(__VA_ARGS__); \
+ private:                                          \
+  size_t jpeg_compression_tasks_count_ = 0;        \
+ public:                                           \
+  bool HasPendingTasksForTesting() const
 
 #include <chrome/browser/thumbnail/cc/thumbnail_cache.h>  // IWYU pragma: export
 

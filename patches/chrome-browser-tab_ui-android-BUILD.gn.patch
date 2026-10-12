@@ -1,0 +1,18 @@
+diff --git a/chrome/browser/tab_ui/android/BUILD.gn b/chrome/browser/tab_ui/android/BUILD.gn
+--- a/chrome/browser/tab_ui/android/BUILD.gn
++++ b/chrome/browser/tab_ui/android/BUILD.gn
+@@ -2,6 +2,7 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+
++import("//brave/browser/tab_ui/android/java_sources.gni")
+ import("//build/config/android/rules.gni")
+ import("//chrome/android/features/android_library_factory_tmpl.gni")
+ import("//chrome/common/features.gni")
+@@ -91,5 +92,6 @@
+     "//ui/android:ui_no_recycler_view_java",
+     "//url:gurl_java",
+   ]
++  sources += brave_tab_ui_java_sources
+   resources_package = "org.chromium.chrome.browser.tab_ui"
+ }
