@@ -1,47 +1,67 @@
 <!doctype html>
 <html lang="en">
-  <meta charset="utf-8" /><meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
-  <title>TV remote</title
-  ><link
-    rel="stylesheet"
-    href="/remote.css"
-  />
-  <script
-    src="/remote.js"
-    defer
-  ></script>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta
+      name="theme-color"
+      content="#111c25"
+    />
+    <title>TV remote</title>
+    <link
+      rel="stylesheet"
+      href="/remote.css"
+    />
+    <script
+      src="/remote.js"
+      defer
+    ></script>
+  </head>
   <body>
     <main>
-      <header>
+      <header class="heading">
         <div>
-          <span class="eyebrow">LOCAL CONTROL</span>
           <h1>TV remote</h1>
+          <p
+            id="status"
+            role="status"
+            aria-live="polite"
+          >
+            Connect to your TV
+          </p>
         </div>
         <button
           id="disconnect"
+          class="quiet"
           hidden
         >
           Disconnect
         </button>
       </header>
-      <p
-        id="status"
-        role="status"
-        aria-live="polite"
+      <section
+        id="pair"
+        class="connection-view"
       >
-        Connect to your TV
-      </p>
-      <p class="warning">
-        Development experiment · Unencrypted. Use synthetic data only on an
-        isolated network.
-      </p>
-      <section id="pair">
-        <h2>A little closer to your TV.</h2>
+        <svg
+          class="connection-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <rect
+            x="2"
+            y="3"
+            width="20"
+            height="14"
+            rx="2"
+          />
+          <path d="M8 21h8m-4-4v4" />
+        </svg>
+        <h2>Connect to your TV</h2>
         <p>
-          Scan the QR on your TV, or enter its eight-digit code below. Approve
+          Scan the QR on your TV, or enter its eight-digit code. Then approve
           the connection on the TV.
         </p>
         <form id="pairForm">
@@ -54,138 +74,366 @@
               maxlength="8"
               autocomplete="off"
               required
-            /><button>Pair</button>
+            /><button class="primary">Pair</button>
           </div>
         </form>
       </section>
       <section
         id="approval"
+        class="connection-view"
         hidden
       >
-        <h2>Approve on your TV.</h2>
+        <svg
+          class="connection-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <rect
+            x="2"
+            y="3"
+            width="20"
+            height="14"
+            rx="2"
+          />
+          <path d="m8 10 3 3 5-6M8 21h8m-4-4v4" />
+        </svg>
+        <h2>Approve on your TV</h2>
         <p>
-          Your pairing request was sent. Choose “Approve phone” on the TV to
-          continue. No code is needed here.
+          Your request is ready. Choose “Approve phone” on the TV to continue.
+          No code is needed here.
         </p>
       </section>
       <div
         id="remote"
         hidden
       >
-        <section class="identity">
-          <h2 id="title">TV home</h2>
-          <p id="url"></p>
-          <form id="addressForm">
-            <label for="address">Address or search</label>
-            <div class="row">
-              <input
-                id="address"
-                type="text"
-                enterkeyhint="go"
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-              /><button>Go</button>
-            </div>
-          </form>
+        <section
+          class="identity"
+          aria-label="Current TV page"
+        >
+          <div>
+            <h2 id="title">TV home</h2>
+            <p id="url"></p>
+          </div>
+          <button
+            class="icon-button"
+            data-view="typeView"
+            aria-label="Enter address or search"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="m14 5 5 5M5 19l4-1 11-11a2.8 2.8 0 0 0-4-4L5 14z" />
+            </svg>
+          </button>
         </section>
-        <nav aria-label="Page controls">
+        <nav
+          class="history"
+          aria-label="Page controls"
+        >
           <button
             data-op="back"
             id="back"
           >
-            ← Back</button
-          ><button
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path d="m10 5-7 7 7 7M3 12h18" /></svg
+            >Back
+          </button>
+          <button
             data-op="forward"
             id="forward"
           >
-            Forward →</button
-          ><button id="reload">Reload</button
-          ><button id="showKeyboard">Keyboard</button>
-        </nav>
-        <section id="pointer">
-          <div
-            id="pad"
-            role="group"
-            aria-label="Touchpad: drag to move, tap to click, two fingers to scroll"
-          >
-            <span class="pad-mark">✦</span><strong>Room to move.</strong
-            ><span
-              >Drag to point · Tap to click<br />Two fingers to scroll</span
+            Forward<svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
             >
-          </div>
-          <details>
-            <summary>Pointer &amp; scroll buttons</summary>
-            <div class="arrows">
+              <path d="m14 5 7 7-7 7M21 12H3" />
+            </svg>
+          </button>
+          <button id="reload">Reload</button>
+        </nav>
+        <div class="panels">
+          <section
+            id="remoteView"
+            class="task-view"
+            role="tabpanel"
+            aria-labelledby="remoteTab"
+          >
+            <div
+              id="homeState"
+              class="empty"
+              hidden
+            >
+              <h2>Start browsing</h2>
+              <p>Enter an address or search to open a webpage on your TV.</p>
               <button
-                data-move="0,-30"
-                aria-label="Move pointer up"
+                class="primary"
+                data-view="typeView"
               >
-                ↑</button
-              ><button
-                data-move="-30,0"
-                aria-label="Move pointer left"
-              >
-                ←</button
-              ><button data-op="click">Click</button
-              ><button
-                data-move="30,0"
-                aria-label="Move pointer right"
-              >
-                →</button
-              ><button
-                data-move="0,30"
-                aria-label="Move pointer down"
-              >
-                ↓</button
-              ><button
-                data-scroll="-3"
-                aria-label="Scroll up"
-              >
-                Scroll ↑</button
-              ><button
-                data-scroll="3"
-                aria-label="Scroll down"
-              >
-                Scroll ↓
+                Enter address
               </button>
             </div>
-          </details>
-        </section>
-        <section
-          id="keyboard"
-          hidden
+            <section id="pointer">
+              <div class="pad-label">
+                <span>Touchpad</span><span>Drag to move</span>
+              </div>
+              <div
+                id="pad"
+                role="group"
+                aria-label="Touchpad: drag to move, tap to click, two fingers to scroll"
+              >
+                <svg
+                  viewBox="0 0 32 32"
+                  aria-hidden="true"
+                >
+                  <path d="m9 5 4 21 4-8 8-4z" />
+                </svg>
+                <span>Move the pointer on your TV</span
+                ><span class="gesture"
+                  >Tap to click · Two fingers to scroll</span
+                >
+              </div>
+              <button
+                class="primary click"
+                data-op="click"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="m6 3 3 17 4-7 7-3z" /></svg
+                >Click
+              </button>
+              <div class="scroll">
+                <span>Scroll</span
+                ><button
+                  data-scroll="-3"
+                  aria-label="Scroll up"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 20V4m-6 6 6-6 6 6" /></svg
+                  >Up</button
+                ><button
+                  data-scroll="3"
+                  aria-label="Scroll down"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 4v16m-6-6 6 6 6-6" /></svg
+                  >Down
+                </button>
+              </div>
+              <details>
+                <summary>Pointer &amp; scroll buttons</summary>
+                <div class="arrows">
+                  <button
+                    data-move="0,-30"
+                    aria-label="Move pointer up"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 20V4m-6 6 6-6 6 6" />
+                    </svg>
+                  </button>
+                  <button
+                    data-move="-30,0"
+                    aria-label="Move pointer left"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M20 12H4m6-6-6 6 6 6" />
+                    </svg>
+                  </button>
+                  <button
+                    data-move="30,0"
+                    aria-label="Move pointer right"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M4 12h16m-6-6 6 6-6 6" />
+                    </svg>
+                  </button>
+                  <button
+                    data-move="0,30"
+                    aria-label="Move pointer down"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 4v16m-6-6 6 6 6-6" />
+                    </svg>
+                  </button>
+                </div>
+              </details>
+            </section>
+          </section>
+          <section
+            id="typeView"
+            class="task-view"
+            role="tabpanel"
+            aria-labelledby="showKeyboard"
+            hidden
+          >
+            <form id="addressForm">
+              <h2>Address or search</h2>
+              <label for="address">Open on your TV</label>
+              <div class="row">
+                <input
+                  id="address"
+                  type="text"
+                  enterkeyhint="go"
+                  autocomplete="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                /><button class="primary">Go</button>
+              </div>
+            </form>
+            <section id="keyboard">
+              <h2>Page text</h2>
+              <p id="fieldHint">
+                Select a text field on the TV. Passwords are excluded.
+              </p>
+              <label for="editor">Text in the selected TV field</label
+              ><textarea
+                id="editor"
+                rows="4"
+                autocomplete="off"
+                spellcheck="false"
+                autocapitalize="off"
+                disabled
+              ></textarea>
+              <div class="row edit-actions">
+                <button id="delete">Delete before cursor</button
+                ><button id="finish">Finish composition</button>
+              </div>
+            </section>
+          </section>
+          <section
+            id="tabsView"
+            class="task-view"
+            role="tabpanel"
+            aria-labelledby="tabsTab"
+            hidden
+          >
+            <div class="row section-heading">
+              <h2>Open tabs</h2>
+              <button
+                class="primary"
+                data-op="new"
+              >
+                New tab
+              </button>
+            </div>
+            <p
+              id="tabsEmpty"
+              class="empty"
+              hidden
+            >
+              No normal tabs are open. Create a new tab to start browsing.
+            </p>
+            <div id="tabs"></div>
+          </section>
+        </div>
+        <nav
+          class="task-nav"
+          role="tablist"
+          aria-label="Remote sections"
         >
-          <h2>Page text</h2>
-          <p id="fieldHint">
-            Select a text field on the TV. Passwords are excluded.
-          </p>
-          <label for="editor">Text in the selected TV field</label
-          ><textarea
-            id="editor"
-            rows="3"
-            autocomplete="off"
-            spellcheck="false"
-            autocapitalize="off"
-            disabled
-          ></textarea>
-          <div class="row">
-            <button id="delete">Delete before cursor</button
-            ><button id="finish">Finish composition</button>
-          </div>
-        </section>
-        <section>
-          <div class="row">
-            <h2>Open tabs</h2>
-            <button data-op="new">＋ New tab</button>
-          </div>
-          <div id="tabs"></div>
-        </section>
+          <button
+            id="remoteTab"
+            role="tab"
+            aria-selected="true"
+            aria-controls="remoteView"
+            data-view="remoteView"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <rect
+                x="5"
+                y="2"
+                width="14"
+                height="20"
+                rx="4"
+              />
+              <path d="M10 6h4M10 17h4" /></svg
+            >Remote
+          </button>
+          <button
+            id="showKeyboard"
+            role="tab"
+            aria-selected="false"
+            aria-controls="typeView"
+            data-view="typeView"
+            tabindex="-1"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <rect
+                x="2"
+                y="5"
+                width="20"
+                height="14"
+                rx="3"
+              />
+              <path
+                d="M6 9h.1M10 9h.1M14 9h.1M18 9h.1M6 12h.1M10 12h.1M14 12h.1M18 12h.1M7 15h10"
+              /></svg
+            >Type
+          </button>
+          <button
+            id="tabsTab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="tabsView"
+            data-view="tabsView"
+            tabindex="-1"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <rect
+                x="6"
+                y="6"
+                width="15"
+                height="15"
+                rx="3"
+              />
+              <path d="M3 16V6a3 3 0 0 1 3-3h10" /></svg
+            >Tabs
+          </button>
+        </nav>
       </div>
       <footer>
-        Same network. No account. No cloud relay.<br />If unreachable, check
-        Wi-Fi and guest-network isolation, then start a new invitation on the
-        TV.
+        <p class="warning">Development experiment · Unencrypted</p>
+        <details>
+          <summary>Network &amp; safety</summary>
+          <p>
+            Use synthetic data only on an isolated network. Same network. No
+            account. No cloud relay. If unreachable, check Wi-Fi and
+            guest-network isolation, then start a new invitation on the TV.
+          </p>
+        </details>
       </footer>
     </main>
   </body>

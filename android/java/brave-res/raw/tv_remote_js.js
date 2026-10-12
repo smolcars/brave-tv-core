@@ -44,12 +44,24 @@ function resetInput() {
   field = 0
   $('editor').value = ''
 }
+function clearPage() {
+  $('title').textContent = 'Control unavailable'
+  $('url').textContent = ''
+  $('address').value = ''
+  $('tabs').replaceChildren()
+  delete $('tabs').dataset.state
+  $('tabsEmpty').hidden = true
+  $('fieldHint').textContent =
+    'Phone typing is unavailable. Continue on your TV.'
+}
 function render(result) {
   if (!result.state && !result.error) result = { error: 'revoked' }
   if (result.error) {
     connected = false
     state = null
     resetInput()
+    clearPage()
+    $('disconnect').hidden = true
     $('pair').hidden = result.error === 'approval'
     $('approval').hidden = result.error !== 'approval'
     $('remote').hidden = true
@@ -100,15 +112,13 @@ function render(result) {
       : result.ok === false
         ? 'TV changed. Action discarded; try again.'
         : state.error
-          ? 'The TV page could not be loaded.'
+          ? 'The TV page could not be loaded. Try Reload or another address.'
           : 'Connected to your TV',
   )
   disable(state.paused)
   if (state.paused) {
+    clearPage()
     $('title').textContent = 'Control paused'
-    $('url').textContent = ''
-    $('tabs').replaceChildren()
-    delete $('tabs').dataset.state
     resetInput()
     if (!previous?.paused) $('status').scrollIntoView({ block: 'start' })
     return
@@ -120,8 +130,13 @@ function render(result) {
   $('reload').textContent = state.loading ? 'Stop' : 'Reload'
   $('reload').disabled = !state.page
   $('pointer').hidden = !state.page
+  $('homeState').hidden = !!state.page
+  $('tabsEmpty').hidden = !!state.tabs?.length
   const tabs = $('tabs')
   if (tabs.dataset.state !== JSON.stringify(state.tabs)) {
+    const focused = document.activeElement
+    const focusedTab = focused?.dataset.tab
+    const focusedAction = focused?.dataset.action
     tabs.dataset.state = JSON.stringify(state.tabs)
     tabs.replaceChildren()
     for (const tab of state.tabs || []) {
@@ -129,27 +144,56 @@ function render(result) {
       row.className = 'tab'
       row.setAttribute('aria-current', String(tab.selected))
       const select = document.createElement('button')
+      select.className = 'tab-select'
+      select.dataset.tab = tab.id
+      select.dataset.action = 'select'
       select.textContent = tab.title || 'New tab'
+      select.setAttribute('aria-current', tab.selected ? 'page' : 'false')
       select.onclick = () => command('selectTab', { tab: tab.id })
       const close = document.createElement('button')
-      close.textContent = '×'
+      close.className = 'tab-close'
+      close.dataset.tab = tab.id
+      close.dataset.action = 'close'
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      icon.setAttribute('viewBox', '0 0 24 24')
+      icon.setAttribute('aria-hidden', 'true')
+      const path = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'path',
+      )
+      path.setAttribute('d', 'm6 6 12 12M18 6 6 18')
+      icon.append(path)
+      close.append(icon)
       close.setAttribute('aria-label', `Close ${tab.title || 'new tab'}`)
       close.onclick = () => command('closeTab', { tab: tab.id })
       row.append(select, close)
       tabs.append(row)
+    }
+    if (focusedTab) {
+      const replacement = [...tabs.querySelectorAll('button')].find(
+        (button) =>
+          button.dataset.tab === focusedTab
+          && button.dataset.action === focusedAction,
+      )
+      ;(replacement || $('tabsView').querySelector('[data-op="new"]')).focus()
     }
   }
   const editable = state.editable
   if (!editable) {
     pendingEdit = null
     dirty = composing = false
+    field = 0
+    $('editor').value = ''
     $('editor').disabled = true
     $('fieldHint').textContent =
       'Select an eligible text field on the TV. Passwords are excluded.'
   } else {
-    $('fieldHint').textContent = 'Editing the selected TV field'
-    $('editor').disabled = false
+    $('fieldHint').textContent = editable.ready
+      ? 'Editing the selected TV field'
+      : 'Reading the selected TV field…'
+    $('editor').disabled = !editable.ready
     if (field !== editable.revision) {
+      $('editor').value = ''
       dirty = false
       composing = false
     }
@@ -164,7 +208,10 @@ function render(result) {
 function disable(value) {
   document.body.classList.toggle('paused', value)
   for (const b of $('remote').querySelectorAll('button,input,textarea'))
-    b.disabled = value
+    if (!b.dataset.view) b.disabled = value
+  for (const id of ['delete', 'finish'])
+    $(id).disabled = value || !state?.editable?.ready
+  $('pad').setAttribute('aria-disabled', String(value || !state?.page))
 }
 async function poll() {
   if (!token || busy || document.hidden) return
@@ -189,6 +236,7 @@ function disconnected() {
   connected = false
   state = null
   resetInput()
+  clearPage()
   disable(true)
   status('Disconnected. Reconnecting for fresh state…')
 }
@@ -288,10 +336,38 @@ $('addressForm').onsubmit = (e) => {
   command('navigate', { text: $('address').value })
 }
 $('reload').onclick = () => command(state?.loading ? 'stop' : 'reload')
-$('showKeyboard').onclick = () => {
-  $('keyboard').hidden = !$('keyboard').hidden
-  if (!$('keyboard').hidden) $('editor').focus()
+const taskTabs = [...document.querySelectorAll('[role="tab"]')]
+function showView(id) {
+  // A task change must not carry an unfinished gesture or unsent field edit.
+  resetInput()
+  if (connected && state) render({ state, epoch })
+  for (const view of document.querySelectorAll('.task-view'))
+    view.hidden = view.id !== id
+  for (const tab of taskTabs) {
+    const selected = tab.dataset.view === id
+    tab.setAttribute('aria-selected', String(selected))
+    tab.tabIndex = selected ? 0 : -1
+  }
 }
+for (const button of document.querySelectorAll('[data-view]'))
+  button.onclick = () => {
+    showView(button.dataset.view)
+    if (button.getAttribute('role') !== 'tab') $('address').focus()
+  }
+for (const tab of taskTabs)
+  tab.onkeydown = (event) => {
+    const index = taskTabs.indexOf(tab)
+    let next
+    if (event.key === 'ArrowRight') next = (index + 1) % taskTabs.length
+    else if (event.key === 'ArrowLeft')
+      next = (index + taskTabs.length - 1) % taskTabs.length
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = taskTabs.length - 1
+    else return
+    event.preventDefault()
+    showView(taskTabs[next].dataset.view)
+    taskTabs[next].focus()
+  }
 for (const b of document.querySelectorAll('[data-op]'))
   b.onclick = () => command(b.dataset.op)
 for (const b of document.querySelectorAll('[data-move]'))

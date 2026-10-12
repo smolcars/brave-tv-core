@@ -1,0 +1,379 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-12T23:35:19.388067+00:00",
+  "title": "Design System: Brave TV phone remote \u2014 After hours",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "tonalRamp": [
+          "oklch(15% 0.02373 243.83)",
+          "oklch(27% 0.02373 243.83)",
+          "oklch(38% 0.02373 243.83)",
+          "oklch(50% 0.02373 243.83)",
+          "oklch(61% 0.02373 243.83)",
+          "oklch(73% 0.02373 243.83)",
+          "oklch(84% 0.02373 243.83)",
+          "oklch(95% 0.02373 243.83)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(15% 0.02962 239.25)",
+          "oklch(27% 0.02962 239.25)",
+          "oklch(38% 0.02962 239.25)",
+          "oklch(50% 0.02962 239.25)",
+          "oklch(61% 0.02962 239.25)",
+          "oklch(73% 0.02962 239.25)",
+          "oklch(84% 0.02962 239.25)",
+          "oklch(95% 0.02962 239.25)"
+        ]
+      },
+      "pad": {
+        "role": "neutral",
+        "displayName": "Pad",
+        "tonalRamp": [
+          "oklch(15% 0.02985 237.36)",
+          "oklch(27% 0.02985 237.36)",
+          "oklch(38% 0.02985 237.36)",
+          "oklch(50% 0.02985 237.36)",
+          "oklch(61% 0.02985 237.36)",
+          "oklch(73% 0.02985 237.36)",
+          "oklch(84% 0.02985 237.36)",
+          "oklch(95% 0.02985 237.36)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Accent",
+        "tonalRamp": [
+          "oklch(15% 0.06654 177.92)",
+          "oklch(27% 0.06654 177.92)",
+          "oklch(38% 0.06654 177.92)",
+          "oklch(50% 0.06654 177.92)",
+          "oklch(61% 0.06654 177.92)",
+          "oklch(73% 0.06654 177.92)",
+          "oklch(84% 0.06654 177.92)",
+          "oklch(95% 0.06654 177.92)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.00499 165.01)",
+          "oklch(27% 0.00499 165.01)",
+          "oklch(38% 0.00499 165.01)",
+          "oklch(50% 0.00499 165.01)",
+          "oklch(61% 0.00499 165.01)",
+          "oklch(73% 0.00499 165.01)",
+          "oklch(84% 0.00499 165.01)",
+          "oklch(95% 0.00499 165.01)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(15% 0.01941 222.21)",
+          "oklch(27% 0.01941 222.21)",
+          "oklch(38% 0.01941 222.21)",
+          "oklch(50% 0.01941 222.21)",
+          "oklch(61% 0.01941 222.21)",
+          "oklch(73% 0.01941 222.21)",
+          "oklch(84% 0.01941 222.21)",
+          "oklch(95% 0.01941 222.21)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "tonalRamp": [
+          "oklch(15% 0.02903 231.28)",
+          "oklch(27% 0.02903 231.28)",
+          "oklch(38% 0.02903 231.28)",
+          "oklch(50% 0.02903 231.28)",
+          "oklch(61% 0.02903 231.28)",
+          "oklch(73% 0.02903 231.28)",
+          "oklch(84% 0.02903 231.28)",
+          "oklch(95% 0.02903 231.28)"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Warning",
+        "tonalRamp": [
+          "oklch(15% 0.09558 77.76)",
+          "oklch(27% 0.09558 77.76)",
+          "oklch(38% 0.09558 77.76)",
+          "oklch(50% 0.09558 77.76)",
+          "oklch(61% 0.09558 77.76)",
+          "oklch(73% 0.09558 77.76)",
+          "oklch(84% 0.09558 77.76)",
+          "oklch(95% 0.09558 77.76)"
+        ]
+      },
+      "control-hover": {
+        "role": "neutral",
+        "displayName": "Control Hover",
+        "tonalRamp": [
+          "oklch(15% 0.03213 236.62)",
+          "oklch(27% 0.03213 236.62)",
+          "oklch(38% 0.03213 236.62)",
+          "oklch(50% 0.03213 236.62)",
+          "oklch(61% 0.03213 236.62)",
+          "oklch(73% 0.03213 236.62)",
+          "oklch(84% 0.03213 236.62)",
+          "oklch(95% 0.03213 236.62)"
+        ]
+      },
+      "control-active": {
+        "role": "neutral",
+        "displayName": "Control Active",
+        "tonalRamp": [
+          "oklch(15% 0.03654 226.29)",
+          "oklch(27% 0.03654 226.29)",
+          "oklch(38% 0.03654 226.29)",
+          "oklch(50% 0.03654 226.29)",
+          "oklch(61% 0.03654 226.29)",
+          "oklch(73% 0.03654 226.29)",
+          "oklch(84% 0.03654 226.29)",
+          "oklch(95% 0.03654 226.29)"
+        ]
+      },
+      "disabled-ink": {
+        "role": "neutral",
+        "displayName": "Disabled Ink",
+        "tonalRamp": [
+          "oklch(15% 0.02592 230.61)",
+          "oklch(27% 0.02592 230.61)",
+          "oklch(38% 0.02592 230.61)",
+          "oklch(50% 0.02592 230.61)",
+          "oklch(61% 0.02592 230.61)",
+          "oklch(73% 0.02592 230.61)",
+          "oklch(84% 0.02592 230.61)",
+          "oklch(95% 0.02592 230.61)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Accent Hover",
+        "tonalRamp": [
+          "oklch(15% 0.05634 177.90)",
+          "oklch(27% 0.05634 177.90)",
+          "oklch(38% 0.05634 177.90)",
+          "oklch(50% 0.05634 177.90)",
+          "oklch(61% 0.05634 177.90)",
+          "oklch(73% 0.05634 177.90)",
+          "oklch(84% 0.05634 177.90)",
+          "oklch(95% 0.05634 177.90)"
+        ]
+      },
+      "accent-active": {
+        "role": "primary",
+        "displayName": "Accent Active",
+        "tonalRamp": [
+          "oklch(15% 0.06559 177.15)",
+          "oklch(27% 0.06559 177.15)",
+          "oklch(38% 0.06559 177.15)",
+          "oklch(50% 0.06559 177.15)",
+          "oklch(61% 0.06559 177.15)",
+          "oklch(73% 0.06559 177.15)",
+          "oklch(84% 0.06559 177.15)",
+          "oklch(95% 0.06559 177.15)"
+        ]
+      },
+      "selected-surface": {
+        "role": "neutral",
+        "displayName": "Selected Surface",
+        "tonalRamp": [
+          "oklch(15% 0.02960 229.35)",
+          "oklch(27% 0.02960 229.35)",
+          "oklch(38% 0.02960 229.35)",
+          "oklch(50% 0.02960 229.35)",
+          "oklch(61% 0.02960 229.35)",
+          "oklch(73% 0.02960 229.35)",
+          "oklch(84% 0.02960 229.35)",
+          "oklch(95% 0.02960 229.35)"
+        ]
+      },
+      "pad-active": {
+        "role": "neutral",
+        "displayName": "Pad Active",
+        "tonalRamp": [
+          "oklch(15% 0.03521 221.75)",
+          "oklch(27% 0.03521 221.75)",
+          "oklch(38% 0.03521 221.75)",
+          "oklch(50% 0.03521 221.75)",
+          "oklch(61% 0.03521 221.75)",
+          "oklch(73% 0.03521 221.75)",
+          "oklch(84% 0.03521 221.75)",
+          "oklch(95% 0.03521 221.75)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Title",
+        "purpose": "Application title."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Task and state headings."
+      },
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "Current TV page identity."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "Prominent Click control."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Instructions and text entry."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Status, hints, and compact controls."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "state-duration",
+        "value": "160ms",
+        "purpose": "Pad and task-selection response."
+      },
+      {
+        "name": "state-easing",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Pad and task-navigation transitions."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "Remove transitions for reduced-motion preference."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "short-height",
+        "value": "(max-height: 740px)"
+      },
+      {
+        "name": "narrow-width",
+        "value": "(max-width: 350px)"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Compact action for pairing, navigation, and new tabs.",
+      "html": "<button class=\"ds-primary\">Go</button>",
+      "css": ".ds-primary{font:16px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-height:48px;border:0;border-radius:12px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--accent,#9ddbcc);color:var(--ground,#111c25);font-weight:620;}.ds-primary:hover{background:#b1e5d8;}.ds-primary:active{background:#88c4b5;}.ds-primary:focus-visible{outline:3px solid var(--accent,#9ddbcc);outline-offset:3px;}.ds-primary:disabled{color:#91a4ae;background:var(--surface,#1a2a35);cursor:default;}"
+    },
+    {
+      "name": "Secondary action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Surface control for scroll and editing alternatives.",
+      "html": "<button class=\"ds-secondary\">Up</button>",
+      "css": ".ds-secondary{font:16px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-height:48px;border:0;border-radius:12px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--surface,#1a2a35);color:var(--ink,#f1f5f3);font-size:14px;min-width:90px;}.ds-secondary:hover{background:#2a3d49;}.ds-secondary:active{background:#334d58;}.ds-secondary:focus-visible{outline:3px solid var(--accent,#9ddbcc);outline-offset:3px;}.ds-secondary:disabled{color:#91a4ae;background:var(--surface,#1a2a35);cursor:default;}"
+    },
+    {
+      "name": "Quiet action",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Disconnect action directly on the ground.",
+      "html": "<button class=\"ds-quiet\">Disconnect</button>",
+      "css": ".ds-quiet{font:16px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-height:48px;border:0;border-radius:12px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;font-size:14px;padding:8px;background:transparent;color:var(--ink,#f1f5f3);}.ds-quiet:hover{background:#2a3d49;}.ds-quiet:active{background:#334d58;}.ds-quiet:focus-visible{outline:3px solid var(--accent,#9ddbcc);outline-offset:3px;}"
+    },
+    {
+      "name": "Address field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labeled field with a teal caret.",
+      "html": "<label class=\"ds-label\" for=\"ds-address\">Open on your TV</label><input class=\"ds-field\" id=\"ds-address\" type=\"text\" placeholder=\"Address or search\"/>",
+      "css": ".ds-label{display:block;margin-bottom:8px;color:var(--muted,#b9c9cf);font:14px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;}.ds-field{font:16px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-width:0;width:100%;min-height:48px;padding:12px;border:1px solid var(--line,#3b4e58);border-radius:12px;background:var(--surface,#1a2a35);color:var(--ink,#f1f5f3);caret-color:var(--accent,#9ddbcc);}.ds-field::placeholder{color:var(--muted,#b9c9cf);}.ds-field:hover{background:var(--surface,#1a2a35);}.ds-field:focus-visible{outline:3px solid var(--accent,#9ddbcc);outline-offset:3px;}.ds-field:disabled{color:#91a4ae;}"
+    },
+    {
+      "name": "Click action",
+      "kind": "button",
+      "refersTo": "click",
+      "description": "Full-width alternative to a touchpad tap.",
+      "html": "<button class=\"ds-click\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m6 3 3 17 4-7 7-3z\"/></svg>Click</button>",
+      "css": ".ds-click{font:16px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-height:48px;border:0;border-radius:12px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--accent,#9ddbcc);color:var(--ground,#111c25);font-weight:620;width:100%;min-height:57px;font-size:17px;}.ds-click:hover{background:#b1e5d8;}.ds-click:active{background:#88c4b5;}.ds-click:focus-visible{outline:3px solid var(--accent,#9ddbcc);outline-offset:3px;}.ds-click:disabled{color:#91a4ae;background:var(--surface,#1a2a35);cursor:default;}.ds-click svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}"
+    },
+    {
+      "name": "Task navigation",
+      "kind": "nav",
+      "refersTo": "task-tab",
+      "description": "Three choices with teal-on-blue selected treatment.",
+      "html": "<nav class=\"ds-nav\" role=\"tablist\" aria-label=\"Remote sections\"><button class=\"ds-task\" role=\"tab\" aria-selected=\"true\" tabindex=\"0\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 4h14v16H5zM10 7h4M10 17h4\"/></svg>Remote</button><button class=\"ds-task\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 5h20v14H2zM6 9h.1M10 9h.1M14 9h.1M18 9h.1M7 15h10\"/></svg>Type</button><button class=\"ds-task\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M6 6h15v15H6zM3 16V6a3 3 0 0 1 3-3h10\"/></svg>Tabs</button></nav>",
+      "css": ".ds-nav{display:flex;gap:6px;border-top:1px solid var(--line,#3b4e58);margin-top:12px;padding-top:8px;}.ds-task{font:16px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-height:48px;border:0;border-radius:12px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;flex:1;flex-direction:column;gap:4px;min-height:62px;font-size:14px;background:transparent;color:var(--muted,#b9c9cf);transition:background-color 160ms cubic-bezier(0.16,1,0.3,1),color 160ms cubic-bezier(0.16,1,0.3,1);}.ds-task svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;width:21px;height:21px;}.ds-task:hover,.ds-task:active{background:transparent;}.ds-task[aria-selected=\"true\"]{background:#1d3039;color:var(--accent,#9ddbcc);}.ds-task:focus-visible{outline:3px solid var(--accent,#9ddbcc);outline-offset:3px;}@media(prefers-reduced-motion:reduce){.ds-task{transition:none;}}"
+    },
+    {
+      "name": "Selected normal tab",
+      "kind": "custom",
+      "refersTo": "active-tab-row",
+      "description": "Title selection with a separate close action.",
+      "html": "<div class=\"ds-tab\" aria-current=\"true\"><button class=\"ds-select\" aria-current=\"page\">A quiet evening</button><button class=\"ds-close\" aria-label=\"Close A quiet evening\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m6 6 12 12M18 6 6 18\"/></svg></button></div>",
+      "css": ".ds-tab{display:flex;border-bottom:1px solid var(--line,#3b4e58);padding:8px 0;gap:8px;}.ds-tab button{font:16px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-height:48px;border:0;border-radius:12px;padding:10px 14px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:transparent;color:var(--ink,#f1f5f3);}.ds-tab .ds-select{flex:1;min-width:0;text-align:left;justify-content:start;overflow-wrap:anywhere;background:#1d3039;color:var(--accent,#9ddbcc);}.ds-close{flex-shrink:0;width:48px;}.ds-close svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}.ds-tab button:hover,.ds-tab button:active{background:transparent;}.ds-tab .ds-select:hover,.ds-tab .ds-select:active{background:#1d3039;}.ds-tab button:focus-visible{outline:3px solid var(--accent,#9ddbcc);outline-offset:3px;}"
+    },
+    {
+      "name": "Touchpad",
+      "kind": "custom",
+      "refersTo": "touchpad",
+      "description": "Slate gesture surface with restrained pressed feedback.",
+      "html": "<div class=\"ds-pad\" role=\"group\" aria-label=\"Touchpad: drag to move, tap to click, two fingers to scroll\"><svg viewBox=\"0 0 32 32\" aria-hidden=\"true\"><path d=\"m9 5 4 21 4-8 8-4z\"/></svg><span>Move the pointer on your TV</span><span class=\"ds-gesture\">Tap to click \u00b7 Two fingers to scroll</span></div>",
+      "css": ".ds-pad{font:14px/1.4 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;min-height:220px;border-radius:16px;background:var(--pad,#22333e);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:28px 12px;touch-action:none;user-select:none;color:var(--muted,#b9c9cf);transition:background-color 160ms cubic-bezier(0.16,1,0.3,1);}.ds-pad svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;width:32px;height:32px;color:var(--accent,#9ddbcc);}.ds-gesture{margin-top:32px;text-align:center;}.ds-pad:hover{background:var(--pad,#22333e);}.ds-pad:active{background:#2c464f;}.ds-pad:focus-visible{outline:3px solid var(--accent,#9ddbcc);outline-offset:3px;}@media(max-height:740px){.ds-pad{min-height:170px;}.ds-gesture{margin-top:20px;}}@media(prefers-reduced-motion:reduce){.ds-pad{transition:none;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "After hours",
+    "overview": "After hours is a calm control surface: deep blue surrounds a slate blue touchpad, warm white carries page identity, and soft teal marks the main action and current task. Compact system sans typography and flat surfaces support repeated phone use.\n\nThis system applies only to the bundled phone-browser companion in `android/java/brave-res/raw/tv_remote.html`, `tv_remote_css.css`, and `tv_remote_js.js`. It does not define the native Android TV browser or upstream Brave applications. The implementation uses authored inline SVG, bundled CSS/JavaScript, and system fonts; it ships no raster assets or external asset requests.",
+    "keyCharacteristics": [
+      "Deep blue ground with restrained soft teal feedback.",
+      "Spacious touchpad and one prominent Click control.",
+      "Compact, separate Remote, Type, and Tabs tasks.",
+      "Flat surfaces, quiet dividers, visible focus, and explicit recovery states."
+    ],
+    "rules": [
+      {
+        "name": "The Teal Feedback Rule",
+        "body": "Use soft teal for primary actions, current selections, connection feedback, pointer icons, carets, and keyboard focus. Keep explanatory copy muted and interruptions amber.",
+        "section": "colors"
+      },
+      {
+        "name": "The Compact Hierarchy Rule",
+        "body": "Use sentence case and the observed small type hierarchy; page identity and task headings provide hierarchy without decorative labels.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "Separate regions with tonal surfaces and quiet rules. The shipped companion uses no shadows, blur, or gradients.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve the deep blue ground, slate touchpad, warm white text, and restrained teal feedback.",
+      "Do use visible named buttons alongside touch gestures and preserve tablist keyboard navigation.",
+      "Do keep safe-area padding, document scrolling, readable zoom, and reduced-motion support.",
+      "Do explain Home, waiting, paused, unavailable-field, and reconnecting states with the next useful action.",
+      "Do use bundled resources, system fonts, and authored inline SVG icons."
+    ],
+    "donts": [
+      "Don't reintroduce stacks of oversized outlined controls.",
+      "Don't imply phone playback commands, private-tab access, password editing, or secure transport that the companion does not support.",
+      "Don't replace truthful connection or disabled-state explanations with decorative status badges.",
+      "Don't add external fonts, raster dependencies, remote assets, or motion that ignores reduced-motion preference."
+    ]
+  }
+}
