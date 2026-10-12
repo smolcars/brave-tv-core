@@ -693,6 +693,26 @@ public class TvHomePageTest {
                 });
     }
 
+    private void injectDpad(int key) {
+        long now = SystemClock.uptimeMillis();
+        KeyEvent down =
+                new KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_DOWN,
+                        key,
+                        0,
+                        0,
+                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                        0,
+                        0,
+                        InputDevice.SOURCE_DPAD);
+        var automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        assertTrue(automation.injectInputEvent(down, true));
+        assertTrue(
+                automation.injectInputEvent(KeyEvent.changeAction(down, KeyEvent.ACTION_UP), true));
+    }
+
     @Test
     @MediumTest
     public void nativeCertificateBackReturnsToSafeDocument() {
@@ -1207,6 +1227,7 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    @MinAndroidSdkLevel(Build.VERSION_CODES.Q)
     public void nativeSearchAndTabCommandsUseTvHomeAndAddress() {
         Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         assertTrue(
@@ -1255,14 +1276,38 @@ public class TvHomePageTest {
 
     private void dismissNativeEntryToPage() {
         for (int i = 0; i < 4; i++) {
+            CriteriaHelper.pollUiThread(
+                    () -> mActivity.hasWindowFocus() || focusedNativeWindow() != null);
             if (ThreadUtils.runOnUiThreadBlocking(mActivity::hasWindowFocus)) return;
+            View owner = ThreadUtils.runOnUiThreadBlocking(this::focusedNativeWindow);
+            assertNotNull(owner);
+            boolean hadIme = ThreadUtils.runOnUiThreadBlocking(() -> windowHasIme(owner));
             mDevice.pressBack();
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            mActivity.hasWindowFocus()
+                                    || !owner.isAttachedToWindow()
+                                    || !owner.hasWindowFocus()
+                                    || (hadIme && !windowHasIme(owner)));
         }
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
     }
 
+    private @Nullable View focusedNativeWindow() {
+        for (View root : WindowInspector.getGlobalWindowViews()) {
+            if (root.isAttachedToWindow() && root.hasWindowFocus()) return root;
+        }
+        return null;
+    }
+
+    private boolean windowHasIme(View view) {
+        WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(view);
+        return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
+    }
+
     @Test
     @MediumTest
+    @MinAndroidSdkLevel(Build.VERSION_CODES.Q)
     public void nativeAdblockUrlUsesTvFiltersAndReturnsToSettings() {
         mActivityTestRule.loadUrl(URL);
         Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
@@ -1324,11 +1369,11 @@ public class TvHomePageTest {
                         () -> mActivity.getTabModelSelector().getModel(false).getCount());
         WebContentsUtils.crashTabAndWait(contents);
         CriteriaHelper.pollUiThread(() -> SadTab.isShowing(original));
-        mDevice.pressDPadDown();
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
         waitForFocus(By.res(mActivity.getPackageName(), "sad_tab_message"));
-        mDevice.pressDPadDown();
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
         waitForFocus(By.res(mActivity.getPackageName(), "sad_tab_button"));
-        mDevice.pressDPadCenter();
+        injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
         CriteriaHelper.pollUiThread(() -> !SadTab.isShowing(original));
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text("TV saved page")));
         ThreadUtils.runOnUiThreadBlocking(
@@ -1962,6 +2007,63 @@ public class TvHomePageTest {
                                         == 0);
         CriteriaHelper.pollInstrumentationThread(
                 () -> mDevice.hasObject(By.descStartsWith(TITLE + "0\n")));
+        assertFalse(
+                mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
+    }
+
+    @Test
+    @MediumTest
+    @MinAndroidSdkLevel(Build.VERSION_CODES.Q)
+    @DisableFeatures(ChromeFeatureList.INCOGNITO_SCREENSHOT)
+    public void privateAddressDraftIsDiscardedAcrossActivityRecreation() {
+        int normalId = ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getId());
+        GURL normalUrl =
+                ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getUrl());
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab().isIncognito()
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        int privateId = ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getId());
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> assertTrue(mActivity.onMenuOrKeyboardAction(R.id.focus_url_bar, false)));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.clazz("android.widget.EditText")));
+        String draft = "TV private draft must be discarded";
+        mDevice.findObject(By.clazz("android.widget.EditText")).setText(draft);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.clazz("android.widget.EditText").text(draft)));
+
+        mActivity = ApplicationTestUtils.recreateActivity(mActivity);
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab() != null
+                                && mActivity.getActivityTab().getId() == privateId
+                                && mActivity.getActivityTab().isIncognito()
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        assertFalse(mDevice.hasObject(By.text(draft)));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> assertTrue(mActivity.onMenuOrKeyboardAction(R.id.focus_url_bar, false)));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> {
+                    UiObject2 editor = mDevice.findObject(By.clazz("android.widget.EditText"));
+                    return editor != null && TextUtils.isEmpty(editor.getText());
+                });
+        dismissNativeEntryToPage();
+        ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getTabModelSelector().selectModel(false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab() != null
+                                && mActivity.getActivityTab().getId() == normalId
+                                && !mActivity.getActivityTab().isIncognito()
+                                && normalUrl.equals(mActivity.getActivityTab().getUrl()));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        assertFalse(mDevice.hasObject(By.text(draft)));
+        assertFalse(mDevice.hasObject(By.clazz("android.widget.EditText")));
         assertFalse(
                 mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
     }
