@@ -126,7 +126,8 @@ public class TvThumbnailCacheTest {
     }
 
     private static void removeCache(TabContentManager manager, int id, File jpeg, File etc) {
-        ThreadUtils.runOnUiThreadBlocking(() -> manager.removeTabThumbnail(id));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> manager.removeTabThumbnail(id, /* forceRemoval= */ true));
         CriteriaHelper.pollUiThread(() -> !manager.isTabCaptureInFlightForTesting(id));
         CriteriaHelper.pollInstrumentationThread(() -> !jpeg.exists() && !etc.exists());
     }

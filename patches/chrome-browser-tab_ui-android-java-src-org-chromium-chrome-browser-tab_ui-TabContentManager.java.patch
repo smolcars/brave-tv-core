@@ -5,7 +5,7 @@ diff --git a/chrome/browser/tab_ui/android/java/src/org/chromium/chrome/browser/
          assert mNativeTabContentManager != 0;
          assert mSnapshotsEnabled;
 
-+        if (TvThumbnailPolicy.blockPrivateCapture(mContext, tab, () -> removeTabThumbnail(tab.getId()), callback)) return;
++        if (TvThumbnailPolicy.blockPrivateCapture(mContext, tab, this, callback)) return;
          long startTime = SystemClock.elapsedRealtime();
          if (tab.getNativePage() != null || isNativeViewShowing(tab)) {
              // Native pages will have their views removed from the view hierarchy when hidden so

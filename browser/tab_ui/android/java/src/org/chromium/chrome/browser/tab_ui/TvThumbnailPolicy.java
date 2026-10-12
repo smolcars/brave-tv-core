@@ -24,7 +24,7 @@ final class TvThumbnailPolicy {
     static boolean blockPrivateCapture(
             Context context,
             Tab tab,
-            Runnable removeCache,
+            TabContentManager manager,
             @Nullable Callback<@Nullable Bitmap> callback) {
         ThreadUtils.assertOnUiThread();
         if (!tab.isIncognito()
@@ -33,7 +33,8 @@ final class TvThumbnailPolicy {
                         != Configuration.UI_MODE_TYPE_TELEVISION) {
             return false;
         }
-        removeCache.run();
+        // Private pixels must be removed even while the live tab owns its cache.
+        manager.removeTabThumbnail(tab.getId(), /* forceRemoval= */ true);
         Callback.runNullSafe(callback, null);
         return true;
     }

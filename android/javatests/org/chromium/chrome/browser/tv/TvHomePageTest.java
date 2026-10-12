@@ -26,8 +26,8 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.inspector.WindowInspector;
 import android.view.inputmethod.InputMethodManager;
+import android.view.inspector.WindowInspector;
 
 import androidx.annotation.Nullable;
 import androidx.core.view.OneShotPreDrawListener;
@@ -42,14 +42,20 @@ import androidx.test.uiautomator.StaleObjectException;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import org.chromium.base.ActivityState;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.Callback;
-import org.chromium.base.task.PostTask;
-import org.chromium.base.task.TaskTraits;
 import org.chromium.base.PackageUtils;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.Token;
+import org.chromium.base.task.PostTask;
+import org.chromium.base.task.TaskTraits;
 import org.chromium.base.test.util.ApplicationTestUtils;
 import org.chromium.base.test.util.CallbackHelper;
 import org.chromium.base.test.util.CommandLineFlags;
@@ -77,8 +83,8 @@ import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.browser.tab.TabObserver;
 import org.chromium.chrome.browser.tab.TvBrowserControlsVisibilityDelegate;
-import org.chromium.chrome.browser.tabmodel.TabClosureParams;
 import org.chromium.chrome.browser.tab_ui.TabContentManager;
+import org.chromium.chrome.browser.tabmodel.TabClosureParams;
 import org.chromium.chrome.browser.tabmodel.TabModel;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
@@ -94,11 +100,6 @@ import org.chromium.content_public.browser.test.util.DOMUtils;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.content_public.browser.test.util.WebContentsUtils;
 import org.chromium.url.GURL;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1494,7 +1495,8 @@ public class TvHomePageTest {
     @MediumTest
     public void unavailableExternalLinkDoesNotTakeFocusedEditorWithHiddenKeyboard()
             throws Exception {
-        mActivityTestRule.loadUrl("data:text/html,<input id='editor' aria-label='TV native editor'>");
+        mActivityTestRule.loadUrl(
+                "data:text/html,<input id='editor' aria-label='TV native editor'>");
         Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         WebContents contents = ThreadUtils.runOnUiThreadBlocking(tab::getWebContents);
         assertNotNull(contents);
@@ -1513,7 +1515,8 @@ public class TvHomePageTest {
                 });
         CriteriaHelper.pollUiThread(
                 () -> {
-                    var insets = ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
+                    var insets =
+                            ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
                     return insets != null && !insets.isVisible(WindowInsetsCompat.Type.ime());
                 });
         ThreadUtils.runOnUiThreadBlocking(
@@ -1528,7 +1531,8 @@ public class TvHomePageTest {
                     assertTrue(mActivity.hasWindowFocus());
                 });
         assertFalse(
-                mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_link_unavailable))));
+                mDevice.hasObject(
+                        By.text(mActivity.getString(R.string.brave_tv_link_unavailable))));
     }
 
     @Test
@@ -2078,7 +2082,8 @@ public class TvHomePageTest {
                 ThreadUtils.runOnUiThreadBlocking(mActivity::getTabContentManager);
         File jpeg = TabContentManager.getTabThumbnailFileJpeg(id);
         File etc = TabContentManager.getTabThumbnailFileEtc1(tab);
-        ThreadUtils.runOnUiThreadBlocking(() -> manager.removeTabThumbnail(id));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> manager.removeTabThumbnail(id, /* forceRemoval= */ true));
         CriteriaHelper.pollInstrumentationThread(() -> !jpeg.exists() && !etc.exists());
         CallbackHelper removed = new CallbackHelper();
         ThreadUtils.runOnUiThreadBlocking(
@@ -2096,7 +2101,8 @@ public class TvHomePageTest {
                                                 assertTrue(
                                                         "Native compression must have started",
                                                         manager.isTabCaptureInFlightForTesting(id));
-                                                manager.removeTabThumbnail(id);
+                                                manager.removeTabThumbnail(
+                                                        id, /* forceRemoval= */ true);
                                                 assertTrue(
                                                         "Removal must not hide pending compression",
                                                         manager.isTabCaptureInFlightForTesting(id));
@@ -2136,7 +2142,8 @@ public class TvHomePageTest {
         TabContentManager manager =
                 ThreadUtils.runOnUiThreadBlocking(mActivity::getTabContentManager);
         File normalJpeg = TabContentManager.getTabThumbnailFileJpeg(normal.getId());
-        ThreadUtils.runOnUiThreadBlocking(() -> manager.removeTabThumbnail(normal.getId()));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> manager.removeTabThumbnail(normal.getId(), /* forceRemoval= */ true));
         CriteriaHelper.pollInstrumentationThread(() -> !normalJpeg.exists());
         ThreadUtils.runOnUiThreadBlocking(() -> manager.cacheTabThumbnail(normal));
         CriteriaHelper.pollInstrumentationThread(normalJpeg::exists);
