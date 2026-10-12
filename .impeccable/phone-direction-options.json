@@ -1,0 +1,232 @@
+{
+  "buildPath": {
+    "value": "code",
+    "toggle": true
+  },
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "canon": true,
+  "steer": true,
+  "title": "A phone remote made for your thumb",
+  "question": "Choose a direction. Each keeps the touchpad first and typing/tabs separate.",
+  "options": [
+    {
+      "id": "gallery",
+      "kind": "assigned",
+      "label": "After hours",
+      "thesis": "A quiet, spacious remote with browsing always within reach.",
+      "palette": [
+        "#111c25",
+        "#22333e",
+        "#9ddbcc",
+        "#f1f5f3"
+      ],
+      "materials": [
+        "Flat tinted surfaces",
+        "System UI typography",
+        "Consistent vector icons"
+      ],
+      "viewport": "Compact page title, a large touchpad, quick actions and a bottom Remote/Type/Tabs bar.",
+      "risk": "The understated identity depends on precise spacing and excellent feedback.",
+      "html": ".impeccable/mocks/decision/gallery.html",
+      "htmlFrame": "390x844",
+      "comp": ".impeccable/mocks/decision/gallery.png",
+      "raised": [
+        {
+          "from": "Data field",
+          "raise": "Every control and status gets decisive contrast; decoration is removed."
+        },
+        {
+          "from": "Streaming shelf",
+          "raise": "The active task and current tab stay visually unmistakable."
+        },
+        {
+          "from": "Gate board",
+          "raise": "Status changes remain legible without rearranging the controls."
+        }
+      ],
+      "kicker": "THE ROLL"
+    },
+    {
+      "id": "velvet",
+      "kind": "pick",
+      "label": "Soft charcoal",
+      "thesis": "A warmer, tactile-looking remote with a generous touch surface.",
+      "palette": [
+        "#201d26",
+        "#322d3d",
+        "#cbb6e6",
+        "#f6f1f6"
+      ],
+      "materials": [
+        "Flat tinted surfaces",
+        "System UI typography",
+        "Consistent vector icons"
+      ],
+      "viewport": "A compact identity above a warm-plum pad, with a clear Click action and separate task views.",
+      "risk": "Familiar and comfortable; this is the closest option to conventional premium remote apps.",
+      "html": ".impeccable/mocks/decision/velvet.html",
+      "htmlFrame": "390x844",
+      "comp": ".impeccable/mocks/decision/velvet.png",
+      "kicker": "IMPECCABLE\u2019S PICK"
+    },
+    {
+      "id": "metro",
+      "kind": "challenger",
+      "label": "Clear blue",
+      "thesis": "Flat, decisive controls with a blue active-control field.",
+      "palette": [
+        "#0b1721",
+        "#183748",
+        "#72c5ee",
+        "#f3f7fb"
+      ],
+      "materials": [
+        "Flat tinted surfaces",
+        "System UI typography",
+        "Consistent vector icons"
+      ],
+      "viewport": "Compact fixed-size page identity, plain touchpad, crisp square-edged actions and obvious task selection.",
+      "risk": "Stronger contrast and flatter shapes may feel more assertive.",
+      "html": ".impeccable/mocks/decision/metro.html",
+      "htmlFrame": "390x844",
+      "comp": ".impeccable/mocks/decision/metro.png",
+      "catalogId": "digital-design-canon-metro-typographic-tiles",
+      "verdict": "competitive",
+      "case": "Strong task clarity; the calmer assigned direction better suits sustained couch use.",
+      "hero": "https://impeccable.style/worlds/cards/digital-design-canon-metro-typographic-tiles-hero.webp"
+    },
+    {
+      "id": "transit",
+      "kind": "challenger",
+      "label": "Night wayfinding",
+      "thesis": "Precise blue controls and a continuous active-task marker.",
+      "palette": [
+        "#111d34",
+        "#213653",
+        "#9abde9",
+        "#f3f6fc"
+      ],
+      "materials": [
+        "Flat tinted surfaces",
+        "System UI typography",
+        "Consistent vector icons"
+      ],
+      "viewport": "Live identity and clear connection state above the pad; task navigation and quick actions remain anchored.",
+      "risk": "More structured and denser than After hours.",
+      "html": ".impeccable/mocks/decision/transit.html",
+      "htmlFrame": "390x844",
+      "comp": ".impeccable/mocks/decision/transit.png",
+      "catalogId": "wayfinding-cartography-signage-midnight-transit-diagram",
+      "verdict": "competitive",
+      "case": "Familiar wayfinding helps orientation; the assigned direction gives the pad more breathing room.",
+      "hero": "https://impeccable.style/worlds/cards/wayfinding-cartography-signage-midnight-transit-diagram-hero.webp"
+    },
+    {
+      "id": "data",
+      "kind": "challenger",
+      "catalogId": "ikeda-datamatics",
+      "label": "Data field",
+      "verdict": "declined",
+      "thesis": "The remote remains touchpad-first with standard web controls.",
+      "palette": [
+        "#000000",
+        "#ffffff"
+      ],
+      "materials": [
+        "Flat surfaces",
+        "Fixed-size labels"
+      ],
+      "viewport": "Page identity, touchpad and quick actions.",
+      "risk": "Dense numeric/bar fields provide no useful content for this pointer-first remote.",
+      "case": "Dense numeric/bar fields provide no useful content for this pointer-first remote.",
+      "kept": "Decisive contrast and removal of decoration."
+    },
+    {
+      "id": "shelf",
+      "kind": "challenger",
+      "catalogId": "pop-culture-shelf-streaming-title-card-wall",
+      "label": "Streaming shelf",
+      "verdict": "declined",
+      "thesis": "The remote remains touchpad-first with standard web controls.",
+      "palette": [
+        "#121212",
+        "#ededed"
+      ],
+      "materials": [
+        "Flat surfaces",
+        "Fixed-size labels"
+      ],
+      "viewport": "Page identity, touchpad and quick actions.",
+      "risk": "The remote exposes tab titles, not a poster-art catalog; adding poster tiles would imply unsupported content.",
+      "case": "The remote exposes tab titles, not a poster-art catalog; adding poster tiles would imply unsupported content.",
+      "kept": "Unmistakable active task and selected-tab identity."
+    },
+    {
+      "id": "rack",
+      "kind": "challenger",
+      "catalogId": "rw-timetable-slide-rack",
+      "label": "Timetable rack",
+      "verdict": "declined",
+      "thesis": "The remote remains touchpad-first with standard web controls.",
+      "palette": [
+        "#171b22",
+        "#d8c47d"
+      ],
+      "materials": [
+        "Flat surfaces",
+        "Fixed-size labels"
+      ],
+      "viewport": "Page identity, touchpad and quick actions.",
+      "risk": "Raked glass and one-size typography weaken quick-control readability on a narrow phone.",
+      "case": "Raked glass and one-size typography weaken quick-control readability on a narrow phone.",
+      "kept": "Consistent spacing and readable fixed-size labels."
+    },
+    {
+      "id": "gate",
+      "kind": "challenger",
+      "catalogId": "vernacular-ephemera-boarding-pass-and-gate-board",
+      "label": "Gate board",
+      "verdict": "declined",
+      "thesis": "The remote remains touchpad-first with standard web controls.",
+      "palette": [
+        "#20252b",
+        "#eaeef2"
+      ],
+      "materials": [
+        "Flat surfaces",
+        "Fixed-size labels"
+      ],
+      "viewport": "Page identity, touchpad and quick actions.",
+      "risk": "An ordered departure board has no true equivalent in the gesture-first task.",
+      "case": "An ordered departure board has no true equivalent in the gesture-first task.",
+      "kept": "State changes stay legible without moving controls."
+    }
+  ],
+  "canonCard": {
+    "id": "canon",
+    "kind": "grounded",
+    "label": "Familiar remote",
+    "thesis": "Standard mobile remote conventions with careful proportions.",
+    "palette": [
+      "#182024",
+      "#293338",
+      "#b8d7c8",
+      "#f2f6f4"
+    ],
+    "materials": [
+      "Flat tinted surfaces",
+      "System UI typography",
+      "Consistent vector icons"
+    ],
+    "viewport": "Compact top identity, large plain touchpad, quick controls and three bottom task tabs.",
+    "risk": "A familiar appearance rather than a distinctive visual identity.",
+    "html": ".impeccable/mocks/decision/canon.html",
+    "htmlFrame": "390x844",
+    "comp": ".impeccable/mocks/decision/canon.png"
+  }
+}

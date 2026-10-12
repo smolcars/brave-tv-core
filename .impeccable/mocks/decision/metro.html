@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Metro clear blue — phone remote preview</title><style>
+:root{--bg:#0b1721;--surface:#183748;--accent:#72c5ee;--fg:#f3f7fb;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+::selection{background:var(--accent);color:var(--bg)}button{font:inherit;border:0;cursor:default;color:inherit;background:transparent;min-height:48px;min-width:44px}button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}button:hover{filter:brightness(1.08)}
+svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.phone{height:844px;max-width:440px;margin:auto;overflow:hidden;padding:24px 24px 18px;display:flex;flex-direction:column}header{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:650;letter-spacing:-.02em}.status{font-size:12px;color:var(--accent);display:flex;align-items:center;gap:6px}.status:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}h1{font-size:24px;line-height:1.2;font-weight:650;letter-spacing:-.025em;margin:0 0 6px}.origin{font-size:14px;color:var(--accent);margin:0}.quick{display:grid;grid-template-columns:repeat(3,1fr);margin-bottom:18px}.quick button{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;padding:9px 0;font-size:12px;min-height:66px}
+.pad{height:294px;min-height:260px;display:flex;flex-direction:column;align-items:center;padding:22px;margin-bottom:12px}.pad-center{display:flex;flex:1;align-items:center;justify-content:center}.pad p{font-size:13px;margin:0;line-height:1.6;text-align:center;color:var(--fg)}.pad p span{display:block;color:var(--accent)}.click{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;min-height:54px;font-size:16px;margin-bottom:16px}.scroll{display:grid;grid-template-columns:1fr 1fr}.scroll button{display:flex;align-items:center;justify-content:center;gap:9px;font-size:14px;min-height:50px}.warning{display:flex;align-items:center;justify-content:center;gap:7px;margin:20px 0 0;color:var(--accent);font-size:11px;line-height:1.5}.warning svg{width:16px;height:16px}.tasks{display:grid;grid-template-columns:repeat(3,1fr);margin-top:auto;padding-top:10px;gap:8px}.tasks button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:12px;min-height:62px;color:var(--fg)}
+header{padding-bottom:22px;border-bottom:1px solid #315268}.identity{padding:22px 0 18px}.quick{gap:2px;background:#315268;padding:1px;border-radius:4px}.quick button{background:var(--surface);border-radius:2px}.pad{border-radius:4px;background:var(--surface)}.pad-label{align-self:start;font-size:15px;font-weight:650}.pad-center{color:var(--accent)}.pad-center svg{width:38px;height:38px}.click{background:var(--accent);color:var(--bg);border-radius:4px;font-weight:700}.scroll{gap:2px;background:#315268;padding:1px;border-radius:4px}.scroll button{background:var(--bg);border-radius:2px}.tasks{border-top:1px solid #315268}.tasks button{border-radius:2px}.tasks .selected{background:var(--surface);color:var(--accent)}
+@media(max-width:350px){.phone{padding-left:16px;padding-right:16px}.status{font-size:11px}.brand{font-size:16px}.warning{font-size:10px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style></head><body><svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<symbol id="tv" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+<symbol id="back" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+<symbol id="forward" viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></symbol>
+<symbol id="reload" viewBox="0 0 24 24"><path d="M19.4 8A8 8 0 1 0 20 14M20 3v6h-6"/></symbol>
+<symbol id="pointer" viewBox="0 0 24 24"><path d="m5 3 14 10-7 1-3 7z"/></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M12 5v14m-6-6 6 6 6-6"/></symbol>
+<symbol id="type" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h1m4 0h1m4 0h1M6 13h1m4 0h1m4 0h1M7 16h10"/></symbol>
+<symbol id="tabs" viewBox="0 0 24 24"><rect x="7" y="7" width="14" height="14" rx="2"/><path d="M17 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2"/></symbol>
+<symbol id="warn" viewBox="0 0 24 24"><path d="M10.3 4a2 2 0 0 1 3.4 0l7 13a2 2 0 0 1-1.7 3H5a2 2 0 0 1-1.7-3zM12 9v4m0 3v.1"/></symbol>
+</defs></svg>
+<main class="phone" aria-label="Inert phone remote preview">
+<header><div class="brand"><svg aria-hidden="true"><use href="#tv"/></svg><span>TV remote</span></div><span class="status">Connected to TV</span></header>
+<section class="identity" aria-label="Synthetic current TV page"><h1>A quiet evening</h1><p class="origin">fixture.test</p></section>
+<div class="quick" aria-label="Browser navigation"><button type="button"><svg aria-hidden="true"><use href="#back"/></svg>Back</button><button type="button"><svg aria-hidden="true"><use href="#forward"/></svg>Forward</button><button type="button"><svg aria-hidden="true"><use href="#reload"/></svg>Reload</button></div>
+<section class="pad" aria-label="Touchpad preview"><span class="pad-label">Touchpad</span><div class="pad-center"><svg aria-hidden="true"><use href="#pointer"/></svg></div><p>Slide to move the pointer<span>Tap to click · Two fingers to scroll</span></p></section>
+<button class="click" type="button"><svg aria-hidden="true"><use href="#pointer"/></svg>Click</button>
+<div class="scroll" aria-label="Scroll alternatives"><button type="button"><svg aria-hidden="true"><use href="#up"/></svg>Scroll up</button><button type="button"><svg aria-hidden="true"><use href="#down"/></svg>Scroll down</button></div>
+<p class="warning"><svg aria-hidden="true"><use href="#warn"/></svg>Development experiment · Unencrypted</p>
+<nav class="tasks" aria-label="Remote tasks"><button class="selected" type="button" aria-current="page"><svg aria-hidden="true"><use href="#pointer"/></svg>Remote</button><button type="button"><svg aria-hidden="true"><use href="#type"/></svg>Type</button><button type="button"><svg aria-hidden="true"><use href="#tabs"/></svg>Tabs</button></nav>
+</main></body></html>

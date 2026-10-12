@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TV remote · Gallery afterhours</title>
+<style>
+:root{color-scheme:dark;--ground:#111c25;--pad:#22333e;--accent:#9ddbcc;--ink:#f1f5f3;--muted:#b9c9cf;--line:#3b4e58;--amber:#e9bf7e}
+*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;line-height:1.4}button{font:inherit;cursor:pointer;color:inherit;border:0;background:transparent}button:hover{background:#2a3d49}button:active{background:#334d58}button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--accent);outline-offset:3px}::selection{background:var(--accent);color:var(--ground)}svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.remote{width:min(100%,390px);height:844px;max-height:100dvh;overflow:hidden;margin:auto;padding:24px 22px 0;display:flex;flex-direction:column}
+.heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:25px}h1{margin:0;font-size:25px;font-weight:650;line-height:1.2;letter-spacing:-.025em}.connection{display:flex;align-items:center;gap:7px;color:var(--accent);font-size:14px}.dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.page{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.page strong{font-size:19px;letter-spacing:-.015em;font-weight:580}.page p{margin:4px 0 0;color:var(--muted);font-size:14px}.demo{font-size:14px;color:var(--muted);letter-spacing:.01em;margin-left:9px}.address{width:44px;height:44px;border-radius:12px;color:var(--muted)}
+.history{display:flex;gap:5px;padding-bottom:17px;border-bottom:1px solid var(--line)}.history button{height:48px;flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;font-size:14px}
+.pad-section{flex:1;min-height:0;display:flex;flex-direction:column;padding-top:19px}.pad-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}.pad-label span:first-child{font-size:16px;font-weight:550}.pad-label span:last-child{font-size:14px;color:var(--muted)}
+.pad{flex:1;min-height:150px;position:relative;border-radius:16px;background:var(--pad);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;touch-action:none}.pad svg{width:30px;height:30px;color:var(--accent)}.pad p{margin:0;color:var(--muted);font-size:14px}.pad .gesture{position:absolute;bottom:23px;text-align:center;font-size:14px;color:var(--muted)}
+.click{width:100%;height:57px;flex-shrink:0;margin-top:12px;border-radius:14px;background:var(--accent);color:var(--ground);font-weight:620;font-size:17px;display:flex;align-items:center;justify-content:center;gap:10px}.click:hover{background:#b1e5d8}.click:active{background:#88c4b5}.scroll{display:flex;align-items:center;gap:12px;margin-top:9px;height:50px;flex-shrink:0}.scroll>span{color:var(--muted);font-size:14px;margin-right:auto}.scroll button{height:46px;width:100px;display:flex;justify-content:center;align-items:center;gap:8px;border-radius:12px;font-size:14px;background:#1a2a35}
+.nav{display:flex;justify-content:space-around;border-top:1px solid var(--line);margin-top:16px;padding:10px 0 6px;flex-shrink:0}.nav button{min-width:84px;min-height:57px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:12px;color:var(--muted);font-size:14px}.nav button[aria-current]{color:var(--accent);background:#1d3039}.nav svg{height:21px;width:21px}.warning{color:var(--amber);font-size:14px;text-align:center;margin:6px 0 13px;flex-shrink:0;line-height:1.4}
+@media(max-height:740px){.remote{padding-top:16px}.heading{margin-bottom:16px}.history{padding-bottom:10px}.pad-section{padding-top:11px}.nav{margin-top:9px}.pad .gesture{bottom:16px}}
+</style>
+</head>
+<body>
+<main class="remote" aria-label="TV phone remote">
+  <header class="heading"><h1>TV remote</h1><span class="connection"><i class="dot" aria-hidden="true"></i>Connected</span></header>
+  <section class="page" aria-label="Current TV webpage, synthetic demo">
+    <div><strong>A quiet evening</strong><p>fixture.test<span class="demo">Synthetic demo</span></p></div>
+    <button class="address" aria-label="Enter address or search"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M5 19l4-1 11-11a2.8 2.8 0 0 0-4-4L5 14z"/></svg></button>
+  </section>
+  <div class="history" aria-label="Page navigation">
+    <button aria-label="Go back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5-7 7 7 7M3 12h18"/></svg>Back</button>
+    <button aria-label="Go forward">Forward<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 7 7-7 7M21 12H3"/></svg></button>
+    <button aria-label="Reload webpage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/></svg>Reload</button>
+  </div>
+  <section class="pad-section" aria-label="Pointer and scrolling controls">
+    <div class="pad-label"><span>Touchpad</span><span>Drag to move</span></div>
+    <div class="pad" role="button" tabindex="0" aria-label="Touchpad: drag to move the TV pointer, tap to click, two fingers to scroll">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="m9 5 4 21 4-8 8-4z"/></svg>
+      <p>Move the pointer on your TV</p>
+      <span class="gesture">Tap to click · Two fingers to scroll</span>
+    </div>
+    <button class="click"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 3 3 17 4-7 7-3z"/></svg>Click</button>
+    <div class="scroll"><span>Scroll</span><button aria-label="Scroll up"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg>Up</button><button aria-label="Scroll down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16m-6-6 6 6 6-6"/></svg>Down</button></div>
+  </section>
+  <nav class="nav" aria-label="Remote sections">
+    <button aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="4"/><path d="M10 6h4M10 17h4"/></svg>Remote</button>
+    <button><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 9h.1M10 9h.1M14 9h.1M18 9h.1M6 12h.1M10 12h.1M14 12h.1M18 12h.1M7 15h10"/></svg>Type</button>
+    <button><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="15" height="15" rx="3"/><path d="M3 16V6a3 3 0 0 1 3-3h10"/></svg>Tabs</button>
+  </nav>
+  <p class="warning">Development experiment · Unencrypted</p>
+</main>
+</body>
+</html>
