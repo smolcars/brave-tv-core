@@ -185,7 +185,8 @@ final class TvBrowserSession {
                             @Override
                             public void didToggleFullscreenModeForTab(
                                     boolean fullscreen, boolean resize) {
-                                invalidate();
+                                // Fullscreen changes coordinate ownership, not the document.
+                                invalidateViewport();
                             }
 
                             @Override

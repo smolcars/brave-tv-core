@@ -48,7 +48,6 @@ import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
 import org.chromium.chrome.browser.browsing_data.TimePeriod;
 import org.chromium.chrome.browser.download.DownloadManagerService;
 import org.chromium.chrome.browser.download.items.OfflineContentAggregatorFactory;
-import org.chromium.chrome.browser.fullscreen.FullscreenManager;
 import org.chromium.chrome.browser.omnibox.suggestions.AutocompleteController;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
 import org.chromium.chrome.browser.preferences.Pref;
@@ -113,13 +112,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final TabModelSelectorTabModelObserver mTabObserver;
     private @Nullable ContentView mPage;
     private @Nullable OneShotPreDrawListener mFullscreenCursorRestore;
-    private final FullscreenManager.Observer mFullscreenObserver =
-            new FullscreenManager.Observer() {
-                @Override
-                public void onExitFullscreen(Tab tab) {
-                    restoreFullscreenCursor(tab);
-                }
-            };
+    private @Nullable TvBrowserSession.Context mFullscreenCursorContext;
     private @Nullable AlertDialog mDialog;
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable Runnable mDialogCleanup;
@@ -220,7 +213,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     }
                 };
         mSession = new TvBrowserSession(activity, this::browserStateChanged);
-        activity.getFullscreenManager().addObserver(mFullscreenObserver);
         mScrimVisible.addSyncObserver(mFilePickerScrimObserver);
         mActivity.getWindow().getDecorView().post(() -> restoreUsableHome(false));
     }
@@ -263,11 +255,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         return true;
     }
 
-    private void restoreFullscreenCursor(Tab tab) {
+    private void restoreFullscreenCursor(TvBrowserSession.Context context) {
         cancelFullscreenCursorRestore();
         ContentView page = mPage;
-        if (!isAlive() || page == null || tab != mActivity.getActivityTab()) return;
-        TvBrowserSession.Context context = mSession.capture();
+        Tab tab = context.tab;
+        if (!isAlive() || page == null || tab == null || !mSession.isCurrentDocument(context))
+            return;
         mInput.cancelPress();
         mPressedContext = null;
         mFullscreenCursorRestore =
@@ -284,7 +277,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                     || keyboardVisible()
                                     || (mDialog != null && mDialog.isShowing())
                                     || nativeUiOwnsInput(false)
-                                    || (tab.isIncognito() && mPrivateTabsLocked.getAsBoolean())) return;
+                                    || (tab.isIncognito() && mPrivateTabsLocked.getAsBoolean()))
+                                return;
                             // Video fullscreen can leave the retained overlay's render state stale.
                             if (attachCursor(page)) mInput.resume();
                         });
@@ -292,6 +286,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void cancelFullscreenCursorRestore() {
+        mFullscreenCursorContext = null;
         if (mFullscreenCursorRestore == null) return;
         mFullscreenCursorRestore.removeListener();
         mFullscreenCursorRestore = null;
@@ -728,6 +723,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPressedContext = null;
         mPhoneRemote.invalidate();
         if (!isAlive()) return;
+        // HTML fullscreen exit precedes the authoritative WebContents transition.
+        if (mPage != null && mPage == currentPage() && isPageFullscreen()) {
+            if (mFullscreenCursorContext == null) mFullscreenCursorContext = mSession.capture();
+        } else if (mFullscreenCursorContext != null) {
+            restoreFullscreenCursor(mFullscreenCursorContext);
+        }
         if (mFilePickerContext != null && !canContinueFilePicker(mFilePickerContext)) {
             dismissDialog();
         }
@@ -2310,7 +2311,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mModalReturnPage = null;
         mModalReturnContext = null;
         if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);
-        mActivity.getFullscreenManager().removeObserver(mFullscreenObserver);
         mScrimVisible.removeObserver(mFilePickerScrimObserver);
         mInput.cancelPress();
         mBackCallback.remove();

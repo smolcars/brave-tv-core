@@ -42,12 +42,6 @@ import androidx.test.uiautomator.StaleObjectException;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import org.chromium.base.ActivityState;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.Callback;
@@ -100,6 +94,11 @@ import org.chromium.content_public.browser.test.util.DOMUtils;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.content_public.browser.test.util.WebContentsUtils;
 import org.chromium.url.GURL;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -474,14 +473,14 @@ public class TvHomePageTest {
                         + "<script>window.clicks=0</script>");
         Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         String fixtureUrl = ThreadUtils.runOnUiThreadBlocking(() -> page.getUrl().getSpec());
-        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         CriteriaHelper.pollUiThread(
                 () ->
                         !page.isLoading()
                                 && TabBrowserControlsConstraintsHelper.getConstraints(page)
                                         == BrowserControlsState.HIDDEN
                                 && mActivity.getBrowserControlsManager().getContentOffset() == 0);
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
         mDevice.pressDPadCenter();
@@ -742,43 +741,80 @@ public class TvHomePageTest {
     @Test
     @MediumTest
     public void nativeFullscreenExitPreservesDocumentAndCursor() throws Exception {
-        mActivityTestRule.loadUrl(
+        assertFullscreenCursorRecovery(
                 "data:text/html,<style>button{position:fixed;inset:0;background:%23202124;"
                         + "color:white;display:flex;align-items:flex-start}</style>"
                         + "<button onclick='document.documentElement."
-                        + "requestFullscreen()'>Fullscreen cursor fixture</button>");
+                        + "requestFullscreen()'>Fullscreen cursor fixture</button>",
+                false);
+    }
+
+    @Test
+    @MediumTest
+    public void nativeVideoFullscreenExitPreservesDocumentAndCursor() throws Exception {
+        String video = InstrumentationRegistry.getArguments().getString("tv_video_fixture_url");
+        assertEquals("http://127.0.0.1:18083/bbb-320x240-2video-2audio.mp4", video);
+        assertFullscreenCursorRecovery(
+                "data:text/html,<video id='video' loop src='"
+                        + video
+                        + "'></video><style>video{width:80px;height:60px}"
+                        + "button{position:fixed;inset:0;background:%23202124;"
+                        + "color:white;display:flex;align-items:flex-start}</style>"
+                        + "<button onclick='document.getElementById(\"video\").play();"
+                        + "document.getElementById(\"video\").requestFullscreen()'>"
+                        + "Video fullscreen cursor fixture</button>",
+                true);
+    }
+
+    private void assertFullscreenCursorRecovery(String url, boolean video) throws Exception {
+        mActivityTestRule.loadUrl(url);
         Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
         WebContents contents = ThreadUtils.runOnUiThreadBlocking(page::getWebContents);
         String fixtureUrl = ThreadUtils.runOnUiThreadBlocking(() -> page.getUrl().getSpec());
         String document =
-                JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "performance.timeOrigin");
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        contents, "performance.timeOrigin");
         CriteriaHelper.pollInstrumentationThread(
                 () -> fixtureCenterColor(page, fixtureUrl) == Color.rgb(32, 33, 36));
-        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
-        mDevice.pressDPadRight();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
-        mDevice.pressDPadCenter();
-        CriteriaHelper.pollUiThread(
-                () -> mActivity.hasWindowFocus() && page.getContentView().hasFocus());
-        injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
-        CriteriaHelper.pollUiThread(
-                () -> mActivity.getFullscreenManager().getPersistentFullscreenMode());
-        injectDpad(KeyEvent.KEYCODE_BACK);
-        CriteriaHelper.pollUiThread(
-                () -> !mActivity.getFullscreenManager().getPersistentFullscreenMode());
-        assertEquals(
-                document,
-                JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "performance.timeOrigin"));
-        ThreadUtils.runOnUiThreadBlocking(
-                () -> {
-                    assertSame(page, mActivity.getActivityTab());
-                    assertSame(contents, page.getWebContents());
-                });
-        injectDpad(KeyEvent.KEYCODE_DPAD_LEFT);
-        injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
-        CriteriaHelper.pollInstrumentationThread(
-                () -> fixtureCenterColor(page, fixtureUrl) == Color.WHITE);
+        TvBrowserSession session =
+                ThreadUtils.runOnUiThreadBlocking(() -> new TvBrowserSession(mActivity, () -> {}));
+        try {
+            TvBrowserSession.Context context = ThreadUtils.runOnUiThreadBlocking(session::capture);
+            ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+            mDevice.pressDPadRight();
+            waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
+            mDevice.pressDPadCenter();
+            CriteriaHelper.pollUiThread(
+                    () -> mActivity.hasWindowFocus() && page.getContentView().hasFocus());
+            injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+            CriteriaHelper.pollUiThread(contents::isFullscreenForCurrentTab);
+            if (video) DOMUtils.waitForMediaPlay(contents, "video");
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertFalse(session.isCurrent(context));
+                        assertTrue(session.isCurrentDocument(context));
+                    });
+            injectDpad(KeyEvent.KEYCODE_BACK);
+            CriteriaHelper.pollUiThread(() -> !contents.isFullscreenForCurrentTab());
+            assertEquals(
+                    document,
+                    JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                            contents, "performance.timeOrigin"));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertSame(page, mActivity.getActivityTab());
+                        assertSame(contents, page.getWebContents());
+                        assertTrue(session.isCurrentDocument(context));
+                        assertFalse(session.isCurrent(context));
+                    });
+            injectDpad(KeyEvent.KEYCODE_DPAD_LEFT);
+            injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+            CriteriaHelper.pollInstrumentationThread(
+                    () -> fixtureCenterColor(page, fixtureUrl) == Color.WHITE);
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(session::destroy);
+        }
     }
 
     private void dispatchHeldDpad(KeyEvent down) {
