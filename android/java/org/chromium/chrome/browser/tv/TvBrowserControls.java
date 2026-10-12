@@ -48,6 +48,7 @@ import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
 import org.chromium.chrome.browser.browsing_data.TimePeriod;
 import org.chromium.chrome.browser.download.DownloadManagerService;
 import org.chromium.chrome.browser.download.items.OfflineContentAggregatorFactory;
+import org.chromium.chrome.browser.fullscreen.FullscreenManager;
 import org.chromium.chrome.browser.omnibox.suggestions.AutocompleteController;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
 import org.chromium.chrome.browser.preferences.Pref;
@@ -111,6 +112,14 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final OnBackPressedCallback mBackCallback;
     private final TabModelSelectorTabModelObserver mTabObserver;
     private @Nullable ContentView mPage;
+    private @Nullable OneShotPreDrawListener mFullscreenCursorRestore;
+    private final FullscreenManager.Observer mFullscreenObserver =
+            new FullscreenManager.Observer() {
+                @Override
+                public void onExitFullscreen(Tab tab) {
+                    restoreFullscreenCursor(tab);
+                }
+            };
     private @Nullable AlertDialog mDialog;
     private @Nullable CallbackController mBookmarkCallbacks;
     private @Nullable Runnable mDialogCleanup;
@@ -211,6 +220,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     }
                 };
         mSession = new TvBrowserSession(activity, this::browserStateChanged);
+        activity.getFullscreenManager().addObserver(mFullscreenObserver);
         mScrimVisible.addSyncObserver(mFilePickerScrimObserver);
         mActivity.getWindow().getDecorView().post(() -> restoreUsableHome(false));
     }
@@ -251,6 +261,40 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPhoneRemote.invalidate();
         mActivity.getActivityTab().getWebContents().exitFullscreen();
         return true;
+    }
+
+    private void restoreFullscreenCursor(Tab tab) {
+        cancelFullscreenCursorRestore();
+        ContentView page = mPage;
+        if (!isAlive() || page == null || tab != mActivity.getActivityTab()) return;
+        TvBrowserSession.Context context = mSession.capture();
+        mInput.cancelPress();
+        mPressedContext = null;
+        mFullscreenCursorRestore =
+                OneShotPreDrawListener.add(
+                        page,
+                        () -> {
+                            mFullscreenCursorRestore = null;
+                            if (!isAlive()
+                                    || page != mPage
+                                    || page != currentPage()
+                                    || !mSession.isCurrentDocument(context)
+                                    || isPageFullscreen()
+                                    || !mActivity.hasWindowFocus()
+                                    || keyboardVisible()
+                                    || (mDialog != null && mDialog.isShowing())
+                                    || nativeUiOwnsInput(false)
+                                    || (tab.isIncognito() && mPrivateTabsLocked.getAsBoolean())) return;
+                            // Video fullscreen can leave the retained overlay's render state stale.
+                            if (attachCursor(page)) mInput.resume();
+                        });
+        page.invalidate();
+    }
+
+    private void cancelFullscreenCursorRestore() {
+        if (mFullscreenCursorRestore == null) return;
+        mFullscreenCursorRestore.removeListener();
+        mFullscreenCursorRestore = null;
     }
 
     private void dispatchNativeBack() {
@@ -521,16 +565,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         ContentView page = currentPage();
         if (page == null) return;
         if (mPage != page) {
-            detachCursor();
-            mPage = page;
-            page.addOnAttachStateChangeListener(mPageAttachmentListener);
-            if (page.getParent() instanceof ViewGroup parent) {
-                parent.addView(
-                        mCursorView,
-                        new ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT));
-            }
+            if (!attachCursor(page)) return;
         }
         showPointer(x, y, TvRemoteInput.Mode.POINTER);
         if (operation.equals("click")) click(x, y);
@@ -2084,17 +2119,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private void performAction(int action) {
         if (!isAlive()) return;
         if (action == R.string.brave_tv_pointer || action == R.string.brave_tv_scroll) {
-            mPage = currentPage();
-            if (mPage == null || !(mPage.getParent() instanceof ViewGroup parent)) return;
-            mPage.addOnAttachStateChangeListener(mPageAttachmentListener);
-            // ViewOverlay drawables disappear over the compositor's transparent surface region.
-            parent.addView(
-                    mCursorView,
-                    parent.indexOfChild(mPage) + 1,
-                    new ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT));
-            mPage.requestFocus();
+            ContentView page = currentPage();
+            if (page == null || !attachCursor(page)) return;
+            page.requestFocus();
             mInput.activate(
                     action == R.string.brave_tv_pointer
                             ? TvRemoteInput.Mode.POINTER
@@ -2253,7 +2280,22 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         }
     }
 
+    private boolean attachCursor(ContentView page) {
+        if (!(page.getParent() instanceof ViewGroup parent)) return false;
+        detachCursor();
+        mPage = page;
+        page.addOnAttachStateChangeListener(mPageAttachmentListener);
+        // ViewOverlay drawables disappear over the compositor's transparent surface region.
+        parent.addView(
+                mCursorView,
+                parent.indexOfChild(page) + 1,
+                new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        return true;
+    }
+
     private void detachCursor() {
+        cancelFullscreenCursorRestore();
         mCursorView.removeCallbacks(mHideCursor);
         mInput.cancelPress();
         mPressedContext = null;
@@ -2268,6 +2310,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mModalReturnPage = null;
         mModalReturnContext = null;
         if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);
+        mActivity.getFullscreenManager().removeObserver(mFullscreenObserver);
         mScrimVisible.removeObserver(mFilePickerScrimObserver);
         mInput.cancelPress();
         mBackCallback.remove();

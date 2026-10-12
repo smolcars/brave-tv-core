@@ -739,6 +739,45 @@ public class TvHomePageTest {
         }
     }
 
+    @Test
+    @MediumTest
+    public void nativeFullscreenExitPreservesDocumentAndCursor() throws Exception {
+        mActivityTestRule.loadUrl(
+                "data:text/html,<style>button{position:fixed;inset:0;background:%23202124;"
+                        + "color:white}</style><button onclick='document.documentElement."
+                        + "requestFullscreen()'>Fullscreen cursor fixture</button>");
+        Tab page = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        WebContents contents = ThreadUtils.runOnUiThreadBlocking(page::getWebContents);
+        String fixtureUrl = ThreadUtils.runOnUiThreadBlocking(() -> page.getUrl().getSpec());
+        String document =
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "performance.timeOrigin");
+        ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.hasWindowFocus() && page.getContentView().hasFocus());
+        injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.getFullscreenManager().getPersistentFullscreenMode());
+        injectDpad(KeyEvent.KEYCODE_BACK);
+        CriteriaHelper.pollUiThread(
+                () -> !mActivity.getFullscreenManager().getPersistentFullscreenMode());
+        assertEquals(
+                document,
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "performance.timeOrigin"));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(page, mActivity.getActivityTab());
+                    assertSame(contents, page.getWebContents());
+                });
+        injectDpad(KeyEvent.KEYCODE_DPAD_LEFT);
+        injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> fixtureCenterColor(page, fixtureUrl) == Color.WHITE);
+    }
+
     private void dispatchHeldDpad(KeyEvent down) {
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
