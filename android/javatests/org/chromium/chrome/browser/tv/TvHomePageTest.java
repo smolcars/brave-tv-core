@@ -2043,24 +2043,10 @@ public class TvHomePageTest {
         CriteriaHelper.pollUiThread(
                 () -> {
                     Tab restored = mActivity.getActivityTab();
-                    Criteria.checkThat(
-                            "[DEBUG-private-recreate] selected="
-                                    + (restored == null ? "none" : restored.getId())
-                                    + "; private="
-                                    + (restored != null && restored.isIncognito())
-                                    + "; native URL retained="
-                                    + (restored != null && privateUrl.equals(restored.getUrl()))
-                                    + "; expected="
-                                    + privateId
-                                    + "; native counts="
-                                    + mActivity.getTabModelSelector().getModel(false).getCount()
-                                    + "/"
-                                    + mActivity.getTabModelSelector().getModel(true).getCount(),
-                            restored != null
-                                    && restored.getId() == privateId
-                                    && restored.isIncognito()
-                                    && privateUrl.equals(restored.getUrl()),
-                            is(true));
+                    return restored != null
+                            && restored.getId() == privateId
+                            && restored.isIncognito()
+                            && privateUrl.equals(restored.getUrl());
                 });
         dismissNativeEntryToPage();
         assertFalse(mDevice.hasObject(By.text(draft)));
@@ -2081,7 +2067,21 @@ public class TvHomePageTest {
                                 && normalUrl.equals(mActivity.getActivityTab().getUrl()));
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         assertFalse(mDevice.hasObject(By.text(draft)));
-        assertFalse(mDevice.hasObject(By.clazz("android.widget.EditText")));
+        CriteriaHelper.pollInstrumentationThread(
+                () -> {
+                    UiObject2 editor = mDevice.findObject(By.clazz("android.widget.EditText"));
+                    Criteria.checkThat(
+                            "Unexpected editor owner: "
+                                    + (editor == null
+                                            ? "none"
+                                            : editor.getApplicationPackage()
+                                                    + "/"
+                                                    + editor.getResourceName()
+                                                    + "; focused="
+                                                    + editor.isFocused()),
+                            editor == null,
+                            is(true));
+                });
         assertFalse(
                 mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
     }
