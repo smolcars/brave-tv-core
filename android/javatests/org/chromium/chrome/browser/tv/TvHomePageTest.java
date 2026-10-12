@@ -38,6 +38,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.Direction;
+import androidx.test.uiautomator.StaleObjectException;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
@@ -2069,18 +2070,23 @@ public class TvHomePageTest {
         assertFalse(mDevice.hasObject(By.text(draft)));
         CriteriaHelper.pollInstrumentationThread(
                 () -> {
-                    UiObject2 editor = mDevice.findObject(By.clazz("android.widget.EditText"));
-                    Criteria.checkThat(
-                            "Unexpected editor owner: "
-                                    + (editor == null
-                                            ? "none"
-                                            : editor.getApplicationPackage()
-                                                    + "/"
-                                                    + editor.getResourceName()
-                                                    + "; focused="
-                                                    + editor.isFocused()),
-                            editor == null,
-                            is(true));
+                    try {
+                        UiObject2 editor = mDevice.findObject(By.clazz("android.widget.EditText"));
+                        Criteria.checkThat(
+                                "Unexpected editor owner: "
+                                        + (editor == null
+                                                ? "none"
+                                                : editor.getApplicationPackage()
+                                                        + "/"
+                                                        + editor.getResourceName()
+                                                        + "; focused="
+                                                        + editor.isFocused()),
+                                editor == null,
+                                is(true));
+                    } catch (StaleObjectException stale) {
+                        return false;
+                    }
+                    return true;
                 });
         assertFalse(
                 mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_private_home))));
