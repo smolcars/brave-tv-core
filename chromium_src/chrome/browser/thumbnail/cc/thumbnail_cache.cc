@@ -3,6 +3,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
+// Compression outlives per-tab tracker removal; keep it pending and discard
+// writes whose metadata was removed before the compression reply.
 #define BRAVE_THUMBNAIL_CACHE_SAVE_AS_JPEG ++jpeg_compression_tasks_count_;
 
 #define BRAVE_THUMBNAIL_CACHE_WRITE_JPEG_THUMBNAIL_IF_NECESSARY \
