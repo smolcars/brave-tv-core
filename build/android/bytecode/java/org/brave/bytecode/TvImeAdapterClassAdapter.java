@@ -72,6 +72,12 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
                 }
                 super.visitInsn(opcode);
             }
+
+            @Override
+            public void visitMaxs(int maxStack, int maxLocals) {
+                // The RETURN hook pushes the adapter and nine state arguments.
+                super.visitMaxs(state ? Math.max(maxStack, 10) : maxStack, maxLocals);
+            }
         };
     }
 

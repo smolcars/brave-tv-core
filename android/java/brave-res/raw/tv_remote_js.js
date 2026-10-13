@@ -664,7 +664,14 @@ $('editor').onselect = () => {
     && $('editor').selectionEnd === state.editable.end
   )
     return
-  if (!dirty && !busy && !pendingEdit && !composing && state?.editable)
+  if (
+    !dirty
+    && !busy
+    && !pendingEdit
+    && !composing
+    && !enterIntent
+    && state?.editable?.ready
+  )
     command('edit', {
       editable: field,
       edit: 'select',
