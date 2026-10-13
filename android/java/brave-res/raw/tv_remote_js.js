@@ -589,7 +589,7 @@ function requestEnter() {
 }
 async function advanceEnter() {
   const intent = enterIntent
-  if (!intent || intent.sent || advancingEnter) return
+  if (!intent || advancingEnter) return
   const editable = state?.editable
   if (
     !connected
@@ -605,7 +605,7 @@ async function advanceEnter() {
     status('TV changed or typing took too long. Enter discarded; try again.')
     return
   }
-  if (busy || pendingEdit || !editable.ready) return
+  if (intent.sent || busy || pendingEdit || !editable.ready) return
   advancingEnter = true
   try {
     if (dirty) {
