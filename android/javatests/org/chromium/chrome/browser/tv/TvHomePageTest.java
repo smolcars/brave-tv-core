@@ -287,7 +287,7 @@ public class TvHomePageTest {
             ThreadUtils.runOnUiThreadBlocking(input::requestStateUpdate);
             CriteriaHelper.pollUiThread(
                     () -> input.ready() && input.eligible() && input.multiline());
-            assertFalse(ThreadUtils.runOnUiThreadBlocking(input::phoneTyping));
+            ThreadUtils.runOnUiThreadBlocking(() -> assertFalse(input.phoneTyping()));
             ThreadUtils.runOnUiThreadBlocking(
                     () -> assertTrue(input.edit(input.revision(), "prepare", "", 0, 0, false)));
             CriteriaHelper.pollUiThread(() -> input.ready() && input.phoneTyping());
