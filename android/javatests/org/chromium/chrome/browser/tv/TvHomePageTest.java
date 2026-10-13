@@ -538,6 +538,111 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void pageLoadingIsVisibleAfterAddressSubmissionBeforeCommit() throws Exception {
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.clazz("android.widget.EditText")));
+        mDevice.findObject(By.clazz("android.widget.EditText"))
+                .setText("http://127.0.0.1:18091/before.html");
+        boolean keyboard =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> {
+                            WindowInsetsCompat insets =
+                                    ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
+                            return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
+                        });
+        if (keyboard) {
+            mDevice.pressBack();
+            CriteriaHelper.pollUiThread(
+                    () -> {
+                        WindowInsetsCompat insets =
+                                ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
+                        return insets != null && !insets.isVisible(WindowInsetsCompat.Type.ime());
+                    });
+        }
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_go)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(
+                () -> tab.isLoading() && tab.getNativePage() instanceof TvHomePage);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        releaseLoadingFixture();
+        CriteriaHelper.pollUiThread(() -> !tab.isLoading() && !tab.isNativePage());
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(By.text("Resource complete"))
+                                && !mDevice.hasObject(
+                                        By.text(
+                                                mActivity.getString(
+                                                        R.string.brave_tv_page_loading))));
+    }
+
+    @Test
+    @MediumTest
+    public void pageLoadingCompletesAndClearsAcrossReplacementAndFailure() throws Exception {
+        String base = "http://127.0.0.1:18091";
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(() -> tab.loadUrl(new LoadUrlParams(base + "/redirect")));
+        CriteriaHelper.pollUiThread(
+                () -> tab.isLoading() && (base + "/hold.html").equals(tab.getUrl().getSpec()));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(By.text("Resource pending"))
+                                && mDevice.hasObject(
+                                        By.text(
+                                                mActivity.getString(
+                                                        R.string.brave_tv_page_loading))));
+        releaseLoadingFixture();
+        CriteriaHelper.pollUiThread(() -> !tab.isLoading());
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(By.text("Resource complete"))
+                                && !mDevice.hasObject(
+                                        By.text(
+                                                mActivity.getString(
+                                                        R.string.brave_tv_page_loading))));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> tab.loadUrl(new LoadUrlParams(base + "/hold.html")));
+        CriteriaHelper.pollUiThread(tab::isLoading);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        mActivityTestRule.loadUrl(base + "/done.html");
+        ThreadUtils.runOnUiThreadBlocking(() -> assertFalse(tab.isLoading()));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        !mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        mActivityTestRule.loadUrl("http://127.0.0.1:18092/connection-refused");
+        ThreadUtils.runOnUiThreadBlocking(() -> assertFalse(tab.isLoading()));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        !mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+    }
+
+    private void releaseLoadingFixture() throws Exception {
+        java.net.HttpURLConnection release =
+                (java.net.HttpURLConnection)
+                        new java.net.URL("http://127.0.0.1:18091/release").openConnection();
+        release.setConnectTimeout(5000);
+        release.setReadTimeout(5000);
+        release.setRequestMethod("POST");
+        try {
+            assertEquals(200, release.getResponseCode());
+        } finally {
+            release.disconnect();
+        }
+    }
+
+    @Test
+    @MediumTest
     public void dedicatedDpadFromVirtualKeyboardClicksOnce() throws Exception {
         mActivityTestRule.loadUrl(
                 "data:text/html,<style>button{position:fixed;inset:0;background:%23202124;"

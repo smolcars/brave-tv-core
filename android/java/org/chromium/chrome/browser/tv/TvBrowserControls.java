@@ -218,14 +218,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     }
                 };
         mSession = new TvBrowserSession(activity, this::browserStateChanged);
-        mLoadIndicator =
-                new TvPageLoadIndicator(
-                        activity,
-                        () ->
-                                isAlive()
-                                        && !nativeSecurityOwnsInput()
-                                        && (!mActivity.getTabModelSelector().isIncognitoSelected()
-                                                || !mPrivateTabsLocked.getAsBoolean()));
+        mLoadIndicator = new TvPageLoadIndicator(activity, this::canShowPageLoading);
         mScrimVisible.addSyncObserver(mFilePickerScrimObserver);
         mActivity.getWindow().getDecorView().post(() -> restoreUsableHome(false));
     }
@@ -321,6 +314,18 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void refreshLoading() {
         mLoadIndicator.refresh();
+    }
+
+    private boolean canShowPageLoading() {
+        if (!isAlive()
+                || nativeSecurityOwnsInput()
+                || keyboardVisible()
+                || (mActivity.getTabModelSelector().isIncognitoSelected()
+                        && mPrivateTabsLocked.getAsBoolean())) return false;
+        Tab tab = mActivity.getActivityTab();
+        // Home remains native until the requested document commits.
+        return tab != null
+                && ((tab.getNativePage() instanceof TvHomePage) || !nativeUiOwnsInput(false));
     }
 
     private void focusNativeDialog(View dialog) {
