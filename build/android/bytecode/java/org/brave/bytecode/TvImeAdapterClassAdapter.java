@@ -56,6 +56,8 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
                     super.visitVarInsn(ALOAD, 0);
                     super.visitVarInsn(ILOAD, 1);
                     super.visitVarInsn(ILOAD, 2);
+                    super.visitVarInsn(ILOAD, 3);
+                    super.visitVarInsn(ILOAD, 4);
                     super.visitVarInsn(ALOAD, 7);
                     super.visitVarInsn(ILOAD, 8);
                     super.visitVarInsn(ILOAD, 9);
@@ -65,7 +67,7 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
                             INVOKESTATIC,
                             TARGET,
                             "stateChanged",
-                            "(L" + IME + ";IILjava/lang/String;IIII)V",
+                            "(L" + IME + ";IIIILjava/lang/String;IIII)V",
                             false);
                 }
                 super.visitInsn(opcode);

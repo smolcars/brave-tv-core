@@ -142,6 +142,9 @@ final class TvRemoteBrowser {
                             .put("version", mText.version())
                             .put("replacementVersion", mText.replacementVersion())
                             .put("ready", mText.ready())
+                            .put("action", mText.action())
+                            .put("multiline", mText.multiline())
+                            .put("composing", mText.composing())
                             .put("text", mText.text())
                             .put("start", mText.start())
                             .put("end", mText.end()));
@@ -233,6 +236,8 @@ final class TvRemoteBrowser {
             case "edit":
                 if (!webPage() || mText == null) return false;
                 String operation = command.getString("edit");
+                if (operation.equals("enter")
+                        && !mText.action().equals(command.optString("action"))) return false;
                 return (TvRemoteSession.parseInteger(command.opt("version")) == mText.version()
                                 || (operation.equals("replace")
                                         && TvRemoteSession.parseInteger(

@@ -313,6 +313,8 @@ public class BytecodeTest {
                         ime,
                         int.class,
                         int.class,
+                        int.class,
+                        int.class,
                         String.class,
                         int.class,
                         int.class,

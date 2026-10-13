@@ -5,6 +5,8 @@
 package org.chromium.content.browser.input;
 
 import android.os.SystemClock;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.Nullable;
 
@@ -41,6 +43,11 @@ public final class TvTextInput {
     private int mEnd;
     private int mCompositionStart = -1;
     private int mCompositionEnd = -1;
+    private int mType;
+    private int mFlags;
+    private int mMode;
+    private int mAction;
+    private int mEditorAction = EditorInfo.IME_ACTION_NONE;
     private @Nullable PendingEdit mPendingEdit;
     private boolean mNativeCompleted;
 
@@ -49,6 +56,7 @@ public final class TvTextInput {
         TEXT,
         SELECTION,
         RESULT,
+        ACTION,
         DRAIN
     }
 
@@ -130,6 +138,30 @@ public final class TvTextInput {
         return mEnd;
     }
 
+    public boolean composing() {
+        return mCompositionStart >= 0;
+    }
+
+    public boolean multiline() {
+        return mType == TextInputType.TEXT_AREA || mType == TextInputType.CONTENT_EDITABLE;
+    }
+
+    /** A primary Enter action; default Next/Previous must not replace website submission. */
+    public String action() {
+        switch (mEditorAction) {
+            case EditorInfo.IME_ACTION_SEARCH:
+                return "search";
+            case EditorInfo.IME_ACTION_GO:
+                return "go";
+            case EditorInfo.IME_ACTION_SEND:
+                return "send";
+            case EditorInfo.IME_ACTION_DONE:
+                return "done";
+            default:
+                return "enter";
+        }
+    }
+
     public void invalidate() {
         ThreadUtils.assertOnUiThread();
         mOperationId++;
@@ -158,6 +190,8 @@ public final class TvTextInput {
             ImeAdapterImpl adapter,
             int type,
             int flags,
+            int mode,
+            int action,
             String text,
             int start,
             int end,
@@ -178,12 +212,18 @@ public final class TvTextInput {
                         && text.length() <= 2048
                         && boundary(text, start)
                         && boundary(text, end);
-        if (input.mEligible != eligible) {
+        boolean configurationChanged =
+                input.mType != type
+                        || input.mFlags != flags
+                        || input.mMode != mode
+                        || input.mAction != action;
+        if (input.mEligible != eligible || configurationChanged) {
             input.mRevision++;
             input.mPendingEdit = null;
         }
         boolean replacementChanged =
-                input.mEligible != eligible
+                configurationChanged
+                        || input.mEligible != eligible
                         || !input.mText.equals(text)
                         || input.mStart != start
                         || input.mEnd != end;
@@ -192,6 +232,15 @@ public final class TvTextInput {
                 || input.mCompositionStart != compositionStart
                 || input.mCompositionEnd != compositionEnd) input.mVersion++;
         input.mEligible = eligible;
+        input.mType = type;
+        input.mFlags = flags;
+        input.mMode = mode;
+        input.mAction = action;
+        if (eligible && configurationChanged) {
+            EditorInfo info = new EditorInfo();
+            ImeUtils.computeEditorInfo(type, flags, mode, action, start, end, text, info);
+            input.mEditorAction = info.imeOptions & EditorInfo.IME_MASK_ACTION;
+        }
         input.mAwaitingState = false;
         input.mText = eligible ? text : "";
         input.mStart = eligible ? start : 0;
@@ -205,6 +254,7 @@ public final class TvTextInput {
         PendingEdit edit = mPendingEdit;
         if (edit == null) return;
         if (edit.phase != Phase.RESULT
+                && edit.phase != Phase.ACTION
                 && edit.phase != Phase.DRAIN
                 && !mText.equals(edit.originalText)
                 && !mText.equals(edit.text)) {
@@ -253,6 +303,10 @@ public final class TvTextInput {
             mPendingEdit = null;
             mAwaitingState = false;
         } else if (edit.phase == Phase.RESULT && matchesResult(edit, true)) {
+            mPendingEdit = null;
+            mAwaitingState = false;
+        } else if (edit.phase == Phase.ACTION) {
+            // Site handlers may change text, focus or navigation, or do nothing.
             mPendingEdit = null;
             mAwaitingState = false;
         } else if (edit.phase == Phase.DRAIN) {
@@ -307,6 +361,18 @@ public final class TvTextInput {
         if (!eligible() || !ready() || revision != mRevision || text.length() > 2048) return false;
         boolean result;
         switch (operation) {
+            case "enter":
+                if (composing() || composing) return false;
+                mPendingEdit = new PendingEdit(mText, mText, mStart, mEnd, -1, -1, Phase.ACTION);
+                if (action().equals("enter")) {
+                    mAdapter.sendSyntheticKeyPress(
+                            KeyEvent.KEYCODE_ENTER,
+                            KeyEvent.FLAG_SOFT_KEYBOARD | KeyEvent.FLAG_KEEP_TOUCH_MODE);
+                    result = true;
+                } else {
+                    result = mAdapter.performEditorAction(mEditorAction);
+                }
+                break;
             case "replace":
                 if (!validUtf16(text) || !boundary(text, start) || !boundary(text, end))
                     return false;
