@@ -480,7 +480,7 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
-    public void pageLoadingFollowsSelectedTabAndActivityResume() {
+    public void pageLoadingFollowsSelectedTabAndActivityResume() throws Exception {
         // Controlled pending resource, bounded by the owned fixture's watchdog.
         String url = "http://127.0.0.1:18091/hold.html";
         Tab loading = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
@@ -546,25 +546,7 @@ public class TvHomePageTest {
                 () -> mDevice.hasObject(By.clazz("android.widget.EditText")));
         mDevice.findObject(By.clazz("android.widget.EditText"))
                 .setText("http://127.0.0.1:18091/before.html");
-        boolean keyboard =
-                ThreadUtils.runOnUiThreadBlocking(
-                        () -> {
-                            WindowInsetsCompat insets =
-                                    ViewCompat.getRootWindowInsets(
-                                            mActivity.getWindow().getDecorView());
-                            return insets != null
-                                    && insets.isVisible(WindowInsetsCompat.Type.ime());
-                        });
-        if (keyboard) {
-            mDevice.pressBack();
-            CriteriaHelper.pollUiThread(
-                    () -> {
-                        WindowInsetsCompat insets =
-                                ViewCompat.getRootWindowInsets(
-                                        mActivity.getWindow().getDecorView());
-                        return insets != null && !insets.isVisible(WindowInsetsCompat.Type.ime());
-                    });
-        }
+        dismissLoadingTestKeyboard();
         mDevice.pressDPadDown();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_go)));
         mDevice.pressDPadCenter();
@@ -634,6 +616,18 @@ public class TvHomePageTest {
                                 By.text(mActivity.getString(R.string.brave_tv_page_loading))));
     }
 
+    private boolean loadingTestKeyboardVisible() {
+        WindowInsetsCompat insets =
+                ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
+        return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
+    }
+
+    private void dismissLoadingTestKeyboard() {
+        if (!ThreadUtils.runOnUiThreadBlocking(this::loadingTestKeyboardVisible)) return;
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(() -> !loadingTestKeyboardVisible());
+    }
+
     private void releaseLoadingFixture() throws Exception {
         java.net.HttpURLConnection release =
                 (java.net.HttpURLConnection)
@@ -667,6 +661,16 @@ public class TvHomePageTest {
                 () -> {
                     View find = mActivity.findViewById(R.id.find_toolbar);
                     return find != null && find.isShown();
+                });
+        CriteriaHelper.pollUiThread(this::loadingTestKeyboardVisible);
+        dismissLoadingTestKeyboard();
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    View find = mActivity.findViewById(R.id.find_toolbar);
+                    assertNotNull(find);
+                    assertTrue(find.isShown());
+                    assertTrue(mActivity.hasWindowFocus());
+                    assertFalse(loadingTestKeyboardVisible());
                 });
         CriteriaHelper.pollInstrumentationThread(
                 () ->
