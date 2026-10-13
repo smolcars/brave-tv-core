@@ -1327,6 +1327,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     WebContents contents = context.contents;
                     if (query != mFocusQuery || !canReadSelection(context) || contents == null)
                         return;
+                    if (!supportsElementNavigation()) {
+                        activatePageMode(TvRemoteInput.Mode.POINTER);
+                        return;
+                    }
                     RenderFrameHost frame = contents.getMainFrame();
                     if (frame == null || !frame.isRenderFrameLive()) return;
                     // Geometry only, in an isolated world; no page text or candidate enumeration.
@@ -1348,6 +1352,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                             ChromeIsolatedWorldIds.ISOLATED_WORLD_ID_CHROME_INTERNAL,
                             result -> {
                                 if (query != mFocusQuery || !canReadSelection(context)) return;
+                                if (!supportsElementNavigation()) {
+                                    activatePageMode(TvRemoteInput.Mode.POINTER);
+                                    return;
+                                }
                                 mCursor.focus = null;
                                 mFocusContext = null;
                                 try {
@@ -1404,7 +1412,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 && !keyboardVisible()
                 && !isPageFullscreen()
                 && !nativeUiOwnsInput(false)
-                && supportsElementNavigation()
                 && (context.tab == null
                         || !context.tab.isIncognito()
                         || !mPrivateTabsLocked.getAsBoolean())

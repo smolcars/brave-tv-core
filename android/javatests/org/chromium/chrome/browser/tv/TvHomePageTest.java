@@ -1738,7 +1738,9 @@ public class TvHomePageTest {
     public void elementsFallBackForCrossOriginFrame() throws Exception {
         Tab tab =
                 loadElementFixture(
-                        "<button id=outside>Outside</button><iframe id=frame sandbox=allow-scripts"
+                        "<style>#outside,#below{position:absolute;top:30px;width:180px;height:70px}"
+                            + "#outside{left:30px}#below{left:300px}#frame{position:absolute;left:30px;top:180px}</style><button"
+                            + " id=outside>Outside</button><iframe id=frame sandbox=allow-scripts"
                             + " style='display:block;width:650px;height:250px' srcdoc=\"<button"
                             + " id=inside"
                             + " style='position:fixed;inset:0;width:100%;height:100%'>Inside</button><script>"
@@ -1761,8 +1763,14 @@ public class TvHomePageTest {
         JavaScriptUtils.executeJavaScriptAndWaitForResult(
                 tab.getWebContents(), "outside.focus();true");
         holdElementOk();
-        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
         waitForElement(tab, "below");
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForScript(tab, "document.activeElement===frame");
+        holdElementOk();
+        assertEquals(
+                "0",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(tab.getWebContents(), "keys"));
     }
 
     @Test
