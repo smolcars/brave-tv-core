@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -434,7 +436,7 @@ object TvPresentation {
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.semantics { heading() })
-                                ActionRows(actions, 3, 10.dp) { action, modifier ->
+                                ActionRows(actions, 3, 10.dp, equalHeight = true) { action, modifier ->
                                     ActionButton(action, modifier.then(
                                         if (action === selected) Modifier.focusRequester(initial)
                                         else Modifier), menu = true)
@@ -578,6 +580,7 @@ object TvPresentation {
     @Composable
     private fun ActionRows(
         actions: List<Action>, maxColumns: Int, spacing: Dp, minimum: Dp = 140.dp,
+        equalHeight: Boolean = false,
         weight: (Action) -> Float = { 1f },
         content: @Composable (Action, Modifier) -> Unit,
     ) {
@@ -588,10 +591,13 @@ object TvPresentation {
                 .coerceIn(1, maxColumns)
             Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
                 actions.chunked(columns).forEach { row ->
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing)) {
+                    Row(Modifier.fillMaxWidth().then(
+                        if (equalHeight) Modifier.height(IntrinsicSize.Min) else Modifier),
+                        horizontalArrangement = Arrangement.spacedBy(spacing)) {
                         row.forEach { action ->
                             key(if (action.key != 0) action.key else action) {
-                                content(action, Modifier.weight(weight(action)))
+                                content(action, Modifier.weight(weight(action)).then(
+                                    if (equalHeight) Modifier.fillMaxHeight() else Modifier))
                             }
                         }
                         repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
