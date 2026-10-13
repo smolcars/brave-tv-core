@@ -265,15 +265,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 params.setMarginStart(
                         Math.round(24 * mActivity.getResources().getDisplayMetrics().density));
                 row.addView(instructions, params);
-                int height =
-                        Math.round(
-                                sizeDp
-                                        * Math.max(
-                                                1,
-                                                mActivity
-                                                        .getResources()
-                                                        .getConfiguration()
-                                                        .fontScale));
+                int height = sizeDp;
                 panel.addContent(row, height);
             } catch (WriterException exception) {
                 panel.addDescription(description);

@@ -3,7 +3,7 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24">
-    <path android:pathData="M12,8a4,4 0,1 0,0 8a4,4 0,1 0,0 -8 M12,2V5 M12,19V22 M2,12H5 M19,12H22 M5,5L7,7 M17,17L19,19 M5,19L7,17 M17,7L19,5" android:fillColor="@android:color/transparent"
+    <path android:pathData="M9,3L10,1H14L15,3L18,5H21L23,9L21,11V13L23,15L21,19H18L15,21L14,23H10L9,21L6,19H3L1,15L3,13V11L1,9L3,5H6Z M12,8a4,4 0,1 0,0 8a4,4 0,1 0,0 -8" android:fillColor="@android:color/transparent"
         android:strokeColor="@android:color/white" android:strokeWidth="1.7"
         android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

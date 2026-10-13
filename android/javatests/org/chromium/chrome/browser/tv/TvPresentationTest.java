@@ -162,7 +162,9 @@ public class TvPresentationTest {
         focused("Browser controls");
         mDevice.pressDPadRight();
         focused("Tabs");
-        mDevice.pressDPadRight();
+        mDevice.pressDPadDown();
+        focused("Settings");
+        mDevice.pressDPadLeft();
         focused("Bookmarks");
         mDevice.pressDPadRight();
         focused("Settings");

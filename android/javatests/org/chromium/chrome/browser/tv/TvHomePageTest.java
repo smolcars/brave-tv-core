@@ -184,7 +184,11 @@ public class TvHomePageTest {
         ThreadUtils.runOnUiThreadBlocking(
                 () -> assertEquals(R.string.brave_tv_phone, mActivity.tvPhoneStatusLabel()));
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.desc(phone)));
-        mDevice.findObject(By.desc(phone)).click();
+        mDevice.pressDPadUp();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_home)));
+        for (int i = 0; i < 3; i++) mDevice.pressDPadRight();
+        waitForFocus(By.desc(phone));
+        mDevice.pressDPadCenter();
         CriteriaHelper.pollUiThread(
                 () -> mActivity.tvPhoneStatusLabel() == R.string.brave_tv_phone_waiting);
         CriteriaHelper.pollInstrumentationThread(

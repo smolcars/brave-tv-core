@@ -68,6 +68,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.ComposeView
@@ -117,6 +118,7 @@ object TvPresentation {
         var label by mutableStateOf(label)
         var enabled by mutableStateOf(enabled)
         var icon by mutableStateOf(icon)
+        var displayLabel by mutableStateOf<String?>(null)
         var announceChanges = false
         internal var focused = false
         internal var focusRequest by mutableStateOf(0)
@@ -261,8 +263,8 @@ object TvPresentation {
                         Color(0xD1071918), Color(0xFF102825)))))
                     Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                            .padding(horizontal = 40.dp, vertical = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                            .padding(start = 40.dp, end = 40.dp, top = 16.dp, bottom = 48.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
                     ) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -270,10 +272,13 @@ object TvPresentation {
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold)
                             Column(Modifier.weight(1f)) {
-                                ActionRows(actions.drop(1).take(4), 4, 8.dp, minimum = 108.dp) { action, modifier ->
+                                ActionRows(actions.drop(1).take(4), 4, 8.dp, minimum = 108.dp,
+                                    weight = { if (it === actions.getOrNull(4)) 1.5f else 1f }) { action, modifier ->
                                     ActionButton(action, modifier.then(
                                         if (action === actions.getOrNull(1)) Modifier.focusRequester(header)
-                                        else Modifier), quiet = true, compact = true)
+                                        else Modifier), quiet = true, compact = true,
+                                        hideIcon = action !== actions.getOrNull(4),
+                                        current = action === actions.getOrNull(1))
                                 }
                             }
                             actions.drop(5).forEach { action ->
@@ -281,11 +286,11 @@ object TvPresentation {
                             }
                             LocalClock(context)
                         }
-                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                            Text(title, style = MaterialTheme.typography.displayMedium,
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(title, style = MaterialTheme.typography.displaySmall,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.semantics { heading() })
-                            if (subtitle.isNotEmpty()) Text(subtitle,
+                            if (subtitle.isNotEmpty() && !state.showSections) Text(subtitle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyLarge)
                             ActionButton(actions.first(), Modifier.widthIn(max = 680.dp).fillMaxWidth()
@@ -296,14 +301,12 @@ object TvPresentation {
                             HomeSection(state.favoritesTitle,
                                 if (state.loadingFavorites) state.loadingLabel else state.favoritesEmpty,
                                 state.favorites, 6)
-                            HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 4)
+                            HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 4, recent = true)
                         }
+                        if (attribution.isNotEmpty() || links.isNotEmpty())
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp),
                             verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                if (state.photoCredit.isNotEmpty()) Text(state.photoCredit,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.labelMedium)
                                 if (attribution.isNotEmpty()) Text(attribution,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     style = MaterialTheme.typography.labelSmall)
@@ -311,6 +314,11 @@ object TvPresentation {
                             links.forEach { action -> ActionButton(action, quiet = true, compact = true) }
                         }
                     }
+                    if (state.photoCredit.isNotEmpty()) Text(state.photoCredit,
+                        modifier = Modifier.align(Alignment.BottomStart)
+                            .padding(horizontal = 40.dp, vertical = 16.dp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium)
                 }
                 LaunchedEffect(state.focusRequest) {
                     withFrameNanos { }
@@ -354,7 +362,10 @@ object TvPresentation {
     }
 
     @Composable
-    private fun HomeSection(title: String, emptyLabel: String, actions: List<Action>, columns: Int) {
+    private fun HomeSection(
+        title: String, emptyLabel: String, actions: List<Action>, columns: Int,
+        recent: Boolean = false,
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() })
@@ -362,8 +373,8 @@ object TvPresentation {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-            ActionRows(actions, columns, 12.dp) { action, modifier ->
-                ActionButton(action, modifier, card = true)
+            ActionRows(actions, columns, 12.dp, minimum = 120.dp) { action, modifier ->
+                ActionButton(action, modifier, card = true, recentCard = recent)
             }
         }
     }
@@ -415,7 +426,7 @@ object TvPresentation {
                                 ActionRows(actions, 3, 10.dp) { action, modifier ->
                                     ActionButton(action, modifier.then(
                                         if (action === selected) Modifier.focusRequester(initial)
-                                        else Modifier))
+                                        else Modifier), menu = true)
                                 }
                             }
                         }
@@ -555,7 +566,8 @@ object TvPresentation {
 
     @Composable
     private fun ActionRows(
-        actions: List<Action>, maxColumns: Int, spacing: Dp, minimum: Dp = 120.dp,
+        actions: List<Action>, maxColumns: Int, spacing: Dp, minimum: Dp = 140.dp,
+        weight: (Action) -> Float = { 1f },
         content: @Composable (Action, Modifier) -> Unit,
     ) {
         if (actions.isEmpty()) return
@@ -568,7 +580,7 @@ object TvPresentation {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing)) {
                         row.forEach { action ->
                             key(if (action.key != 0) action.key else action) {
-                                content(action, Modifier.weight(1f))
+                                content(action, Modifier.weight(weight(action)))
                             }
                         }
                         repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
@@ -579,11 +591,22 @@ object TvPresentation {
     }
 
     @Composable
+    private fun SiteInitial(host: String) {
+        Box(Modifier.size(28.dp).background(LocalContentColor.current.copy(alpha = 0.12f),
+            RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+            Text(host.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "",
+                style = MaterialTheme.typography.titleMedium)
+        }
+    }
+
+    @Composable
     internal fun ActionButton(
         action: Action, modifier: Modifier = Modifier, quiet: Boolean = false,
         compact: Boolean = false, search: Boolean = false, card: Boolean = false,
-        iconOnly: Boolean = false,
+        iconOnly: Boolean = false, hideIcon: Boolean = false,
+        current: Boolean = false, recentCard: Boolean = false, menu: Boolean = false,
     ) {
+        val caption = action.displayLabel ?: action.label
         var hasFocus by remember { mutableStateOf(false) }
         var size by remember { mutableStateOf(IntSize.Zero) }
         val requested = remember { FocusRequester() }
@@ -611,7 +634,9 @@ object TvPresentation {
                 action.focused = it.isFocused
             }.clearAndSetSemantics {
                 role = Role.Button
-                contentDescription = action.label
+                contentDescription = if (action.label.contains(caption, ignoreCase = true))
+                    action.label else "$caption · ${action.label}"
+                if (current) selected = true
                 if (action.announceChanges) liveRegion = LiveRegionMode.Polite
                 focused = hasFocus
                 if (!action.enabled) disabled()
@@ -626,14 +651,14 @@ object TvPresentation {
                 if (search) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface))),
             scale = ButtonDefaults.scale(focusedScale = 1.02f),
             colors = ButtonDefaults.colors(
-                containerColor = if (search) text else if (quiet) Color.Transparent
+                containerColor = if (search) text else if (quiet && !current) Color.Transparent
                     else MaterialTheme.colorScheme.surface,
                 contentColor = if (search) MaterialTheme.colorScheme.background else text,
                 focusedContainerColor = if (search) text else MaterialTheme.colorScheme.primary,
                 focusedContentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
-            if (action.icon != 0) {
+            if (action.icon != 0 && !hideIcon) {
                 Image(painterResource(action.icon), contentDescription = null,
                     modifier = Modifier.size(20.dp),
                     colorFilter = ColorFilter.tint(LocalContentColor.current))
@@ -641,26 +666,32 @@ object TvPresentation {
             }
             if (card) {
                 val lines = action.label.split("\n", limit = 2)
-                Column(Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Box(Modifier.size(32.dp).background(LocalContentColor.current.copy(alpha = 0.12f),
-                        RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                        Text(lines.last().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString()
-                            ?: "", style = MaterialTheme.typography.titleMedium)
+                if (recentCard) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        SiteInitial(lines.last())
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(lines.first(), style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (lines.size > 1) Text(lines.last(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = LocalContentColor.current.copy(alpha = 0.85f),
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
-                    Text(lines.first(), style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (lines.size > 1) Text(lines.last(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = LocalContentColor.current.copy(alpha = 0.85f),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                } else {
+                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        SiteInitial(lines.last())
+                        Text(lines.first(), style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
-            } else if (!iconOnly) Text(action.label,
+            } else if (!iconOnly) Text(caption,
                 style = if (compact) MaterialTheme.typography.labelLarge
                     else if (search) MaterialTheme.typography.titleLarge
                     else MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                maxLines = 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(vertical = if (search) 14.dp else 8.dp)
+                maxLines = if (menu) 3 else 2, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(vertical = if (search) 4.dp else 8.dp)
                     .then(if (search) Modifier.weight(1f) else Modifier))
         }
     }

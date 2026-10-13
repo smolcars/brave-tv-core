@@ -138,10 +138,7 @@ public final class TvHomePage extends BasicNativePage {
                         R.drawable.brave_tv_ambient,
                         activity.getString(R.string.brave_tv_home_brand),
                         activity.getString(R.string.brave_tv_home_photo));
-        List<TvPresentation.Action> links = new ArrayList<>();
-        links.add(
-                action(R.string.brave_tv_source, () -> open(TvBrowserControls.PROJECT_SOURCE_URL)));
-        links.add(action(R.string.brave_tv_licenses, () -> open(TvBrowserControls.LICENSES_URL)));
+        List<TvPresentation.Action> links = List.of();
         mSettingsAction = action(R.string.brave_tv_settings, () -> activity.showTvSettings(this));
         mPhoneAction = action(R.string.brave_tv_phone, () -> activity.showTvPhoneRemote(this));
         mPhoneAction.setEnabled(!tab.isIncognito());
@@ -157,7 +154,7 @@ public final class TvHomePage extends BasicNativePage {
                                 tab.isIncognito()
                                         ? R.string.brave_tv_private_home_description
                                         : R.string.brave_tv_home_tagline),
-                        activity.getString(R.string.brave_tv_attribution),
+                        "",
                         List.of(
                                 action(
                                         R.string.brave_tv_address,

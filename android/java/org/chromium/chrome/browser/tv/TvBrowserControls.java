@@ -948,14 +948,17 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             int action,
             boolean enabled,
             TvBrowserSession.Context context) {
-        actions.add(
+        TvPresentation.Action entry =
                 new TvPresentation.Action(
                         mActivity.getString(action),
                         enabled,
                         () -> runControl(action, context),
                         action == R.string.brave_tv_stop ? R.string.brave_tv_reload : action,
                         controlIcon(action),
-                        mActivity.getString(controlGroup(action))));
+                        mActivity.getString(controlGroup(action)));
+        if (action == R.string.brave_tv_address)
+            entry.setDisplayLabel(mActivity.getString(android.R.string.search_go));
+        actions.add(entry);
     }
 
     private static int controlGroup(int action) {
