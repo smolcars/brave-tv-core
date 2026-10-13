@@ -258,7 +258,28 @@ public class TvHomePageTest {
                     });
             CriteriaHelper.pollUiThread(() -> input.ready() && input.text().equals("one"));
             ThreadUtils.runOnUiThreadBlocking(
-                    () -> assertTrue(input.edit(input.revision(), "enter", "", 0, 0, false)));
+                    () -> {
+                        if (input.composing())
+                            assertFalse(input.edit(input.revision(), "enter", "", 0, 0, false));
+                        assertTrue(input.edit(input.revision(), "finish", "", 0, 0, false));
+                    });
+            CriteriaHelper.pollUiThread(() -> input.ready() && !input.composing());
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> assertTrue(input.edit(input.revision(), "select", "", 3, 3, false)));
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            input.ready()
+                                    && !input.composing()
+                                    && input.start() == 3
+                                    && input.end() == 3
+                                    && input.text().equals("one"));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertFalse(input.composing());
+                        assertEquals(3, input.start());
+                        assertEquals(3, input.end());
+                        assertTrue(input.edit(input.revision(), "enter", "", 0, 0, false));
+                    });
             CriteriaHelper.pollUiThread(() -> input.ready() && input.text().equals("one\n"));
             assertEquals(
                     "\"one\\n\"",
