@@ -197,7 +197,11 @@ public class TvHomePageTest {
                 });
         mActivity = ApplicationTestUtils.recreateActivity(mActivity);
         CriteriaHelper.pollUiThread(
-                () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+                () ->
+                        mActivity.getActivityTab() != null
+                                && mActivity.getActivityTab().getNativePage() instanceof TvHomePage
+                                && UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                        .getBoolean(TvHomePage.STARTER_FAVORITES_PREF));
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     List<BookmarkId> sites = starterIds();
@@ -217,7 +221,11 @@ public class TvHomePageTest {
                 });
         mActivity = ApplicationTestUtils.recreateActivity(mActivity);
         CriteriaHelper.pollUiThread(
-                () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+                () ->
+                        mActivity.getActivityTab() != null
+                                && mActivity.getActivityTab().getNativePage() instanceof TvHomePage
+                                && mActivity.getActivityTab().getNativePage().getView()
+                                        .isAttachedToWindow());
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
                     assertEquals(3, starterIds().size());
@@ -251,7 +259,12 @@ public class TvHomePageTest {
                     });
             mActivity = ApplicationTestUtils.recreateActivity(mActivity);
             CriteriaHelper.pollUiThread(
-                    () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+                    () ->
+                            mActivity.getActivityTab() != null
+                                    && mActivity.getActivityTab().getNativePage()
+                                            instanceof TvHomePage
+                                    && mActivity.getActivityTab().getNativePage().getView()
+                                            .isAttachedToWindow());
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
                         assertTrue(starterIds().isEmpty());
@@ -266,17 +279,21 @@ public class TvHomePageTest {
                             mActivity.getActivityTab().isIncognito()
                                     && mActivity.getActivityTab().getNativePage()
                                             instanceof TvHomePage);
+            int privateId =
+                    ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getId());
             ThreadUtils.runOnUiThreadBlocking(
-                    () -> prefs.setBoolean(TvHomePage.STARTER_FAVORITES_PREF, false));
-            ThreadUtils.runOnUiThreadBlocking(
-                    () ->
-                            mActivity.getActivityTab()
-                                    .loadUrl(new LoadUrlParams("chrome-native://newtab/")));
+                    () -> {
+                        prefs.setBoolean(TvHomePage.STARTER_FAVORITES_PREF, false);
+                        mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false);
+                    });
             CriteriaHelper.pollUiThread(
                     () ->
-                            mActivity.getActivityTab().isIncognito()
+                            mActivity.getActivityTab().getId() != privateId
+                                    && mActivity.getActivityTab().isIncognito()
                                     && mActivity.getActivityTab().getNativePage()
-                                            instanceof TvHomePage);
+                                            instanceof TvHomePage
+                                    && mActivity.getActivityTab().getNativePage().getView()
+                                            .isAttachedToWindow());
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
                         assertTrue(starterIds().isEmpty());
