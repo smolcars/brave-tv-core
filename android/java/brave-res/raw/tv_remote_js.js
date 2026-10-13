@@ -19,7 +19,16 @@ let gesture = null,
   waiting = false,
   dirtyVersion = 0,
   dirtyReplacementVersion = 0,
-  pendingEdit = null
+  pendingEdit = null,
+  enterIntent = null,
+  advancingEnter = false
+const actionLabels = {
+  enter: 'Enter',
+  search: 'Search',
+  go: 'Go',
+  send: 'Send',
+  done: 'Done',
+}
 function status(text) {
   $('status').textContent = text
 }
@@ -42,6 +51,8 @@ function resetInput() {
   pendingEdit = null
   composing = false
   field = 0
+  enterIntent = null
+  $('editor').readOnly = false
   $('editor').value = ''
 }
 function clearPage() {
@@ -80,9 +91,12 @@ function render(result) {
   connected = !!state
   if (!state) return
   if (previous && previous.revision !== state.revision) resetInput()
-  if (result.ok === false && pendingEdit) {
-    pendingEdit = null
-    dirty = composing = false
+  if (result.ok === false) {
+    enterIntent = null
+    if (pendingEdit) {
+      pendingEdit = null
+      dirty = composing = false
+    }
   }
   if (pendingEdit && state.editable?.ready) {
     const editable = state.editable
@@ -93,11 +107,16 @@ function render(result) {
       && editable.start === pendingEdit.start
       && editable.end === pendingEdit.end
     ) {
+      if (enterIntent?.field === editable.revision)
+        enterIntent.version = editable.version
       if (dirty) {
         dirtyVersion = editable.version
         dirtyReplacementVersion = editable.replacementVersion
       }
-    } else dirty = composing = false
+    } else {
+      dirty = composing = false
+      enterIntent = null
+    }
     pendingEdit = null
   }
   $('pair').hidden = true
@@ -186,6 +205,7 @@ function render(result) {
   }
   const editable = state.editable
   if (!editable) {
+    enterIntent = null
     pendingEdit = null
     dirty = composing = false
     field = 0
@@ -194,31 +214,60 @@ function render(result) {
     $('fieldHint').textContent =
       'Select an eligible text field on the TV. Passwords are excluded.'
   } else {
-    $('fieldHint').textContent = editable.ready
-      ? 'Editing the selected TV field'
-      : 'Reading the selected TV field…'
     // Awaiting our native edit must not blur the phone IME mid-composition.
     const awaitingEdit =
       field === editable.revision && pendingEdit?.field === editable.revision
-    $('editor').disabled = !editable.ready && !awaitingEdit
+    const awaitingEnter =
+      field === editable.revision && enterIntent?.field === editable.revision
+    $('editor').disabled = !editable.ready && !awaitingEdit && !awaitingEnter
     if (field !== editable.revision) {
+      enterIntent = null
       $('editor').value = ''
       dirty = false
       composing = false
     }
     field = editable.revision
+    const action = Object.hasOwn(actionLabels, editable.action)
+      ? editable.action
+      : 'enter'
+    $('enter').textContent = actionLabels[action]
+    $('editor').setAttribute('enterkeyhint', action)
+    if (enterIntent?.sent && editable.ready) enterIntent = null
+    $('fieldHint').textContent = enterIntent
+      ? `Sending ${actionLabels[enterIntent.action]} to the TV…`
+      : editable.ready
+        ? editable.multiline
+          ? 'Editing the selected TV field. Enter may add a new line.'
+          : 'Editing the selected TV field'
+        : 'Reading the selected TV field…'
     if (!dirty && !composing && editable.ready) {
       $('editor').value = editable.text
       $('editor').setSelectionRange(editable.start, editable.end)
       lastText = editable.text
     }
   }
+  updateEnter()
+}
+function updateEnter() {
+  const editable = state?.editable
+  $('editor').readOnly = !!enterIntent
+  $('enter').disabled =
+    !connected
+    || state?.paused
+    || !editable
+    || composing
+    || !!enterIntent
+    || !!editable.composing
+    || (!editable.ready && pendingEdit?.field !== editable.revision)
+  for (const id of ['delete', 'finish'])
+    $(id).disabled =
+      !connected || state?.paused || !editable?.ready || !!enterIntent
 }
 function disable(value) {
   document.body.classList.toggle('paused', value)
   for (const b of $('remote').querySelectorAll('button,input,textarea'))
     if (!b.dataset.view) b.disabled = value
-  for (const id of ['delete', 'finish'])
+  for (const id of ['delete', 'finish', 'enter'])
     $(id).disabled = value || !state?.editable?.ready
   $('pad').setAttribute('aria-disabled', String(value || !state?.page))
 }
@@ -451,7 +500,9 @@ function flushMotion() {
 setInterval(flushMotion, 60)
 // Coalesce current-field edits only. A failed request or target change discards them.
 $('editor').addEventListener('compositionstart', () => {
+  enterIntent = null
   composing = true
+  updateEnter()
 })
 $('editor').addEventListener('compositionend', () => {
   composing = false
@@ -460,6 +511,7 @@ $('editor').addEventListener('compositionend', () => {
     dirtyReplacementVersion = state?.editable?.replacementVersion
   }
   dirty = true
+  updateEnter()
 })
 $('editor').oninput = () => {
   if (!dirty) {
@@ -468,7 +520,7 @@ $('editor').oninput = () => {
   }
   dirty = true
 }
-setInterval(async () => {
+async function flushEditor() {
   if (
     !dirty
     || busy
@@ -482,7 +534,7 @@ setInterval(async () => {
     start = $('editor').selectionStart,
     end = $('editor').selectionEnd
   dirty = false
-  await command('edit', {
+  return command('edit', {
     editable: field,
     edit: 'replace',
     version: dirtyVersion,
@@ -492,7 +544,119 @@ setInterval(async () => {
     end,
     composing,
   })
-}, 80)
+}
+function requestEnter() {
+  const editable = state?.editable
+  if (
+    !connected
+    || state.paused
+    || enterIntent
+    || composing
+    || !editable
+    || field !== editable.revision
+    || (editable.composing && !dirty && !pendingEdit)
+    || (!editable.ready && pendingEdit?.field !== field)
+  )
+    return false
+  enterIntent = {
+    epoch,
+    revision: state.revision,
+    field,
+    version: editable.version,
+    action: Object.hasOwn(actionLabels, editable.action)
+      ? editable.action
+      : 'enter',
+    text: $('editor').value,
+    start: $('editor').selectionStart,
+    end: $('editor').selectionEnd,
+    deadline: performance.now() + 2000,
+    sent: false,
+  }
+  // A pending selection acknowledgement can race the phone's latest caret.
+  if (
+    !dirty
+    && (enterIntent.text !== editable.text
+      || enterIntent.start !== editable.start
+      || enterIntent.end !== editable.end)
+  ) {
+    dirtyVersion = editable.version
+    dirtyReplacementVersion = editable.replacementVersion
+    dirty = true
+  }
+  updateEnter()
+  $('editor').focus({ preventScroll: true })
+  return true
+}
+async function advanceEnter() {
+  const intent = enterIntent
+  if (!intent || intent.sent || advancingEnter) return
+  const editable = state?.editable
+  if (
+    !connected
+    || state.paused
+    || epoch !== intent.epoch
+    || state.revision !== intent.revision
+    || editable?.revision !== intent.field
+    || composing
+    || performance.now() > intent.deadline
+  ) {
+    enterIntent = null
+    updateEnter()
+    status('TV changed or typing took too long. Enter discarded; try again.')
+    return
+  }
+  if (busy || pendingEdit || !editable.ready) return
+  advancingEnter = true
+  try {
+    if (dirty) {
+      await flushEditor()
+      return
+    }
+    if (
+      editable.version !== intent.version
+      || editable.composing
+      || editable.text !== intent.text
+      || editable.start !== intent.start
+      || editable.end !== intent.end
+    ) {
+      enterIntent = null
+      status('TV field changed. Enter discarded; try again.')
+      return
+    }
+    intent.sent = true
+    await command('edit', {
+      editable: intent.field,
+      version: intent.version,
+      edit: 'enter',
+      action: intent.action,
+    })
+  } finally {
+    advancingEnter = false
+    updateEnter()
+  }
+}
+setInterval(() => (enterIntent ? advanceEnter() : flushEditor()), 80)
+$('enter').onclick = requestEnter
+$('editor').addEventListener('keydown', (event) => {
+  if (
+    event.key !== 'Enter'
+    || composing
+    || event.isComposing
+    || event.keyCode === 229
+  )
+    return
+  if (event.repeat || enterIntent || requestEnter()) event.preventDefault()
+})
+$('editor').addEventListener('beforeinput', (event) => {
+  if (
+    !event.cancelable
+    || composing
+    || event.isComposing
+    || !['insertLineBreak', 'insertParagraph'].includes(event.inputType)
+  )
+    return
+  if (enterIntent || requestEnter()) event.preventDefault()
+})
 $('editor').onselect = () => {
   if (
     state?.editable

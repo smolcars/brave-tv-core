@@ -306,7 +306,11 @@
             </form>
             <section id="keyboard">
               <h2>Page text</h2>
-              <p id="fieldHint">
+              <p
+                id="fieldHint"
+                role="status"
+                aria-live="polite"
+              >
                 Select a text field on the TV. Passwords are excluded.
               </p>
               <label for="editor">Text in the selected TV field</label
@@ -318,6 +322,13 @@
                 autocapitalize="off"
                 disabled
               ></textarea>
+              <button
+                id="enter"
+                class="primary field-enter"
+                disabled
+              >
+                Enter
+              </button>
               <div class="row edit-actions">
                 <button id="delete">Delete before cursor</button
                 ><button id="finish">Finish composition</button>
