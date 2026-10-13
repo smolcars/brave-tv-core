@@ -202,6 +202,69 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void recreatedHomeReceivesPhoneConnectionStatus() throws Exception {
+        mActivity = ApplicationTestUtils.recreateActivity(mActivity);
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab() != null
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressDPadUp();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_home)));
+        for (int i = 0; i < 3; i++) mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_phone)));
+        mDevice.pressDPadCenter();
+        BySelector instructions =
+                By.textStartsWith(mActivity.getString(R.string.brave_tv_phone_pair));
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(instructions));
+        var invitation =
+                java.util.regex.Pattern.compile("(http://[^\\s]+)\\s+(\\d{8})")
+                        .matcher(mDevice.findObject(instructions).getText());
+        assertTrue(invitation.find());
+        String origin = invitation.group(1);
+        byte[] body =
+                new org.json.JSONObject()
+                        .put("v", 1)
+                        .put("invite", invitation.group(2))
+                        .toString()
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        var connection =
+                (java.net.HttpURLConnection)
+                        java.net.URI.create(origin + "/pair").toURL().openConnection();
+        connection.setConnectTimeout(3000);
+        connection.setReadTimeout(3000);
+        connection.setRequestMethod("POST");
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Origin", origin);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setFixedLengthStreamingMode(body.length);
+        try {
+            try (var output = connection.getOutputStream()) {
+                output.write(body);
+            }
+            assertEquals(200, connection.getResponseCode());
+            try (var response = connection.getInputStream()) {
+                String reply =
+                        new String(
+                                org.chromium.base.FileUtils.readStream(response),
+                                java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(new org.json.JSONObject(reply).has("token"));
+            }
+        } finally {
+            connection.disconnect();
+        }
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_phone_approve)));
+        mDevice.pressDPadCenter();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_phone_connected)));
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        assertEquals(
+                                R.string.brave_tv_phone_connected, mActivity.tvPhoneStatusLabel()));
+    }
+
+    @Test
+    @MediumTest
     public void televisionToolbarUsesNativeHiddenOffsets() {
         assertTelevisionViewport();
         mActivityTestRule.loadUrl(URL);

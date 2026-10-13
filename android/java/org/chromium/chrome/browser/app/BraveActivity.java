@@ -356,6 +356,9 @@ public abstract class BraveActivity extends ChromeActivity
     // One-shot guard so the app-close shred notification fires at most once per cold start.
     private boolean mAppCloseShredTriggered;
     private @Nullable TvBrowserControls mTvBrowserControls;
+    // A restored native Home can attach before foreground controls are constructed.
+    private final org.chromium.base.ObserverList<Runnable> mTvPhoneObservers =
+            new org.chromium.base.ObserverList<>();
 
     /** Serves as a general exception for failed attempts to get BraveActivity. */
     public static class BraveActivityNotFoundException extends Exception {
@@ -389,10 +392,12 @@ public abstract class BraveActivity extends ChromeActivity
     }
 
     public void addTvPhoneObserver(Runnable observer) {
+        mTvPhoneObservers.addObserver(observer);
         if (mTvBrowserControls != null) mTvBrowserControls.addPhoneObserver(observer);
     }
 
     public void removeTvPhoneObserver(Runnable observer) {
+        mTvPhoneObservers.removeObserver(observer);
         if (mTvBrowserControls != null) mTvBrowserControls.removePhoneObserver(observer);
     }
 
@@ -475,6 +480,10 @@ public abstract class BraveActivity extends ChromeActivity
                                             && (mIncognitoReauthController == null
                                                     || mIncognitoReauthController
                                                             .isIncognitoReauthPending()));
+            for (Runnable observer : mTvPhoneObservers) {
+                mTvBrowserControls.addPhoneObserver(observer);
+                observer.run();
+            }
             Tab tab = getActivityTab();
             // A restored home tab may not have created its native view yet.
             if (tab != null && !UrlUtilities.isNtpUrl(tab.getUrl().getSpec())) {
