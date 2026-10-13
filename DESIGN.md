@@ -262,3 +262,6 @@ Pairing leads to explicit TV approval. Connected status is teal. Home replaces p
 
 When opaque native tab handles rotate, selection focus follows the current
 engine-selected row. Removed close controls return focus to New tab.
+
+Keep the phone editor focused during a pending same-field native edit. Initial
+field loading, target changes and sensitive/native pauses still disable editing.

@@ -197,7 +197,10 @@ function render(result) {
     $('fieldHint').textContent = editable.ready
       ? 'Editing the selected TV field'
       : 'Reading the selected TV field…'
-    $('editor').disabled = !editable.ready
+    // Awaiting our native edit must not blur the phone IME mid-composition.
+    const awaitingEdit =
+      field === editable.revision && pendingEdit?.field === editable.revision
+    $('editor').disabled = !editable.ready && !awaitingEdit
     if (field !== editable.revision) {
       $('editor').value = ''
       dirty = false
