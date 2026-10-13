@@ -1637,9 +1637,8 @@ public class TvHomePageTest {
         Tab tab =
                 loadElementFixture(
                         "<style>button{position:absolute;width:180px;height:90px}"
-                            + "#a{left:60px;top:60px}#b{left:320px;top:60px}"
-                            + "#c{left:60px;top:220px}#d{left:320px;top:220px}</style><button id=a"
-                            + " autofocus>A</button><button id=b>B</button><button"
+                            + "#a{left:60px;top:60px}#b{left:320px;top:60px}#c{left:60px;top:220px}#d{left:320px;top:220px}</style><button"
+                            + " id=a autofocus>A</button><button id=b>B</button><button"
                             + " id=c>C</button><button id=d onclick='window.clicks++'>D</button>"
                             + "<script>window.clicks=0</script>");
         injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
@@ -1690,6 +1689,26 @@ public class TvHomePageTest {
         injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
         waitForElement(tab, "last");
         waitForScript(tab, "scrollY+innerHeight>=document.documentElement.scrollHeight-2");
+    }
+
+    @Test
+    @MediumTest
+    public void elementsKeepEditableInputNative() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<style>button,input{position:absolute;top:60px;width:180px;height:70px}"
+                                + "button{left:60px}input{left:320px}</style>"
+                                + "<button id=a autofocus>A</button><input id=field>");
+        injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+        waitForElement(tab, "field");
+        CriteriaHelper.pollUiThread(() -> tab.getWebContents().isFocusedElementEditable());
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    var connection = tab.getContentView().onCreateInputConnection(new EditorInfo());
+                    assertNotNull(connection);
+                    assertTrue(connection.commitText("Remote text", 1));
+                });
+        waitForScript(tab, "field.value==='Remote text'");
     }
 
     @Test

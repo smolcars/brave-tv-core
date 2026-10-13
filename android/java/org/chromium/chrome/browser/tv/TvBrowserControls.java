@@ -213,7 +213,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         float density = activity.getResources().getDisplayMetrics().density;
         CommandLine.getInstance().appendSwitch("enable-spatial-navigation");
         mInput = new TvRemoteInput(this, Math.max(1, Math.round(16 * density)));
-        mCursor = new Cursor(density);
+        mCursor = new Cursor(density, activity.getResources().getDisplayMetrics().scaledDensity);
         mCursorView = new View(activity);
         mCursorView.setBackground(mCursor);
         mCursorView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -1154,7 +1154,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 || (mDialog != null && mDialog.isShowing())
                 || (mActivity.getActivityTab().isIncognito() && mPrivateTabsLocked.getAsBoolean()))
             return;
-        if (mPage == currentPage() && mSession.isCurrentDocument(mPageNavigationContext)) return;
+        if (mPage == currentPage()
+                && mSession.isCurrentDocument(mPageNavigationContext)
+                && mInput.getMode() != TvRemoteInput.Mode.CONTROLS) return;
         activatePageMode(TvRemoteInput.Mode.ELEMENTS);
     }
 
@@ -1192,6 +1194,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     @Override
     public void showNavigation() {
+        mPageMode = TvRemoteInput.Mode.ELEMENTS;
         setSpatialNavigation(isPageFullscreen());
         mCursor.elements = true;
         mCursor.edgeDirection = 0;
@@ -1290,10 +1293,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 try {
                                     JSONArray values = new JSONArray(result);
                                     if (values.length() == 4) {
-                                        double left = values.getDouble(0),
-                                                top = values.getDouble(1);
-                                        double width = values.getDouble(2),
-                                                height = values.getDouble(3);
+                                        double left = values.getDouble(0);
+                                        double top = values.getDouble(1);
+                                        double width = values.getDouble(2);
+                                        double height = values.getDouble(3);
                                         if (Double.isFinite(left)
                                                 && Double.isFinite(top)
                                                 && Double.isFinite(width)
@@ -2624,6 +2627,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     @Override
     public void showPointer(int x, int y, TvRemoteInput.Mode mode, int edgeDirection) {
+        mPageMode = mode;
         setSpatialNavigation(true);
         mCursor.elements = false;
         mCursor.focus = null;
@@ -2761,6 +2765,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private static final class Cursor extends Drawable {
         final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         final float density;
+        final float textDensity;
         int x;
         int y;
         int hintTop;
@@ -2770,14 +2775,15 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         boolean hintVisible = true;
         @Nullable RectF focus;
 
-        Cursor(float density) {
+        Cursor(float density, float textDensity) {
             this.density = density;
+            this.textDensity = textDensity;
         }
 
         @Override
         public void draw(Canvas canvas) {
             paint.setStyle(Paint.Style.FILL);
-            paint.setTextSize(16 * density);
+            paint.setTextSize(16 * textDensity);
             paint.setColor(Color.BLACK);
             if (hintVisible) {
                 canvas.drawRect(
