@@ -29,10 +29,13 @@ public final class TvRemoteInput {
 
         int getHeight();
 
+        /** Visible top, inclusive physical pixels in the pointer's coordinate space. */
         int getTop();
 
+        /** Visible bottom, inclusive physical pixels in the pointer's coordinate space. */
         int getBottom();
 
+        /** Draw the pointer; edgeDirection is -1 (up), 0 (off), or 1 (down). */
         void showPointer(int x, int y, Mode mode, int edgeDirection);
 
         void click(int x, int y);
@@ -111,8 +114,16 @@ public final class TvRemoteInput {
         return mMode != Mode.CONTROLS && activate(mMode);
     }
 
+    /**
+     * Handle a remote key with Android's repeat count and monotonic event time in milliseconds.
+     * Directional repeats require a fresh down (repeat zero) after any interruption.
+     */
     public boolean onKey(Key key, boolean down, int repeat, boolean canceled, long eventTime) {
-        if (mMode == Mode.CONTROLS || key == Key.OTHER) return false;
+        if (mMode == Mode.CONTROLS) return false;
+        if (key == Key.OTHER) {
+            if (canceled) cancelPress();
+            return false;
+        }
         if (mTarget.getWidth() <= 0 || mTarget.getHeight() <= 0) {
             back();
             return false;
