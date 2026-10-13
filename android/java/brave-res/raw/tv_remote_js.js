@@ -48,6 +48,7 @@ async function post(path, data) {
   return response.json()
 }
 function resetInput() {
+  typingRequested = typingFocus = false
   pointers.clear()
   gesture = motion = null
   dirty = false
@@ -227,6 +228,7 @@ function render(result) {
       field === editable.revision && enterIntent?.field === editable.revision
     $('editor').disabled = !editable.ready && !awaitingEdit && !awaitingEnter
     if (field !== editable.revision) {
+      typingRequested = typingFocus = false
       enterIntent = null
       enterNotice = ''
       $('editor').value = ''
@@ -422,9 +424,7 @@ $('addressForm').onsubmit = (e) => {
 $('reload').onclick = () => command(state?.loading ? 'stop' : 'reload')
 const taskTabs = [...document.querySelectorAll('[role="tab"]')]
 function showView(id) {
-  typingRequested = id === 'typeView'
-  typingFocus = false
-  if (id !== 'typeView' && state?.editable?.phoneTyping) command('stopTyping')
+  if (id !== 'typeView') stopTyping()
   // A task change must not carry an unfinished gesture or unsent field edit.
   resetInput()
   if (connected && state) render({ state, epoch })
@@ -435,16 +435,49 @@ function showView(id) {
     tab.setAttribute('aria-selected', String(selected))
     tab.tabIndex = selected ? 0 : -1
   }
+  if (id === 'typeView' && state?.editable) {
+    typingRequested = {
+      epoch,
+      revision: state.revision,
+      field: state.editable.revision,
+      deadline: performance.now() + 2000,
+    }
+  }
+}
+function stopTyping() {
+  // Cleanup is session-scoped and must follow even an in-flight preparation/edit.
+  if (token && epoch)
+    post('/api', {
+      token,
+      epoch,
+      seq: ++seq,
+      op: 'stopTyping',
+      revision: state?.revision,
+    }).catch(() => {})
 }
 function requestTyping() {
   if (!connected || state?.paused || !state?.editable || $('typeView').hidden)
     return
-  typingRequested = true
+  typingRequested = {
+    epoch,
+    revision: state.revision,
+    field: state.editable.revision,
+    deadline: performance.now() + 2000,
+  }
   typingFocus = true
   prepareTyping()
 }
 async function prepareTyping() {
   const editable = state?.editable
+  if (
+    typingRequested
+    && (typingRequested.epoch !== epoch
+      || typingRequested.revision !== state?.revision
+      || typingRequested.field !== editable?.revision
+      || performance.now() > typingRequested.deadline)
+  ) {
+    typingRequested = typingFocus = false
+  }
   if (
     !typingRequested
     || busy
@@ -772,14 +805,7 @@ $('finish').onclick = () =>
 document.addEventListener('visibilitychange', () => {
   typingRequested = typingFocus = false
   // Release the session's keyboard lease even when a field/request has just changed.
-  if (document.hidden && token && epoch)
-    post('/api', {
-      token,
-      epoch,
-      seq: ++seq,
-      op: 'stopTyping',
-      revision: state?.revision,
-    }).catch(() => {})
+  if (document.hidden) stopTyping()
   resetInput()
   connected = false
   disable(true)
