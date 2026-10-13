@@ -195,9 +195,10 @@ public class TvHomePageTest {
         String fixture =
                 "<form id='form'><input id='query' type='search' enterkeyhint='search'>"
                         + "<button>Search</button></form><textarea id='lines'></textarea>"
-                        + "<script>window.submitted=0;window.keys=0;"
+                        + "<script>window.submitted=0;window.keys=0;window.lineKeys=[];"
                         + "form.onsubmit=e=>{e.preventDefault();submitted++;};"
                         + "query.onkeydown=e=>{if(e.key==='Enter')keys++;};"
+                        + "lines.onkeydown=e=>lineKeys.push([e.key,e.isTrusted]);"
                         + "query.value='x'.repeat(2049);</script>";
         mActivityTestRule.loadUrl("data:text/html," + Uri.encode(fixture));
         WebContents contents =
@@ -262,6 +263,31 @@ public class TvHomePageTest {
             assertEquals(
                     "\"one\\n\"",
                     JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "lines.value"));
+        } catch (RuntimeException | AssertionError failure) {
+            String state =
+                    ThreadUtils.runOnUiThreadBlocking(
+                            () ->
+                                    "eligible="
+                                            + input.eligible()
+                                            + ",ready="
+                                            + input.ready()
+                                            + ",composing="
+                                            + input.composing()
+                                            + ",action="
+                                            + input.action()
+                                            + ",length="
+                                            + input.text().length());
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertSame(contents, mActivity.getActivityTab().getWebContents());
+                        assertEquals(
+                                "data:text/html," + Uri.encode(fixture),
+                                mActivity.getActivityTab().getUrl().getSpec());
+                    });
+            String renderer =
+                    JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                            contents, "[document.activeElement.id,lines.value,lineKeys]");
+            throw new AssertionError("Native Enter fixture: " + state + "; " + renderer, failure);
         } finally {
             ThreadUtils.runOnUiThreadBlocking(input::destroy);
         }
