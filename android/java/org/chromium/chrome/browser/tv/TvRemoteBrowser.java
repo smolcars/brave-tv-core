@@ -66,6 +66,10 @@ final class TvRemoteBrowser {
         mIds.clear();
     }
 
+    void releaseTyping() {
+        if (mText != null) mText.releasePhoneTyping();
+    }
+
     private void refresh() {
         Tab tab = mActivity.getActivityTab();
         WebContents contents = tab == null || tab.isIncognito() ? null : tab.getWebContents();
@@ -87,6 +91,7 @@ final class TvRemoteBrowser {
                 tab == null || tab.getContentView() == null ? 0 : tab.getContentView().getHeight();
         String pauseReason = mControls.remotePauseReason();
         boolean paused = pauseReason != null;
+        if (paused) releaseTyping();
         int offset = mActivity.getBrowserControlsManager().getContentOffset();
         if (width != mWidth
                 || height != mHeight
@@ -141,7 +146,12 @@ final class TvRemoteBrowser {
                             .put("revision", mText.revision())
                             .put("version", mText.version())
                             .put("replacementVersion", mText.replacementVersion())
-                            .put("ready", mText.ready())
+                            .put(
+                                    "ready",
+                                    mText.ready()
+                                            && (!mText.phoneTyping()
+                                                    || !mControls.keyboardVisible()))
+                            .put("phoneTyping", mText.phoneTyping())
                             .put("action", mText.action())
                             .put("multiline", mText.multiline())
                             .put("composing", mText.composing())
@@ -154,10 +164,15 @@ final class TvRemoteBrowser {
 
     boolean command(JSONObject command) throws JSONException {
         refresh();
+        String op = command.getString("op");
+        // Session-scoped lease cleanup cannot mutate a field, including after context rotation.
+        if (op.equals("stopTyping")) {
+            releaseTyping();
+            return true;
+        }
         if (mPaused
                 || mTab == null
                 || TvRemoteSession.parseInteger(command.opt("revision")) != mRevision) return false;
-        String op = command.getString("op");
         switch (op) {
             case "navigate":
                 String input = command.getString("text").trim();

@@ -197,6 +197,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     @Override
                     public void handleOnBackPressed() {
                         if (!isAlive()) return;
+                        mPhoneRemote.releaseTyping();
                         if (!keyboardVisible() && !nativeUiOwnsInput(true)) {
                             if (!exitPageFullscreen() && !mInput.back()) showControls();
                             return;
@@ -390,7 +391,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (mPage == page && !keyboardVisible()) mInput.resume();
     }
 
-    private boolean keyboardVisible() {
+    boolean keyboardVisible() {
         WindowInsetsCompat insets =
                 ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
         return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
@@ -449,6 +450,16 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     public boolean dispatchKeyEvent(KeyEvent event) {
+        int code = event.getKeyCode();
+        if (event.getAction() == KeyEvent.ACTION_DOWN
+                && !event.isCanceled()
+                && ((code >= KeyEvent.KEYCODE_DPAD_UP && code <= KeyEvent.KEYCODE_DPAD_CENTER)
+                        || code == KeyEvent.KEYCODE_ENTER
+                        || code == KeyEvent.KEYCODE_BACK
+                        || code == KeyEvent.KEYCODE_MENU
+                        || event.isPrintingKey())) {
+            mPhoneRemote.releaseTyping();
+        }
         mPhoneRemote.invalidate();
         if (!isAlive()) return false;
         if (event.isCanceled()) cancelPagePress();

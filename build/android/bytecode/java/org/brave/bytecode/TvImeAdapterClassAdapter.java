@@ -6,18 +6,23 @@ package org.brave.bytecode;
 
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.F_SAME;
+import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
-/** Observe renderer state without changing the physical IME's behavior. */
+/** Observe renderer state and yield the physical IME while a phone owns typing. */
 final class TvImeAdapterClassAdapter extends BraveClassVisitor {
     private static final String IME = "org/chromium/content/browser/input/ImeAdapterImpl";
     private static final String TARGET = "org/chromium/content/browser/input/TvTextInput";
     private int mHooks;
+    private int mInputGates;
 
     TvImeAdapterClassAdapter(ClassVisitor visitor) {
         super(visitor);
@@ -31,11 +36,16 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
         boolean state = name.equals("updateState");
         boolean focus = name.equals("focusedNodeChanged");
         boolean reset = name.equals("resetAndHideKeyboard") || name.equals("destroyFromNative");
-        if (!state && !focus && !reset) return visitor;
+        boolean show = name.equals("showSoftKeyboard");
+        boolean connection =
+                name.equals("onCreateInputConnection")
+                        && descriptor.equals(
+                                "(Landroid/view/inputmethod/EditorInfo;Z)Lorg/chromium/content/browser/input/ChromiumBaseInputConnection;");
+        if (!state && !focus && !reset && !show && !connection) return visitor;
         String expected =
                 state
                         ? "(IIIIZZLjava/lang/String;IIIIZII[Lorg/chromium/content/browser/input/ImeTextSpan;)V"
-                        : focus ? "(ZIIII)V" : "()V";
+                        : focus ? "(ZIIII)V" : connection ? descriptor : "()V";
         if (!descriptor.equals(expected))
             throw new IllegalStateException("TV IME signature changed: " + name);
         mHooks++;
@@ -43,11 +53,37 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
             @Override
             public void visitCode() {
                 super.visitCode();
-                if (!state) {
+                if (focus || reset) {
                     super.visitVarInsn(ALOAD, 0);
                     super.visitMethodInsn(
                             INVOKESTATIC, TARGET, "focusChanged", "(L" + IME + ";)V", false);
+                } else if (show) {
+                    super.visitVarInsn(ALOAD, 0);
+                    super.visitMethodInsn(
+                            INVOKESTATIC, TARGET, "phoneTyping", "(L" + IME + ";)Z", false);
+                    Label physical = new Label();
+                    super.visitJumpInsn(IFEQ, physical);
+                    super.visitInsn(RETURN);
+                    super.visitLabel(physical);
+                    super.visitFrame(F_SAME, 0, null, 0, null);
                 }
+            }
+
+            @Override
+            public void visitMethodInsn(
+                    int opcode, String owner, String method, String desc, boolean isInterface) {
+                if (connection
+                        && owner.equals(IME)
+                        && method.equals("focusedNodeEditable")
+                        && desc.equals("()Z")) {
+                    mInputGates++;
+                    super.visitInsn(DUP);
+                    super.visitMethodInsn(opcode, owner, method, desc, isInterface);
+                    super.visitMethodInsn(
+                            INVOKESTATIC, TARGET, "allowPhysicalInput", "(L" + IME + ";Z)Z", false);
+                    return;
+                }
+                super.visitMethodInsn(opcode, owner, method, desc, isInterface);
             }
 
             @Override
@@ -76,14 +112,18 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
             @Override
             public void visitMaxs(int maxStack, int maxLocals) {
                 // The RETURN hook pushes the adapter and nine state arguments.
-                super.visitMaxs(state ? Math.max(maxStack, 10) : maxStack, maxLocals);
+                super.visitMaxs(
+                        state
+                                ? Math.max(maxStack, 10)
+                                : connection ? maxStack + 1 : Math.max(maxStack, 1),
+                        maxLocals);
             }
         };
     }
 
     @Override
     public void visitEnd() {
-        if (IME.equals(mName) && mHooks != 4)
+        if (IME.equals(mName) && (mHooks != 6 || mInputGates != 1))
             throw new IllegalStateException("TV IME hooks missing");
         super.visitEnd();
     }

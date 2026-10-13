@@ -17,6 +17,7 @@ import org.chromium.base.task.PostTask;
 import org.chromium.base.task.TaskTraits;
 import org.chromium.blink_public.web.WebTextInputFlags;
 import org.chromium.content_public.browser.WebContents;
+import org.chromium.ui.KeyboardVisibilityDelegate;
 import org.chromium.ui.base.ime.TextInputType;
 
 import java.lang.ref.WeakReference;
@@ -50,6 +51,7 @@ public final class TvTextInput {
     private int mEditorAction = EditorInfo.IME_ACTION_NONE;
     private @Nullable PendingEdit mPendingEdit;
     private boolean mNativeCompleted;
+    private boolean mPhoneTyping;
 
     private enum Phase {
         SELECT_ALL,
@@ -57,6 +59,7 @@ public final class TvTextInput {
         SELECTION,
         RESULT,
         ACTION,
+        PREPARE,
         DRAIN
     }
 
@@ -97,6 +100,7 @@ public final class TvTextInput {
     }
 
     public void destroy() {
+        releasePhoneTyping();
         ACTIVE.remove(mAdapter);
         invalidate();
     }
@@ -123,7 +127,44 @@ public final class TvTextInput {
     }
 
     public boolean ready() {
-        return !mAwaitingState;
+        return !mAwaitingState && (!mPhoneTyping || !mAdapter.hasInputConnection());
+    }
+
+    public boolean phoneTyping() {
+        return mPhoneTyping;
+    }
+
+    /** A physical controller or lost browser owner returns the field to the platform IME. */
+    public void releasePhoneTyping() {
+        ThreadUtils.assertOnUiThread();
+        if (!mPhoneTyping) return;
+        mPhoneTyping = false;
+        if (!mContents.isDestroyed()) mAdapter.restartInput();
+    }
+
+    // Signature-checked hooks gate only physical input creation/display, preserving EditorInfo.
+    public static boolean phoneTyping(ImeAdapterImpl adapter) {
+        ThreadUtils.assertOnUiThread();
+        TvTextInput input = ACTIVE.get(adapter);
+        return input != null && input.mPhoneTyping;
+    }
+
+    public static boolean allowPhysicalInput(ImeAdapterImpl adapter, boolean editable) {
+        return editable && !phoneTyping(adapter);
+    }
+
+    private boolean beginPhoneTyping() {
+        if (mPhoneTyping) return true;
+        if (mContents.isIncognito()) return false;
+        var delegate = mContents.getViewAndroidDelegate();
+        if (delegate == null || delegate.getContainerView() == null) return false;
+        mPhoneTyping = true;
+        // Keep renderer focus/type intact; the normal creation path detaches and unblocks the IME.
+        mAdapter.onCreateInputConnection(new EditorInfo());
+        mAdapter.restartInput();
+        mAdapter.cancelRequestToScrollFocusedEditableNodeIntoView();
+        KeyboardVisibilityDelegate.getInstance().hideKeyboard(delegate.getContainerView());
+        return true;
     }
 
     public String text() {
@@ -183,7 +224,11 @@ public final class TvTextInput {
     // Called by a signature-checked bytecode hook, including equal-type focus changes.
     public static void focusChanged(ImeAdapterImpl adapter) {
         TvTextInput input = ACTIVE.get(adapter);
-        if (input != null) input.invalidate();
+        if (input != null) {
+            // Native focus/reset/destruction performs its own connection restart.
+            input.mPhoneTyping = false;
+            input.invalidate();
+        }
     }
 
     public static void stateChanged(
@@ -218,6 +263,7 @@ public final class TvTextInput {
                         || input.mMode != mode
                         || input.mAction != action;
         boolean eligibilityChanged = input.mEligible != eligible;
+        if (!eligible) input.releasePhoneTyping();
         if (eligibilityChanged || configurationChanged) {
             input.mRevision++;
             if (input.mPendingEdit != null) input.mPendingEdit.phase = Phase.DRAIN;
@@ -256,6 +302,7 @@ public final class TvTextInput {
         if (edit == null) return;
         if (edit.phase != Phase.RESULT
                 && edit.phase != Phase.ACTION
+                && edit.phase != Phase.PREPARE
                 && edit.phase != Phase.DRAIN
                 && !mText.equals(edit.originalText)
                 && !mText.equals(edit.text)) {
@@ -303,7 +350,8 @@ public final class TvTextInput {
         } else if (edit.phase == Phase.SELECTION && matchesResult(edit, true)) {
             mPendingEdit = null;
             mAwaitingState = false;
-        } else if (edit.phase == Phase.RESULT && matchesResult(edit, true)) {
+        } else if ((edit.phase == Phase.RESULT || edit.phase == Phase.PREPARE)
+                && matchesResult(edit, true)) {
             mPendingEdit = null;
             mAwaitingState = false;
         } else if (edit.phase == Phase.ACTION) {
@@ -337,6 +385,7 @@ public final class TvTextInput {
                     if (input == null
                             || input.mOperationId != operationId
                             || input.mPendingEdit == null) return;
+                    if (input.mPendingEdit.phase == Phase.PREPARE) input.releasePhoneTyping();
                     input.invalidate();
                     input.mAdapter.requestTextInputStateUpdate();
                 },
@@ -366,6 +415,11 @@ public final class TvTextInput {
                 || text.length() > 2048) return false;
         boolean result;
         switch (operation) {
+            case "prepare":
+                if (composing() || composing || !beginPhoneTyping()) return false;
+                mPendingEdit = new PendingEdit(mText, mText, mStart, mEnd, -1, -1, Phase.PREPARE);
+                result = true;
+                break;
             case "enter":
                 if (composing() || composing) return false;
                 mPendingEdit = new PendingEdit(mText, mText, mStart, mEnd, -1, -1, Phase.ACTION);
@@ -420,6 +474,7 @@ public final class TvTextInput {
                 result = mAdapter.sendCompositionToNative(text, 1, operation.equals("commit"), 0);
                 break;
             case "finish":
+                if (!beginPhoneTyping()) return false;
                 mPendingEdit = new PendingEdit(mText, mText, mStart, mEnd, -1, -1, Phase.RESULT);
                 result = mAdapter.finishComposingText();
                 break;
@@ -471,6 +526,7 @@ public final class TvTextInput {
         result = result && awaitNativeInput();
         mAwaitingState = true;
         if (!result) {
+            if (operation.equals("prepare")) releasePhoneTyping();
             invalidate();
             mAdapter.requestTextInputStateUpdate();
         }

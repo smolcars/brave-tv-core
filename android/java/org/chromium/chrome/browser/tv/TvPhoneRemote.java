@@ -83,6 +83,10 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         if (mBrowser != null) mBrowser.invalidate();
     }
 
+    void releaseTyping() {
+        if (mBrowser != null) mBrowser.releaseTyping();
+    }
+
     void show() {
         if (!available() || mActivity.isFinishing() || mActivity.isDestroyed()) return;
         if (mSession != null) {

@@ -27,6 +27,7 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inspector.WindowInspector;
 
@@ -95,6 +96,7 @@ import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
+import org.chromium.content.browser.input.ImeAdapterImpl;
 import org.chromium.content.browser.input.TvTextInput;
 import org.chromium.content_public.browser.ImeAdapter;
 import org.chromium.content_public.browser.LoadUrlParams;
@@ -219,6 +221,20 @@ public class TvHomePageTest {
             CriteriaHelper.pollUiThread(
                     () -> input.ready() && input.eligible() && input.text().equals("ok"));
             ThreadUtils.runOnUiThreadBlocking(
+                    () -> assertTrue(input.edit(input.revision(), "prepare", "", 0, 0, false)));
+            CriteriaHelper.pollUiThread(() -> input.ready() && input.phoneTyping());
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        ImeAdapterImpl adapter = ImeAdapterImpl.fromWebContents(contents);
+                        assertNull(adapter.onCreateInputConnection(new EditorInfo()));
+                        assertFalse(TvTextInput.allowPhysicalInput(adapter, true));
+                        assertEquals("ok", input.text());
+                    });
+            assertEquals(
+                    "\"query\"",
+                    JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                            contents, "document.activeElement.id"));
+            ThreadUtils.runOnUiThreadBlocking(
                     () -> {
                         assertEquals("search", input.action());
                         assertFalse(input.multiline());
@@ -251,6 +267,10 @@ public class TvHomePageTest {
             ThreadUtils.runOnUiThreadBlocking(input::requestStateUpdate);
             CriteriaHelper.pollUiThread(
                     () -> input.ready() && input.eligible() && input.multiline());
+            assertFalse(ThreadUtils.runOnUiThreadBlocking(input::phoneTyping));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> assertTrue(input.edit(input.revision(), "prepare", "", 0, 0, false)));
+            CriteriaHelper.pollUiThread(() -> input.ready() && input.phoneTyping());
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
                         assertEquals("enter", input.action());
@@ -284,6 +304,14 @@ public class TvHomePageTest {
             assertEquals(
                     "\"one\\n\"",
                     JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "lines.value"));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        input.releasePhoneTyping();
+                        assertFalse(input.phoneTyping());
+                        assertTrue(
+                                TvTextInput.allowPhysicalInput(
+                                        ImeAdapterImpl.fromWebContents(contents), true));
+                    });
         } catch (RuntimeException | AssertionError failure) {
             String state =
                     ThreadUtils.runOnUiThreadBlocking(
