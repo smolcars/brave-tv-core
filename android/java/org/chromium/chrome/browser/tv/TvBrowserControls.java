@@ -585,12 +585,21 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPhoneRemote.removeObserver(observer);
     }
 
+    boolean canPresentPhone() {
+        Tab tab = mActivity.getActivityTab();
+        return isAlive()
+                && tab != null
+                && !tab.isIncognito()
+                && !nativeSecurityOwnsInput()
+                && !keyboardVisible();
+    }
+
     public void showPhoneRemote() {
         showPhoneRemote(null);
     }
 
     public void showPhoneRemote(@Nullable TvHomePage home) {
-        if (!isAlive()) return;
+        if (!canPresentPhone()) return;
         Tab tab = mActivity.getActivityTab();
         if (tab == null || tab.isIncognito() || !canAccessTabs(false)) return;
         if (home != null && tab.getNativePage() != home) return;

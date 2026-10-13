@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -256,7 +257,8 @@ object TvPresentation {
                     AmbientBackdrop(context, state.wallpaper)
                     // Fixed scrims bound contrast even over the brightest parts of the photo.
                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
-                        Color(0xD9081924), Color(0x99081924), Color(0xF5081924)))))
+                        Color(0xAD081E1C), Color(0x70091C1B),
+                        Color(0xD1071918), Color(0xFF102825)))))
                     Column(
                         Modifier.fillMaxSize().verticalScroll(rememberScrollState())
                             .padding(horizontal = 40.dp, vertical = 24.dp),
@@ -286,7 +288,7 @@ object TvPresentation {
                             if (subtitle.isNotEmpty()) Text(subtitle,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyLarge)
-                            ActionButton(actions.first(), Modifier.fillMaxWidth()
+                            ActionButton(actions.first(), Modifier.widthIn(max = 680.dp).fillMaxWidth()
                                 .focusRequester(initial).focusProperties { up = header },
                                 search = true)
                         }
@@ -464,11 +466,11 @@ object TvPresentation {
                         modifier = Modifier.semantics { heading() })
                     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (subtitle.isNotEmpty()) Text(subtitle, color = secondary, fontSize = 16.sp,
+                        if (subtitle.isNotEmpty()) Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp,
                             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
                         entries.forEach { entry ->
                             when (entry) {
-                                is Description -> Text(entry.text, color = secondary, fontSize = 16.sp,
+                                is Description -> Text(entry.text, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp,
                                     modifier = Modifier.semantics {
                                         if (entry.announceChanges) liveRegion = LiveRegionMode.Polite
                                     })
@@ -482,7 +484,7 @@ object TvPresentation {
                             }
                         }
                     }
-                    Text(backHint, color = secondary, fontSize = 14.sp)
+                    Text(backHint, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
                 LaunchedEffect(Unit) {
                     withFrameNanos { }
@@ -534,11 +536,11 @@ object TvPresentation {
     internal fun Theme(ambient: Boolean = false, content: @Composable () -> Unit) {
         MaterialTheme(
             colorScheme = darkColorScheme(
-                primary = if (ambient) Color(0xFF9BDCF5) else accent,
-                onPrimary = if (ambient) Color(0xFF092230) else backgroundColor,
-                background = if (ambient) Color(0xFF0C1B26) else backgroundColor,
-                onBackground = text, surface = if (ambient) Color(0xFF203745) else surface,
-                onSurface = text, onSurfaceVariant = if (ambient) Color(0xFFCDDDE5) else secondary,
+                primary = if (ambient) Color(0xFFDCEBDC) else accent,
+                onPrimary = if (ambient) Color(0xFF19362E) else backgroundColor,
+                background = if (ambient) Color(0xFF142726) else backgroundColor,
+                onBackground = text, surface = if (ambient) Color(0xFF28413E) else surface,
+                onSurface = text, onSurfaceVariant = if (ambient) Color(0xFFD0DFD8) else secondary,
             ),
             content = {
                 CompositionLocalProvider(
@@ -618,7 +620,8 @@ object TvPresentation {
                     action.enabled
                 }
             },
-            shape = ButtonDefaults.shape(shape = RoundedCornerShape(if (search || compact) 32.dp else 14.dp)),
+            shape = ButtonDefaults.shape(shape = RoundedCornerShape(if (search || compact) 32.dp
+                else if (MaterialTheme.colorScheme.primary == accent) 12.dp else 14.dp)),
             border = ButtonDefaults.border(focusedBorder = Border(BorderStroke(2.dp,
                 if (search) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface))),
             scale = ButtonDefaults.scale(focusedScale = 1.02f),
@@ -640,6 +643,11 @@ object TvPresentation {
                 val lines = action.label.split("\n", limit = 2)
                 Column(Modifier.fillMaxWidth().padding(vertical = 10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.size(32.dp).background(LocalContentColor.current.copy(alpha = 0.12f),
+                        RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                        Text(lines.last().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString()
+                            ?: "", style = MaterialTheme.typography.titleMedium)
+                    }
                     Text(lines.first(), style = MaterialTheme.typography.titleMedium,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                     if (lines.size > 1) Text(lines.last(),
@@ -649,9 +657,11 @@ object TvPresentation {
                 }
             } else if (!iconOnly) Text(action.label,
                 style = if (compact) MaterialTheme.typography.labelLarge
-                    else MaterialTheme.typography.bodyLarge,
+                    else if (search) MaterialTheme.typography.titleLarge
+                    else MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(vertical = if (search) 14.dp else 8.dp))
+                modifier = Modifier.padding(vertical = if (search) 14.dp else 8.dp)
+                    .then(if (search) Modifier.weight(1f) else Modifier))
         }
     }
 }

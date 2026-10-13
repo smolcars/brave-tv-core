@@ -1056,7 +1056,7 @@ public class TvHomePageTest {
                                     && !page.isLoading()
                                     && original.equals(page.getUrl().getSpec()));
             openControlsWithAddressFocus();
-            for (int i = 0; i < 3; i++) mDevice.pressDPadRight();
+            mDevice.pressDPadDown();
             waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_forward)));
             mDevice.pressDPadCenter();
             CriteriaHelper.pollUiThread(
@@ -1066,6 +1066,7 @@ public class TvHomePageTest {
                                     && fixture.equals(page.getUrl().getSpec()));
             openControlsWithAddressFocus();
             mDevice.pressDPadDown();
+            mDevice.pressDPadRight();
             waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_reload)));
             int beforeReload = loads.getCallCount();
             mDevice.pressDPadCenter();
@@ -1136,7 +1137,7 @@ public class TvHomePageTest {
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
         CriteriaHelper.pollInstrumentationThread(
                 () -> mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
-        for (int i = 0; i < 2; i++) mDevice.pressDPadUp();
+        for (int i = 0; i < 8; i++) mDevice.pressDPadUp();
         for (int i = 0; i < 3; i++) mDevice.pressDPadLeft();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
     }

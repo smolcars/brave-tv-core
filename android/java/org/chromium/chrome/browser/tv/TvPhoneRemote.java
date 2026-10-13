@@ -104,15 +104,18 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
 
     void invalidate() {
         if (mBrowser != null) mBrowser.invalidate();
+        if (!mControls.canPresentPhone()) {
+            if (mSession != null && !mSession.approved()) stop();
+            else {
+                dismiss();
+                mOnReturn = () -> {};
+            }
+        }
         positionBadge();
     }
 
     void releaseTyping() {
         if (mBrowser != null) mBrowser.releaseTyping();
-    }
-
-    void show() {
-        show(mControls::showControls);
     }
 
     void show(Runnable onReturn) {
@@ -202,6 +205,10 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
 
     private void showPairing() {
         if (mSession == null || mOrigin == null) return;
+        if (!mControls.canPresentPhone()) {
+            stop();
+            return;
+        }
         dismiss();
         setStatus(
                 mSession.approved()
@@ -252,7 +259,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 TextView instructions = new TextView(mActivity);
                 instructions.setText(description);
                 instructions.setTextSize(16);
-                instructions.setTextColor(Color.rgb(205, 221, 229));
+                instructions.setTextColor(Color.rgb(208, 223, 216));
                 var params =
                         new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
                 params.setMarginStart(
@@ -278,7 +285,9 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                     R.string.brave_tv_phone_approve,
                     true,
                     () -> {
-                        if (mSession == null || mSession.expired(SystemClock.elapsedRealtime())) {
+                        if (mSession == null
+                                || mSession.expired(SystemClock.elapsedRealtime())
+                                || !mControls.canPresentPhone()) {
                             stop();
                             return;
                         }
@@ -300,7 +309,9 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         if (mBadge != null) return;
         mBadge =
                 TvPresentation.connectionBadge(
-                        mActivity, text(R.string.brave_tv_phone_connected), this::show);
+                        mActivity,
+                        text(R.string.brave_tv_phone_connected),
+                        mControls::showPhoneRemote);
         var params =
                 new FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -321,7 +332,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 || !(mBadge.getLayoutParams() instanceof FrameLayout.LayoutParams params)) return;
         var tab = mActivity.getActivityTab();
         mBadge.setVisibility(
-                tab != null && tab.getNativePage() instanceof TvHomePage
+                tab == null || tab.isIncognito() || tab.getNativePage() instanceof TvHomePage
                         ? View.GONE
                         : View.VISIBLE);
         float density = mActivity.getResources().getDisplayMetrics().density;
