@@ -137,6 +137,7 @@ public class TvPresentationTest {
     @MediumTest
     public void narrowHomeShortcutsKeepFocusAndCallbacks() {
         AtomicInteger settingsRuns = new AtomicInteger();
+        AtomicInteger sourceRuns = new AtomicInteger();
         ThreadUtils.runOnUiThreadBlocking(
                 () ->
                         showNarrow(
@@ -154,7 +155,7 @@ public class TvPresentationTest {
                                                         "Settings",
                                                         5,
                                                         settingsRuns::incrementAndGet)),
-                                        List.of(),
+                                        List.of(action("GitHub", 6, sourceRuns::incrementAndGet)),
                                         new TvPresentation.HomeState(false, "", "", "", "", "")),
                                 96));
         focused("Address or search");
@@ -173,6 +174,13 @@ public class TvPresentationTest {
         mDevice.pressDPadDown();
         focused("Address or search");
         assertEquals(1, settingsRuns.get());
+        mDevice.pressDPadDown();
+        focused("GitHub");
+        visibleWithEdgeSpace("GitHub");
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(() -> sourceRuns.get() == 1);
+        mDevice.pressDPadUp();
+        focused("Address or search");
     }
 
     @Test

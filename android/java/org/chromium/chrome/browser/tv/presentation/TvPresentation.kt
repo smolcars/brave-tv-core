@@ -265,71 +265,77 @@ object TvPresentation {
                     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
                         Color(0xAD081E1C), Color(0x70091C1B),
                         Color(0xD1071918), Color(0xFF102825)))))
-                    Column(
-                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                            .padding(start = 40.dp, end = 40.dp, top = 16.dp, bottom = 48.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            if (state.brand.isNotEmpty()) Text(state.brand,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold)
-                            Column(Modifier.weight(1f)) {
-                                ActionRows(actions.drop(1).take(4), 4, 8.dp, minimum = 108.dp,
-                                    weight = { if (it === actions.getOrNull(4)) 1.5f else 1f }) { action, modifier ->
-                                    ActionButton(action, modifier.then(
-                                        if (action === actions.getOrNull(1)) Modifier.focusRequester(header)
-                                        else Modifier), quiet = true, compact = true,
-                                        hideIcon = action !== actions.getOrNull(4),
-                                        current = action === actions.getOrNull(1))
-                                }
-                            }
-                            actions.drop(5).forEach { action ->
-                                ActionButton(action, compact = true, quiet = true, iconOnly = true)
-                            }
-                            LocalClock(context)
-                        }
-                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(title, style = MaterialTheme.typography.displaySmall,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.semantics { heading() })
-                            if (subtitle.isNotEmpty() && !state.showSections) Text(subtitle,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                style = MaterialTheme.typography.bodyLarge)
-                            ActionButton(actions.first(), Modifier.widthIn(max = 680.dp).fillMaxWidth()
-                                .focusRequester(initial).focusProperties {
-                                    up = header
-                                    down = when {
-                                        state.favorites.isNotEmpty() -> favoritesFocus
-                                        state.recentTabs.isNotEmpty() -> recentFocus
-                                        else -> FocusRequester.Default
+                    Column(Modifier.fillMaxSize()) {
+                        Column(
+                            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                                .padding(start = 40.dp, end = 40.dp, top = 16.dp, bottom = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                if (state.brand.isNotEmpty()) Text(state.brand,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold)
+                                Column(Modifier.weight(1f)) {
+                                    ActionRows(actions.drop(1).take(4), 4, 8.dp, minimum = 108.dp,
+                                        weight = { if (it === actions.getOrNull(4)) 1.5f else 1f }) { action, modifier ->
+                                        ActionButton(action, modifier.then(
+                                            if (action === actions.getOrNull(1)) Modifier.focusRequester(header)
+                                            else Modifier), quiet = true, compact = true,
+                                            hideIcon = action !== actions.getOrNull(4),
+                                            current = action === actions.getOrNull(1))
                                     }
-                                },
-                                search = true)
-                        }
-                        if (state.showSections) {
-                            HomeSection(state.favoritesTitle,
-                                if (state.loadingFavorites) state.loadingLabel else state.favoritesEmpty,
-                                state.favorites, 6, initial = favoritesFocus)
-                            HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 4, recent = true, initial = recentFocus)
-                        }
-                        if (attribution.isNotEmpty() || links.isNotEmpty())
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                if (attribution.isNotEmpty()) Text(attribution,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.labelSmall)
+                                }
+                                actions.drop(5).forEach { action ->
+                                    ActionButton(action, compact = true, quiet = true, iconOnly = true)
+                                }
+                                LocalClock(context)
                             }
-                            links.forEach { action -> ActionButton(action, quiet = true, compact = true) }
+                            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text(title, style = MaterialTheme.typography.displaySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.semantics { heading() })
+                                if (subtitle.isNotEmpty() && !state.showSections) Text(subtitle,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.bodyLarge)
+                                ActionButton(actions.first(), Modifier.widthIn(max = 680.dp).fillMaxWidth()
+                                    .focusRequester(initial).focusProperties {
+                                        up = header
+                                        down = when {
+                                            state.favorites.isNotEmpty() -> favoritesFocus
+                                            state.recentTabs.isNotEmpty() -> recentFocus
+                                            else -> FocusRequester.Default
+                                        }
+                                    },
+                                    search = true)
+                            }
+                            if (state.showSections) {
+                                HomeSection(state.favoritesTitle,
+                                    if (state.loadingFavorites) state.loadingLabel else state.favoritesEmpty,
+                                    state.favorites, 6, initial = favoritesFocus)
+                                HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 4, recent = true, initial = recentFocus)
+                            }
+                        }
+                        if (attribution.isNotEmpty() || links.isNotEmpty() || state.photoCredit.isNotEmpty()) {
+                            Row(Modifier.fillMaxWidth().padding(start = 40.dp, end = 40.dp,
+                                    top = 8.dp, bottom = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    if (state.showSections && subtitle.isNotEmpty()) Text(subtitle,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.labelMedium)
+                                    if (attribution.isNotEmpty()) Text(attribution,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.labelMedium)
+                                    if (state.photoCredit.isNotEmpty()) Text(state.photoCredit,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.labelSmall)
+                                }
+                                links.forEach { action -> ActionButton(action, quiet = true, compact = true) }
+                            }
                         }
                     }
-                    if (state.photoCredit.isNotEmpty()) Text(state.photoCredit,
-                        modifier = Modifier.align(Alignment.BottomStart)
-                            .padding(horizontal = 40.dp, vertical = 16.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.labelMedium)
                 }
                 LaunchedEffect(state.focusRequest) {
                     withFrameNanos { }

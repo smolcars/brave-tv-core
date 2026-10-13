@@ -1623,6 +1623,24 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void homeFooterOpensProjectInCurrentTab() {
+        Tab original = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        assertTrue(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_home_tagline))));
+        assertTrue(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_home_credits))));
+        assertTrue(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_home_photo))));
+        focusDown(By.desc(mActivity.getString(R.string.brave_tv_github)));
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollUiThread(
+                () -> original.getUrl().equals(new GURL(TvBrowserControls.PROJECT_SOURCE_URL)));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertSame(original, mActivity.getActivityTab());
+                    assertFalse(original.isIncognito());
+                });
+    }
+
+    @Test
+    @MediumTest
     public void savedPageOpensThroughNativeHome() {
         focusFirstFavorite();
         mDevice.pressDPadCenter();

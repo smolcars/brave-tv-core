@@ -3933,7 +3933,9 @@ If you don't accept this request, VPN will not reconnect and your internet conne
       Approximate
     </message>
     <message name="IDS_BRAVE_TV_HOME_BRAND" desc="Brand in the native TV Home navigation.">Brave TV</message>
-    <message name="IDS_BRAVE_TV_HOME_PHOTO" desc="Credit for the single bundled landscape photograph.">Lago di Braies · Luca Bravo / Unsplash</message>
+    <message name="IDS_BRAVE_TV_HOME_PHOTO" desc="Credit for the single bundled landscape photograph.">Photo: Luca Bravo / Unsplash</message>
+    <message name="IDS_BRAVE_TV_HOME_CREDITS" desc="Compact Home footer credit to the independent TV browser's upstream projects.">Built on Brave and Chromium · Thanks to their open-source contributors</message>
+    <message name="IDS_BRAVE_TV_GITHUB" desc="Home footer button opening the public TV browser project on GitHub.">GitHub</message>
     <message name="IDS_BRAVE_TV_MENU_BROWSE" desc="Group for navigation and page controls in the TV drawer.">Browse</message>
     <message name="IDS_BRAVE_TV_MENU_LIBRARY" desc="Group for tabs, bookmarks, history and downloads in the TV drawer.">Your library</message>
     <message name="IDS_BRAVE_TV_MENU_PAGE" desc="Group for page tools in the TV drawer.">This page</message>
@@ -4079,7 +4081,7 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_MANAGED_SEARCH" desc="TV search settings notice when policy prevents changes.">Search engine is managed by your administrator</message>
     <message name="IDS_BRAVE_TV_HOME" desc="Title of the minimal TV new-tab page.">Home</message>
     <message name="IDS_BRAVE_TV_HOME_HEADING" desc="Heading welcoming people to the independent TV browser.">Where to next?</message>
-    <message name="IDS_BRAVE_TV_HOME_TAGLINE" desc="Heading on the independent browser TV home page.">Simple, private, and ad-blocking.</message>
+    <message name="IDS_BRAVE_TV_HOME_TAGLINE" desc="Product description in the independent browser TV Home footer.">Simple, private, and ad-blocking.</message>
     <message name="IDS_BRAVE_TV_PRIVATE_HOME" desc="Heading of the private TV new-tab page.">Private browsing</message>
     <message name="IDS_BRAVE_TV_PRIVATE_HOME_DESCRIPTION" desc="Explains the local-data limit of a private browsing session.">Pages in this session are not saved to browsing history. Websites and your network provider can still see your activity.</message>
     <message name="IDS_BRAVE_TV_ATTRIBUTION" desc="Upstream credit on the independent TV browser home page.">An independent, open-source fork of Brave, built on Chromium. Thanks to Brave, Chromium, and their open-source contributors.</message>
