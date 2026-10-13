@@ -4081,7 +4081,7 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_MANAGED_SEARCH" desc="TV search settings notice when policy prevents changes.">Search engine is managed by your administrator</message>
     <message name="IDS_BRAVE_TV_HOME" desc="Title of the minimal TV new-tab page.">Home</message>
     <message name="IDS_BRAVE_TV_HOME_HEADING" desc="Heading welcoming people to the independent TV browser.">Where to next?</message>
-    <message name="IDS_BRAVE_TV_HOME_TAGLINE" desc="Product description in the independent browser TV Home footer.">Simple, private, and ad-blocking.</message>
+    <message name="IDS_BRAVE_TV_HOME_TAGLINE" desc="Product description in the independent browser TV Home footer.">A simple browser with ad blocking and private browsing.</message>
     <message name="IDS_BRAVE_TV_PRIVATE_HOME" desc="Heading of the private TV new-tab page.">Private browsing</message>
     <message name="IDS_BRAVE_TV_PRIVATE_HOME_DESCRIPTION" desc="Explains the local-data limit of a private browsing session.">Pages in this session are not saved to browsing history. Websites and your network provider can still see your activity.</message>
     <message name="IDS_BRAVE_TV_ATTRIBUTION" desc="Upstream credit on the independent TV browser home page.">An independent, open-source fork of Brave, built on Chromium. Thanks to Brave, Chromium, and their open-source contributors.</message>
