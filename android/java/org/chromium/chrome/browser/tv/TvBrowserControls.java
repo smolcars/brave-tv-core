@@ -77,6 +77,7 @@ import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.ImeAdapter;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.NavigationHandle;
+import org.chromium.content_public.browser.RenderCoordinates;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.WebContentsObserver;
 import org.chromium.ui.base.PageTransition;
@@ -497,7 +498,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         event.getRepeatCount(),
                         event.isCanceled()
                                 || (!mSession.isCurrent(mPressedContext)
-                                        && key == TvRemoteInput.Key.SELECT));
+                                        && key == TvRemoteInput.Key.SELECT),
+                        event.getEventTime());
         if (handled && key == TvRemoteInput.Key.SELECT && !down && mPage != null) showCursor();
         if (key == TvRemoteInput.Key.SELECT && !down) mPressedContext = null;
         return handled;
@@ -2197,10 +2199,28 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     @Override
-    public void showPointer(int x, int y, TvRemoteInput.Mode mode) {
+    public int getTop() {
+        return Math.max(0, mActivity.getBrowserControlsManager().getContentOffset());
+    }
+
+    @Override
+    public int getBottom() {
+        Tab tab = mActivity.getActivityTab();
+        WebContents contents = tab == null ? null : tab.getWebContents();
+        int height =
+                contents == null
+                        ? 0
+                        : RenderCoordinates.fromWebContents(contents)
+                                .getLastFrameViewportHeightPixInt();
+        return height > 0 ? Math.min(getHeight(), getTop() + height) - 1 : getHeight() - 1;
+    }
+
+    @Override
+    public void showPointer(int x, int y, TvRemoteInput.Mode mode, int edgeDirection) {
         showCursor();
         mCursor.x = x;
         mCursor.y = y;
+        mCursor.edgeDirection = edgeDirection;
         mCursor.hintTop = mActivity.getBrowserControlsManager().getContentOffset();
         mCursor.hint =
                 mActivity.getString(
@@ -2327,6 +2347,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         int x;
         int y;
         int hintTop;
+        int edgeDirection;
         String hint = "";
 
         Cursor(float density) {
@@ -2347,6 +2368,18 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             paint.setColor(Color.WHITE);
             canvas.drawText(hint, 24 * density, hintTop + 36 * density, paint);
             canvas.drawCircle(x, y, 7 * density, paint);
+            if (edgeDirection != 0) {
+                float tipY = y - edgeDirection * 12 * density;
+                float baseY = tipY - edgeDirection * 5 * density;
+                paint.setColor(Color.BLACK);
+                paint.setStrokeWidth(4 * density);
+                canvas.drawLine(x - 5 * density, baseY, x, tipY, paint);
+                canvas.drawLine(x, tipY, x + 5 * density, baseY, paint);
+                paint.setColor(Color.WHITE);
+                paint.setStrokeWidth(2 * density);
+                canvas.drawLine(x - 5 * density, baseY, x, tipY, paint);
+                canvas.drawLine(x, tipY, x + 5 * density, baseY, paint);
+            }
             paint.setColor(Color.BLACK);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(2 * density);

@@ -4087,8 +4087,8 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_ADDRESS_INVALID" desc="Recoverable TV address error when native classification cannot produce a valid destination.">Could not open this address or search. Edit it and try again.</message>
     <message name="IDS_BRAVE_TV_ADDRESS_CHANGED" desc="TV address editor error if its underlying tab or document changed while editing.">The page changed while you were editing. Return to the page and open Address again.</message>
     <message name="IDS_BRAVE_TV_MORE_CONTROLS" desc="TV control opening secondary browser actions.">More controls</message>
-    <message name="IDS_BRAVE_TV_POINTER" desc="TV control to move a pointer on the page.">Page cursor</message>
-    <message name="IDS_BRAVE_TV_SCROLL" desc="TV control to scroll at the pointer position.">Scroll page</message>
+    <message name="IDS_BRAVE_TV_POINTER" desc="TV control to move a pointer and scroll by holding an arrow at a page edge.">Browse page</message>
+    <message name="IDS_BRAVE_TV_SCROLL" desc="Secondary TV control to scroll nested or horizontal content at the pointer position.">Scroll here</message>
     <message name="IDS_BRAVE_TV_RELOAD" desc="TV control to reload the current page.">Reload page</message>
     <message name="IDS_BRAVE_TV_PLAYBACK" desc="Title of the native TV media controls.">Playback</message>
     <message name="IDS_BRAVE_TV_PLAYBACK_DESCRIPTION" desc="Explains the scope and prerequisite for TV media controls.">Control audio or video on this tab. Start playback on the page first.</message>
@@ -4096,8 +4096,8 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_PAUSE" desc="TV action to pause media in the current tab.">Pause</message>
     <message name="IDS_BRAVE_TV_SEEK_BACKWARD" desc="TV action to seek backward; the distance can depend on the site.">Seek backward</message>
     <message name="IDS_BRAVE_TV_SEEK_FORWARD" desc="TV action to seek forward; the distance can depend on the site.">Seek forward</message>
-    <message name="IDS_BRAVE_TV_POINTER_HINT" desc="Remote button hints for pointer mode.">D-pad: move · OK: click · Back: controls</message>
-    <message name="IDS_BRAVE_TV_SCROLL_HINT" desc="Remote button hints for scroll mode.">D-pad: scroll · OK: cursor · Back: controls</message>
+    <message name="IDS_BRAVE_TV_POINTER_HINT" desc="Remote button hints for unified page browsing.">D-pad: move · Hold at top/bottom: scroll · OK: click · Back: controls</message>
+    <message name="IDS_BRAVE_TV_SCROLL_HINT" desc="Remote button hints for scrolling content under the pointer.">D-pad: scroll here · OK: browse · Back: controls</message>
   </messages>
   </release>
 </grit>
