@@ -235,7 +235,9 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     }
 
     private void positionBadge() {
-        if (mBadge == null
+        if (mActivity.isFinishing()
+                || mActivity.isDestroyed()
+                || mBadge == null
                 || !(mBadge.getLayoutParams() instanceof FrameLayout.LayoutParams params)) return;
         float density = mActivity.getResources().getDisplayMetrics().density;
         int top = Math.round(60 * density);
