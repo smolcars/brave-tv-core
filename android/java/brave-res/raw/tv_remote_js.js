@@ -21,6 +21,7 @@ let gesture = null,
   dirtyReplacementVersion = 0,
   pendingEdit = null,
   enterIntent = null,
+  enterNotice = '',
   advancingEnter = false
 const actionLabels = {
   enter: 'Enter',
@@ -52,6 +53,7 @@ function resetInput() {
   composing = false
   field = 0
   enterIntent = null
+  enterNotice = ''
   $('editor').readOnly = false
   $('editor').value = ''
 }
@@ -222,6 +224,7 @@ function render(result) {
     $('editor').disabled = !editable.ready && !awaitingEdit && !awaitingEnter
     if (field !== editable.revision) {
       enterIntent = null
+      enterNotice = ''
       $('editor').value = ''
       dirty = false
       composing = false
@@ -233,13 +236,15 @@ function render(result) {
     $('enter').textContent = actionLabels[action]
     $('editor').setAttribute('enterkeyhint', action)
     if (enterIntent?.sent && editable.ready) enterIntent = null
-    $('fieldHint').textContent = enterIntent
-      ? `Sending ${actionLabels[enterIntent.action]} to the TV…`
-      : editable.ready
-        ? editable.multiline
-          ? 'Editing the selected TV field. Enter may add a new line.'
-          : 'Editing the selected TV field'
-        : 'Reading the selected TV field…'
+    $('fieldHint').textContent =
+      enterNotice
+      || (enterIntent
+        ? `Sending ${actionLabels[enterIntent.action]} to the TV…`
+        : editable.ready
+          ? editable.multiline
+            ? 'Editing the selected TV field. Enter may add a new line.'
+            : 'Editing the selected TV field'
+          : 'Reading the selected TV field…')
     if (!dirty && !composing && editable.ready) {
       $('editor').value = editable.text
       $('editor').setSelectionRange(editable.start, editable.end)
@@ -514,6 +519,7 @@ $('editor').addEventListener('compositionend', () => {
   updateEnter()
 })
 $('editor').oninput = () => {
+  enterNotice = ''
   if (!dirty) {
     dirtyVersion = state?.editable?.version
     dirtyReplacementVersion = state?.editable?.replacementVersion
@@ -572,6 +578,7 @@ function requestEnter() {
     deadline: performance.now() + 2000,
     sent: false,
   }
+  enterNotice = ''
   // A pending selection acknowledgement can race the phone's latest caret.
   if (
     !dirty
@@ -589,7 +596,7 @@ function requestEnter() {
 }
 async function advanceEnter() {
   const intent = enterIntent
-  if (!intent || advancingEnter) return
+  if (!intent) return
   const editable = state?.editable
   if (
     !connected
@@ -602,10 +609,15 @@ async function advanceEnter() {
   ) {
     enterIntent = null
     updateEnter()
-    status('TV changed or typing took too long. Enter discarded; try again.')
+    enterNotice = intent.sent
+      ? 'Enter was sent. Check the TV before trying again.'
+      : 'TV changed or typing took too long. Enter discarded; try again.'
+    $('fieldHint').textContent = enterNotice
+    status(enterNotice)
     return
   }
-  if (intent.sent || busy || pendingEdit || !editable.ready) return
+  if (intent.sent || advancingEnter || busy || pendingEdit || !editable.ready)
+    return
   advancingEnter = true
   try {
     if (dirty) {
