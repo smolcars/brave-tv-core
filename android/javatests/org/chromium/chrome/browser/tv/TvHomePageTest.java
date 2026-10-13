@@ -195,13 +195,14 @@ public class TvHomePageTest {
     @MediumTest
     public void phoneEnterUsesNativeFieldActionsAndMultiline() throws Exception {
         String fixture =
-                "<form id='form'><input id='query' type='search' enterkeyhint='search'>"
-                        + "<button>Search</button></form><textarea id='lines'></textarea>"
-                        + "<script>window.submitted=0;window.keys=0;window.lineKeys=[];"
-                        + "form.onsubmit=e=>{e.preventDefault();submitted++;};"
-                        + "query.onkeydown=e=>{if(e.key==='Enter')keys++;};"
-                        + "lines.onkeydown=e=>lineKeys.push([e.key,e.isTrusted]);"
-                        + "query.value='x'.repeat(2049);</script>";
+                "<form id='form'><input id='query' type='search'"
+                    + " enterkeyhint='search'><button>Search</button></form><input id='other'"
+                    + " type='search' enterkeyhint='search'><textarea id='lines'></textarea>"
+                    + "<script>window.submitted=0;window.keys=0;window.lineKeys=[];"
+                    + "form.onsubmit=e=>{e.preventDefault();submitted++;};"
+                    + "query.onkeydown=e=>{if(e.key==='Enter')keys++;};"
+                    + "lines.onkeydown=e=>lineKeys.push([e.key,e.isTrusted]);"
+                    + "query.value='x'.repeat(2049);</script>";
         mActivityTestRule.loadUrl("data:text/html," + Uri.encode(fixture));
         WebContents contents =
                 ThreadUtils.runOnUiThreadBlocking(
@@ -247,6 +248,25 @@ public class TvHomePageTest {
                     "[1,1,\"ok\"]",
                     JavaScriptUtils.executeJavaScriptAndWaitForResult(
                             contents, "[submitted,keys,query.value]"));
+
+            long leasedRevision = ThreadUtils.runOnUiThreadBlocking(input::revision);
+            JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "other.focus();true");
+            ThreadUtils.runOnUiThreadBlocking(input::requestStateUpdate);
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            input.ready()
+                                    && !input.phoneTyping()
+                                    && input.revision() != leasedRevision);
+            CriteriaHelper.pollUiThread(
+                    () -> ImeAdapterImpl.fromWebContents(contents).hasInputConnection());
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            assertNotNull(
+                                    ImeAdapterImpl.fromWebContents(contents)
+                                            .onCreateInputConnection(new EditorInfo())));
+            JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "query.focus();true");
+            ThreadUtils.runOnUiThreadBlocking(input::requestStateUpdate);
+            CriteriaHelper.pollUiThread(() -> input.ready() && input.text().equals("ok"));
 
             String[] hints = {"go", "send", "done", "enter", "next", "previous", "search"};
             for (String hint : hints) {

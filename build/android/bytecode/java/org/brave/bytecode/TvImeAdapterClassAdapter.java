@@ -8,12 +8,16 @@ import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.F_SAME;
+import static org.objectweb.asm.Opcodes.ICONST_1;
 import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.POP;
+import static org.objectweb.asm.Opcodes.PUTFIELD;
 import static org.objectweb.asm.Opcodes.RETURN;
 
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
@@ -23,9 +27,21 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
     private static final String TARGET = "org/chromium/content/browser/input/TvTextInput";
     private int mHooks;
     private int mInputGates;
+    private int mRestartFields;
 
     TvImeAdapterClassAdapter(ClassVisitor visitor) {
         super(visitor);
+    }
+
+    @Override
+    public FieldVisitor visitField(
+            int access, String name, String descriptor, String signature, Object value) {
+        if (IME.equals(mName) && name.equals("mRestartInputOnNextStateUpdate")) {
+            if (!descriptor.equals("Z"))
+                throw new IllegalStateException("TV IME restart field changed");
+            mRestartFields++;
+        }
+        return super.visitField(access, name, descriptor, signature, value);
     }
 
     @Override
@@ -56,7 +72,18 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
                 if (focus || reset) {
                     super.visitVarInsn(ALOAD, 0);
                     super.visitMethodInsn(
-                            INVOKESTATIC, TARGET, "focusChanged", "(L" + IME + ";)V", false);
+                            INVOKESTATIC, TARGET, "focusChanged", "(L" + IME + ";)Z", false);
+                    if (focus) {
+                        Label unchanged = new Label();
+                        super.visitJumpInsn(IFEQ, unchanged);
+                        super.visitVarInsn(ALOAD, 0);
+                        super.visitInsn(ICONST_1);
+                        super.visitFieldInsn(PUTFIELD, IME, "mRestartInputOnNextStateUpdate", "Z");
+                        super.visitLabel(unchanged);
+                        super.visitFrame(F_SAME, 0, null, 0, null);
+                    } else {
+                        super.visitInsn(POP);
+                    }
                 } else if (show) {
                     super.visitVarInsn(ALOAD, 0);
                     super.visitMethodInsn(
@@ -115,7 +142,7 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
                 super.visitMaxs(
                         state
                                 ? Math.max(maxStack, 10)
-                                : connection ? maxStack + 1 : Math.max(maxStack, 1),
+                                : connection ? maxStack + 1 : Math.max(maxStack, focus ? 2 : 1),
                         maxLocals);
             }
         };
@@ -123,7 +150,7 @@ final class TvImeAdapterClassAdapter extends BraveClassVisitor {
 
     @Override
     public void visitEnd() {
-        if (IME.equals(mName) && (mHooks != 6 || mInputGates != 1))
+        if (IME.equals(mName) && (mHooks != 6 || mInputGates != 1 || mRestartFields != 1))
             throw new IllegalStateException("TV IME hooks missing");
         super.visitEnd();
     }

@@ -288,9 +288,16 @@ public class BytecodeTest {
                         int.class));
         Assert.assertNotNull(ime.getDeclaredMethod("destroyFromNative"));
         Assert.assertNotNull(ime.getDeclaredMethod("resetAndHideKeyboard"));
-        Assert.assertNotNull(ime.getDeclaredMethod("showSoftKeyboard"));
-        Assert.assertNotNull(bridge.getDeclaredMethod("phoneTyping", ime));
-        Assert.assertNotNull(bridge.getDeclaredMethod("allowPhysicalInput", ime, boolean.class));
+        Assert.assertEquals(void.class, ime.getDeclaredMethod("showSoftKeyboard").getReturnType());
+        Assert.assertEquals(
+                boolean.class, bridge.getDeclaredMethod("phoneTyping", ime).getReturnType());
+        Assert.assertEquals(
+                boolean.class,
+                bridge.getDeclaredMethod("allowPhysicalInput", ime, boolean.class).getReturnType());
+        Assert.assertEquals(
+                boolean.class, bridge.getDeclaredMethod("focusChanged", ime).getReturnType());
+        Assert.assertEquals(
+                boolean.class, ime.getDeclaredField("mRestartInputOnNextStateUpdate").getType());
         Assert.assertNotNull(
                 ime.getDeclaredMethod(
                         "updateState",

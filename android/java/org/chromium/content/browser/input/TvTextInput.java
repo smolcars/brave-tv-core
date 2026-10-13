@@ -222,13 +222,17 @@ public final class TvTextInput {
     }
 
     // Called by a signature-checked bytecode hook, including equal-type focus changes.
-    public static void focusChanged(ImeAdapterImpl adapter) {
+    public static boolean focusChanged(ImeAdapterImpl adapter) {
         TvTextInput input = ACTIVE.get(adapter);
         if (input != null) {
-            // Native focus/reset/destruction performs its own connection restart.
+            boolean wasPhoneTyping = input.mPhoneTyping;
+            // The focus hook schedules a restart with the next field's state. Reset and
+            // destruction already own their connection teardown and ignore the result.
             input.mPhoneTyping = false;
             input.invalidate();
+            return wasPhoneTyping;
         }
+        return false;
     }
 
     public static void stateChanged(
