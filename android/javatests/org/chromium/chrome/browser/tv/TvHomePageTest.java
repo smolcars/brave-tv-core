@@ -94,6 +94,7 @@ import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
+import org.chromium.components.bookmarks.BookmarkItem;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content.browser.input.ImeAdapterImpl;
@@ -267,7 +268,10 @@ public class TvHomePageTest {
                                             instanceof TvHomePage);
             ThreadUtils.runOnUiThreadBlocking(
                     () -> prefs.setBoolean(TvHomePage.STARTER_FAVORITES_PREF, false));
-            mActivityTestRule.loadUrl("chrome-native://newtab/");
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            mActivity.getActivityTab()
+                                    .loadUrl(new LoadUrlParams("chrome-native://newtab/")));
             CriteriaHelper.pollUiThread(
                     () ->
                             mActivity.getActivityTab().isIncognito()
