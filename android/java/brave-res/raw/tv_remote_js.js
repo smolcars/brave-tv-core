@@ -24,7 +24,8 @@ let gesture = null,
   enterNotice = '',
   advancingEnter = false,
   typingRequested = false,
-  typingFocus = false
+  typingFocus = false,
+  typingRelease = null
 const actionLabels = {
   enter: 'Enter',
   search: 'Search',
@@ -446,14 +447,31 @@ function showView(id) {
 }
 function stopTyping() {
   // Cleanup is session-scoped and must follow even an in-flight preparation/edit.
-  if (token && epoch)
-    post('/api', {
-      token,
-      epoch,
-      seq: ++seq,
-      op: 'stopTyping',
-      revision: state?.revision,
-    }).catch(() => {})
+  if (!token || !epoch) return
+  const credential = token,
+    session = epoch,
+    sequence = ++seq
+  const release = post('/api', {
+    token: credential,
+    epoch: session,
+    seq: sequence,
+    op: 'stopTyping',
+    revision: state?.revision,
+  })
+    .then((result) => {
+      if (
+        token === credential
+        && epoch === session
+        && seq === sequence
+        && !document.hidden
+      )
+        render(result)
+    })
+    .catch(() => {})
+    .finally(() => {
+      if (typingRelease === release) typingRelease = null
+    })
+  typingRelease = release
 }
 function requestTyping() {
   if (!connected || state?.paused || !state?.editable || $('typeView').hidden)
@@ -480,6 +498,7 @@ async function prepareTyping() {
   }
   if (
     !typingRequested
+    || typingRelease
     || busy
     || !connected
     || state?.paused
