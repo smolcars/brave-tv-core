@@ -573,12 +573,40 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mLoadIndicator.onResume();
     }
 
+    public int phoneStatusLabel() {
+        return mPhoneRemote.statusLabel();
+    }
+
+    public void addPhoneObserver(Runnable observer) {
+        mPhoneRemote.addObserver(observer);
+    }
+
+    public void removePhoneObserver(Runnable observer) {
+        mPhoneRemote.removeObserver(observer);
+    }
+
     public void showPhoneRemote() {
+        showPhoneRemote(null);
+    }
+
+    public void showPhoneRemote(@Nullable TvHomePage home) {
         if (!isAlive()) return;
         Tab tab = mActivity.getActivityTab();
-        if (tab == null || tab.isIncognito()) return;
+        if (tab == null || tab.isIncognito() || !canAccessTabs(false)) return;
+        if (home != null && tab.getNativePage() != home) return;
+        TvBrowserSession.Context context = mSession.capture();
+        mLastAction = R.string.brave_tv_phone;
+        Runnable onReturn =
+                home == null
+                        ? this::returnToControls
+                        : () -> {
+                            if (!isAlive()) return;
+                            if (!mSession.isCurrentDocument(context)
+                                    || tab.getNativePage() != home
+                                    || !home.focusPhone()) returnToPage();
+                        };
         dismissDialog();
-        mPhoneRemote.show();
+        mPhoneRemote.show(onReturn);
     }
 
     boolean remotePaused() {
@@ -721,8 +749,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         tab == null || tab.isNativePage() ? "" : url,
                         controlStatus(context),
                         actions,
-                        mLastAction,
-                        mActivity.getString(R.string.brave_tv_more_controls));
+                        mLastAction);
         mControlsView = content;
         mControlsTab = tab;
         mDialog =
@@ -730,7 +757,6 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         .setView(content)
                         .setOnCancelListener(ignored -> returnToPage())
                         .create();
-        mDialog.setOnKeyListener((dialog, key, event) -> TvPresentation.back(content, event));
         AlertDialog controlsDialog = mDialog;
         controlsDialog
                 .getOnBackPressedDispatcher()
@@ -738,8 +764,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         new OnBackPressedCallback(true) {
                             @Override
                             public void handleOnBackPressed() {
-                                if (!TvPresentation.collapseControls(content))
-                                    controlsDialog.cancel();
+                                controlsDialog.cancel();
                             }
                         });
         mDialog.setOnDismissListener(
@@ -758,10 +783,17 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
             }
             window.setBackgroundDrawableResource(android.R.color.transparent);
-            window.setGravity(Gravity.BOTTOM);
+            window.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
             var metrics = mActivity.getResources().getDisplayMetrics();
+            var attributes = window.getAttributes();
+            attributes.x = Math.round(24 * metrics.density);
+            attributes.dimAmount = 0.4f;
+            window.setAttributes(attributes);
             window.setLayout(
-                    Math.round(metrics.widthPixels * 0.92f), ViewGroup.LayoutParams.WRAP_CONTENT);
+                    Math.min(
+                            Math.round(540 * metrics.density),
+                            Math.round(metrics.widthPixels * 0.92f)),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
         }
     }
 
@@ -891,14 +923,14 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 context);
         addComposeControl(actions, R.string.brave_tv_home, tab != null, context);
         addComposeControl(actions, R.string.brave_tv_close_tab, tab != null, context);
-        if (TvPhoneRemote.available()) {
-            actions.add(
-                    new TvPresentation.Action(
-                            mActivity.getString(R.string.brave_tv_phone),
-                            tab != null && !tab.isIncognito(),
-                            this::showPhoneRemote,
-                            R.string.brave_tv_phone));
-        }
+        actions.add(
+                new TvPresentation.Action(
+                        mActivity.getString(mPhoneRemote.statusLabel()),
+                        tab != null && !tab.isIncognito(),
+                        this::showPhoneRemote,
+                        R.string.brave_tv_phone,
+                        R.drawable.brave_tv_phone,
+                        mActivity.getString(R.string.brave_tv_menu_browser)));
         return actions;
     }
 
@@ -913,7 +945,43 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         enabled,
                         () -> runControl(action, context),
                         action == R.string.brave_tv_stop ? R.string.brave_tv_reload : action,
-                        action == R.string.brave_tv_pointer ? R.drawable.ic_cursor : 0));
+                        controlIcon(action),
+                        mActivity.getString(controlGroup(action))));
+    }
+
+    private static int controlGroup(int action) {
+        if (action == R.string.brave_tv_tabs
+                || action == R.string.brave_tv_bookmarks
+                || action == R.string.brave_tv_history
+                || action == R.string.brave_tv_downloads) return R.string.brave_tv_menu_library;
+        if (action == R.string.brave_tv_shields
+                || action == R.string.menu_page_info
+                || action == R.string.brave_tv_scroll
+                || action == R.string.brave_tv_playback) return R.string.brave_tv_menu_page;
+        if (action == R.string.brave_tv_settings
+                || action == R.string.brave_tv_home
+                || action == R.string.brave_tv_close_tab) return R.string.brave_tv_menu_browser;
+        return R.string.brave_tv_menu_browse;
+    }
+
+    private static int controlIcon(int action) {
+        if (action == R.string.brave_tv_address) return R.drawable.brave_tv_search;
+        if (action == R.string.brave_tv_pointer) return R.drawable.ic_cursor;
+        if (action == R.string.brave_tv_back) return R.drawable.brave_tv_back;
+        if (action == R.string.brave_tv_forward) return R.drawable.brave_tv_forward;
+        if (action == R.string.brave_tv_reload) return R.drawable.brave_tv_reload;
+        if (action == R.string.brave_tv_stop) return R.drawable.brave_tv_stop;
+        if (action == R.string.brave_tv_tabs) return R.drawable.brave_tv_tabs;
+        if (action == R.string.brave_tv_bookmarks) return R.drawable.brave_tv_bookmark;
+        if (action == R.string.brave_tv_history) return R.drawable.brave_tv_history;
+        if (action == R.string.brave_tv_downloads) return R.drawable.brave_tv_download;
+        if (action == R.string.brave_tv_shields) return R.drawable.brave_tv_shields;
+        if (action == R.string.menu_page_info) return R.drawable.brave_tv_info;
+        if (action == R.string.brave_tv_settings) return R.drawable.brave_tv_settings;
+        if (action == R.string.brave_tv_scroll) return R.drawable.brave_tv_scroll;
+        if (action == R.string.brave_tv_playback) return R.drawable.brave_tv_playback;
+        if (action == R.string.brave_tv_home) return R.drawable.brave_tv_home;
+        return R.drawable.brave_tv_close;
     }
 
     private void dismissDialog() {

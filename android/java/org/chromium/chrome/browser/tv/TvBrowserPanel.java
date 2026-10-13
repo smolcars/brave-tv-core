@@ -30,6 +30,7 @@ final class TvBrowserPanel {
     private final List<TvPresentation.PanelEntry> mEntries = new ArrayList<>();
     private @Nullable List<TvPresentation.Action> mRow;
     private boolean mWide;
+    private boolean mAmbient;
     private boolean mPrivateContent;
     private boolean mRestorePreferredFocus;
     private boolean mFocusRestored;
@@ -56,6 +57,10 @@ final class TvBrowserPanel {
 
     boolean hasRestoredFocus() {
         return mFocusRestored;
+    }
+
+    void useAmbientStyle() {
+        mAmbient = true;
     }
 
     void useWideLayout() {
@@ -111,7 +116,8 @@ final class TvBrowserPanel {
                         List.copyOf(mEntries),
                         mPreferredAction,
                         mRestorePreferredFocus,
-                        () -> mFocusRestored = true);
+                        () -> mFocusRestored = true,
+                        mAmbient);
         AlertDialog dialog =
                 new AlertDialog.Builder(mActivity)
                         .setView(content)

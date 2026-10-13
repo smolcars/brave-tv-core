@@ -6,6 +6,7 @@
 package org.chromium.chrome.browser.tv;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -85,14 +86,13 @@ public class TvPresentationTest {
     private void showNarrow(View content, int paddingDp) {
         mDialog = new AlertDialog.Builder(mActivity).setView(content).create();
         mDialog.setOnDismissListener(ignored -> TvPresentation.dispose(content));
-        mDialog.setOnKeyListener((dialog, key, event) -> TvPresentation.back(content, event));
         AlertDialog dialog = mDialog;
         dialog.getOnBackPressedDispatcher()
                 .addCallback(
                         new OnBackPressedCallback(true) {
                             @Override
                             public void handleOnBackPressed() {
-                                if (!TvPresentation.collapseControls(content)) dialog.cancel();
+                                dialog.cancel();
                             }
                         });
         mDialog.show();
@@ -158,21 +158,17 @@ public class TvPresentationTest {
                                         new TvPresentation.HomeState(false, "", "", "", "", "")),
                                 96));
         focused("Address or search");
-        mDevice.pressDPadDown();
-        UiObject2 controls = focused("Browser controls");
-        mDevice.pressDPadRight();
-        UiObject2 tabs = focused("Tabs");
-        assertEquals(controls.getVisibleBounds().centerY(), tabs.getVisibleBounds().centerY());
-        mDevice.pressDPadDown();
-        UiObject2 settings = focused("Settings");
-        assertTrue(settings.getVisibleBounds().centerY() > tabs.getVisibleBounds().centerY());
-        mDevice.pressDPadCenter();
-        CriteriaHelper.pollInstrumentationThread(() -> settingsRuns.get() == 1);
-        mDevice.pressDPadLeft();
-        focused("Bookmarks");
         mDevice.pressDPadUp();
         focused("Browser controls");
-        mDevice.pressDPadUp();
+        mDevice.pressDPadRight();
+        focused("Tabs");
+        mDevice.pressDPadRight();
+        focused("Bookmarks");
+        mDevice.pressDPadRight();
+        focused("Settings");
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(() -> settingsRuns.get() == 1);
+        mDevice.pressDPadDown();
         focused("Address or search");
         assertEquals(1, settingsRuns.get());
     }
@@ -240,8 +236,7 @@ public class TvPresentationTest {
                                         "",
                                         "Initial native status",
                                         controls(),
-                                        4,
-                                        "More controls"));
+                                        4));
         ThreadUtils.runOnUiThreadBlocking(() -> showNarrow(content, 48));
         focused("Address or search");
         ThreadUtils.runOnUiThreadBlocking(
@@ -259,13 +254,11 @@ public class TvPresentationTest {
         mDevice.pressDPadDown();
         focused("Tabs");
         mDevice.pressDPadDown();
-        focused("More controls");
-        mDevice.pressDPadCenter();
         focused("Downloads");
+        visibleWithEdgeSpace("Downloads");
         mDevice.pressBack();
-        focused("More controls");
-        visibleWithEdgeSpace("More controls");
-        assertTrue(ThreadUtils.runOnUiThreadBlocking(mDialog::isShowing));
+        CriteriaHelper.pollUiThread(() -> !mDialog.isShowing());
+        assertFalse(ThreadUtils.runOnUiThreadBlocking(mDialog::isShowing));
     }
 
     @Test

@@ -3932,12 +3932,24 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_PERMISSIONS_GEOLOCATION_APPROXIMATE" desc="Radio button label for approximate location in the permission prompt.">
       Approximate
     </message>
-    <message name="IDS_BRAVE_TV_PHONE" desc="TV phone remote: phone.">Use your phone</message>
-    <message name="IDS_BRAVE_TV_PHONE_WARNING" desc="TV phone remote: phone warning.">Development experiment · unencrypted HTTP. Use synthetic data on an isolated network. Other devices on the network may read or change traffic. Do not enter passwords or personal information.</message>
-    <message name="IDS_BRAVE_TV_PHONE_START" desc="TV phone remote: phone start.">Start experiment</message>
+    <message name="IDS_BRAVE_TV_HOME_BRAND" desc="Brand in the native TV Home navigation.">Brave TV</message>
+    <message name="IDS_BRAVE_TV_HOME_PHOTO" desc="Credit for the single bundled landscape photograph.">Lago di Braies · Luca Bravo / Unsplash</message>
+    <message name="IDS_BRAVE_TV_MENU_BROWSE" desc="Group for navigation and page controls in the TV drawer.">Browse</message>
+    <message name="IDS_BRAVE_TV_MENU_LIBRARY" desc="Group for tabs, bookmarks, history and downloads in the TV drawer.">Your library</message>
+    <message name="IDS_BRAVE_TV_MENU_PAGE" desc="Group for page tools in the TV drawer.">This page</message>
+    <message name="IDS_BRAVE_TV_MENU_BROWSER" desc="Group for browser settings, Home and Phone in the TV drawer.">Browser</message>
+    <message name="IDS_BRAVE_TV_PHONE_CONNECTING" desc="Home Phone status while the local listener starts.">Phone · Connecting…</message>
+    <message name="IDS_BRAVE_TV_PHONE_WAITING" desc="Home Phone status while waiting for a phone to pair.">Phone · Pairing</message>
+    <message name="IDS_BRAVE_TV_PHONE_APPROVAL" desc="Home Phone status when TV approval is required.">Phone · Approve</message>
+    <message name="IDS_BRAVE_TV_PHONE_EXPIRED" desc="Phone recovery after invitation or approved session expiry.">Connection expired. Choose Try again to create a new invitation.</message>
+    <message name="IDS_BRAVE_TV_PHONE_FAILED" desc="Phone recovery when the local listener or bundled companion fails.">Could not start the local connection. Choose Try again.</message>
+    <message name="IDS_BRAVE_TV_PHONE_STARTING" desc="Status while the native local listener starts.">Starting a local connection…</message>
+    <message name="IDS_BRAVE_TV_PHONE" desc="TV phone remote: phone.">Phone</message>
+    <message name="IDS_BRAVE_TV_PHONE_WARNING" desc="TV phone remote: phone warning.">Local connection · Not encrypted. Use a trusted network. Other devices on this network may read or change traffic. Do not enter passwords or personal information.</message>
+    <message name="IDS_BRAVE_TV_PHONE_START" desc="TV phone remote: phone start.">Try again</message>
     <message name="IDS_BRAVE_TV_PHONE_NETWORK" desc="TV phone remote: phone network.">Connect the TV to one private IPv4 Wi-Fi or Ethernet network. VPN and IPv6-only connections are unsupported.</message>
-    <message name="IDS_BRAVE_TV_PHONE_CONNECTED" desc="TV phone remote: phone connected.">Phone connected · Disconnect in controls</message>
-    <message name="IDS_BRAVE_TV_PHONE_APPROVE_DESCRIPTION" desc="TV phone remote: phone approve description.">A phone requested control. Approve only if you just paired it. This unencrypted experiment exposes normal tabs and typed text.</message>
+    <message name="IDS_BRAVE_TV_PHONE_CONNECTED" desc="TV phone remote: phone connected.">Phone connected</message>
+    <message name="IDS_BRAVE_TV_PHONE_APPROVE_DESCRIPTION" desc="TV phone remote: phone approve description.">A phone requested control. Approve only if you just paired it. The phone can see normal tabs and typed text. Private tabs and password fields stay blocked.</message>
     <message name="IDS_BRAVE_TV_PHONE_PAIR" desc="TV phone remote: phone pair.">Scan with your phone on the same network, or open this address and enter the code. Expires in two minutes.</message>
     <message name="IDS_BRAVE_TV_PHONE_QR" desc="TV phone remote: phone qr.">Pairing QR code; manual address and code above</message>
     <message name="IDS_BRAVE_TV_PHONE_APPROVE" desc="TV phone remote: phone approve.">Approve phone</message>
@@ -4066,7 +4078,7 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_SELECTED_ENGINE" desc="Selected provider in TV search settings."><ph name="ENGINE">%1$s<ex>Google</ex></ph> · Selected</message>
     <message name="IDS_BRAVE_TV_MANAGED_SEARCH" desc="TV search settings notice when policy prevents changes.">Search engine is managed by your administrator</message>
     <message name="IDS_BRAVE_TV_HOME" desc="Title of the minimal TV new-tab page.">Home</message>
-    <message name="IDS_BRAVE_TV_HOME_HEADING" desc="Heading welcoming people to the independent TV browser.">The web. On your terms.</message>
+    <message name="IDS_BRAVE_TV_HOME_HEADING" desc="Heading welcoming people to the independent TV browser.">Where to next?</message>
     <message name="IDS_BRAVE_TV_HOME_TAGLINE" desc="Heading on the independent browser TV home page.">Simple, private, and ad-blocking.</message>
     <message name="IDS_BRAVE_TV_PRIVATE_HOME" desc="Heading of the private TV new-tab page.">Private browsing</message>
     <message name="IDS_BRAVE_TV_PRIVATE_HOME_DESCRIPTION" desc="Explains the local-data limit of a private browsing session.">Pages in this session are not saved to browsing history. Websites and your network provider can still see your activity.</message>
@@ -4076,7 +4088,7 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_ABOUT_VERSION" desc="TV About panel description showing the installed Android package version.">Version <ph name="VERSION">%1$s<ex>1.97.0</ex></ph></message>
     <message name="IDS_BRAVE_TV_LICENSES" desc="TV home button opening third-party licenses and credits.">Open-source licenses</message>
     <message name="IDS_BRAVE_TV_LAUNCHER" desc="Name of the development TV launcher entry.">TV Browser (prototype)</message>
-    <message name="IDS_BRAVE_TV_ADDRESS" desc="TV control to edit the address bar.">Address or search</message>
+    <message name="IDS_BRAVE_TV_ADDRESS" desc="TV control to edit the address bar.">Search or enter a website</message>
     <message name="IDS_BRAVE_TV_ADDRESS_DESCRIPTION" desc="TV address editor description before the selected search provider is available.">Enter a web address or search with your selected provider.</message>
     <message name="IDS_BRAVE_TV_ADDRESS_PROVIDER" desc="TV address editor description naming the selected native search provider.">Search with <ph name="PROVIDER">%s<ex>DuckDuckGo</ex></ph>, or enter a web address.</message>
     <message name="IDS_BRAVE_TV_GO" desc="TV address editor action to submit the current address or search query.">Go</message>

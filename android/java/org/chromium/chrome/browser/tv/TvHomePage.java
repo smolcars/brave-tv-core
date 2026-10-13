@@ -41,6 +41,8 @@ public final class TvHomePage extends BasicNativePage {
     private final View mContent;
     private final TvPresentation.HomeState mState;
     private final TvPresentation.Action mSettingsAction;
+    private final TvPresentation.Action mPhoneAction;
+    private final Runnable mPhoneObserver = this::refreshPhone;
     private final Map<BookmarkId, SavedPage> mFavorites = new HashMap<>();
     private final Map<Integer, TvPresentation.Action> mRecentActions = new HashMap<>();
     private final List<Tab> mObservedTabs = new ArrayList<>();
@@ -132,15 +134,17 @@ public final class TvHomePage extends BasicNativePage {
                         activity.getString(R.string.brave_tv_home_empty_favorites),
                         activity.getString(R.string.brave_tv_home_recent_tabs),
                         activity.getString(R.string.brave_tv_home_empty_recent_tabs),
-                        activity.getString(R.string.brave_tv_loading_bookmarks));
+                        activity.getString(R.string.brave_tv_loading_bookmarks),
+                        R.drawable.brave_tv_ambient,
+                        activity.getString(R.string.brave_tv_home_brand),
+                        activity.getString(R.string.brave_tv_home_photo));
         List<TvPresentation.Action> links = new ArrayList<>();
-        if (!tab.isIncognito() && TvPhoneRemote.available()) {
-            links.add(action(R.string.brave_tv_phone, activity::showTvPhoneRemote));
-        }
         links.add(
                 action(R.string.brave_tv_source, () -> open(TvBrowserControls.PROJECT_SOURCE_URL)));
         links.add(action(R.string.brave_tv_licenses, () -> open(TvBrowserControls.LICENSES_URL)));
         mSettingsAction = action(R.string.brave_tv_settings, () -> activity.showTvSettings(this));
+        mPhoneAction = action(R.string.brave_tv_phone, () -> activity.showTvPhoneRemote(this));
+        mPhoneAction.setEnabled(!tab.isIncognito());
         mContent =
                 TvPresentation.home(
                         activity,
@@ -159,10 +163,14 @@ public final class TvHomePage extends BasicNativePage {
                                         () ->
                                                 activity.onMenuOrKeyboardAction(
                                                         R.id.focus_url_bar, false)),
-                                action(R.string.brave_tv_controls, activity::showTvBrowserControls),
+                                action(R.string.brave_tv_home, this::focusAddress),
                                 action(R.string.brave_tv_tabs, activity::showTvTabs),
-                                action(R.string.brave_tv_bookmarks, activity::showTvBookmarks),
-                                mSettingsAction),
+                                action(R.string.brave_tv_home_favorites, activity::showTvBookmarks),
+                                mPhoneAction,
+                                mSettingsAction,
+                                action(
+                                        R.string.brave_tv_controls,
+                                        activity::showTvBrowserControls)),
                         links,
                         mState);
         mContent.addOnAttachStateChangeListener(
@@ -193,6 +201,8 @@ public final class TvHomePage extends BasicNativePage {
 
     private void startObserving() {
         if (!isCurrentHome() || mTab.isIncognito() || mBookmarks != null) return;
+        mActivity.addTvPhoneObserver(mPhoneObserver);
+        refreshPhone();
         mBookmarks = BookmarkModel.getForProfile(mTab.getProfile().getOriginalProfile());
         mBookmarks.addObserver(mBookmarkObserver);
         if (!mBookmarks.isBookmarkModelLoaded()) {
@@ -209,6 +219,7 @@ public final class TvHomePage extends BasicNativePage {
     }
 
     private void stopObserving() {
+        mActivity.removeTvPhoneObserver(mPhoneObserver);
         if (mBookmarks != null) mBookmarks.removeObserver(mBookmarkObserver);
         if (mNormalTabs != null) mNormalTabs.removeObserver(mTabModelObserver);
         if (mLoadingCallbacks != null) mLoadingCallbacks.destroy();
@@ -249,7 +260,7 @@ public final class TvHomePage extends BasicNativePage {
                     mFavorites.put(id, saved);
                 }
                 saved.url = url;
-                saved.action.setLabel(item.getTitle() + "\n" + item.getUrlForDisplay());
+                saved.action.setLabel(item.getTitle() + "\n" + item.getUrl().getHost());
                 ids.add(id);
                 actions.add(saved.action);
                 if (actions.size() == TvPresentation.MAX_HOME_FAVORITES) break;
@@ -336,7 +347,31 @@ public final class TvHomePage extends BasicNativePage {
                     if (isCurrentHome()) {
                         callback.run();
                     }
-                });
+                },
+                label,
+                homeIcon(label));
+    }
+
+    private static int homeIcon(int label) {
+        if (label == R.string.brave_tv_address) return R.drawable.brave_tv_search;
+        if (label == R.string.brave_tv_home) return R.drawable.brave_tv_home;
+        if (label == R.string.brave_tv_tabs) return R.drawable.brave_tv_tabs;
+        if (label == R.string.brave_tv_home_favorites) return R.drawable.brave_tv_bookmark;
+        if (label == R.string.brave_tv_phone) return R.drawable.brave_tv_phone;
+        if (label == R.string.brave_tv_settings) return R.drawable.brave_tv_settings;
+        if (label == R.string.brave_tv_controls) return R.drawable.brave_tv_menu;
+        return 0;
+    }
+
+    private void refreshPhone() {
+        if (isCurrentHome() && !mTab.isIncognito())
+            mPhoneAction.setLabel(mActivity.getString(mActivity.tvPhoneStatusLabel()));
+    }
+
+    public boolean focusPhone() {
+        if (!isCurrentHome()) return false;
+        mPhoneAction.requestFocus();
+        return true;
     }
 
     private void open(String url) {

@@ -27,8 +27,7 @@ import com.google.zxing.WriterException;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.chromium.base.CommandLine;
-import org.chromium.base.version_info.VersionInfo;
+import org.chromium.base.ObserverList;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
@@ -38,7 +37,7 @@ import java.io.InputStream;
 import java.net.Inet4Address;
 import java.nio.charset.StandardCharsets;
 
-/** Opt-in HTTP experiment. No server exists outside this activity's foreground lifetime. */
+/** User-initiated local Phone connection, confined to this activity's foreground lifetime. */
 final class TvPhoneRemote implements TvRemoteServer.Delegate {
     private final BraveActivity mActivity;
     private final TvBrowserControls mControls;
@@ -48,6 +47,9 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     private TvRemoteSession mSession;
     private TvRemoteBrowser mBrowser;
     private AlertDialog mDialog;
+    private final ObserverList<Runnable> mObservers = new ObserverList<>();
+    private int mStatus = R.string.brave_tv_phone;
+    private Runnable mOnReturn = () -> {};
     private View mBadge;
     private final ViewTreeObserver.OnGlobalLayoutListener mBadgeLayoutObserver =
             this::positionBadge;
@@ -62,8 +64,12 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 @Override
                 public void run() {
                     if (mSession == null) return;
-                    if (mSession.expired(SystemClock.elapsedRealtime()) || !sameNetwork()) {
-                        stop();
+                    if (mSession.expired(SystemClock.elapsedRealtime())) {
+                        fail(R.string.brave_tv_phone_expired);
+                        return;
+                    }
+                    if (!sameNetwork()) {
+                        fail(R.string.brave_tv_phone_network);
                         return;
                     }
                     mUi.postDelayed(this, 500);
@@ -76,14 +82,27 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         mConnectivity = activity.getSystemService(ConnectivityManager.class);
     }
 
-    static boolean available() {
-        return !VersionInfo.isOfficialBuild()
-                && VersionInfo.isLocalBuild()
-                && CommandLine.getInstance().hasSwitch("tv-local-remote-experiment");
+    int statusLabel() {
+        return mStatus;
+    }
+
+    void addObserver(Runnable observer) {
+        mObservers.addObserver(observer);
+    }
+
+    void removeObserver(Runnable observer) {
+        mObservers.removeObserver(observer);
+    }
+
+    private void setStatus(int status) {
+        if (mStatus == status) return;
+        mStatus = status;
+        for (Runnable observer : mObservers) observer.run();
     }
 
     void invalidate() {
         if (mBrowser != null) mBrowser.invalidate();
+        positionBadge();
     }
 
     void releaseTyping() {
@@ -91,39 +110,59 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     }
 
     void show() {
-        if (!available() || mActivity.isFinishing() || mActivity.isDestroyed()) return;
+        show(mControls::showControls);
+    }
+
+    void show(Runnable onReturn) {
+        if (mActivity.isFinishing() || mActivity.isDestroyed()) return;
+        mOnReturn = onReturn;
         if (mSession != null) {
-            showPairing();
+            if (mOrigin == null) showStarting();
+            else showPairing();
             return;
         }
+        start();
+    }
+
+    private TvBrowserPanel panel(String description) {
         TvBrowserPanel panel =
-                new TvBrowserPanel(
-                        mActivity,
-                        text(R.string.brave_tv_phone),
-                        text(R.string.brave_tv_phone_warning),
-                        0);
-        panel.addAction(
-                R.string.brave_tv_phone_start,
-                true,
-                () -> {
-                    dismiss();
-                    start();
-                });
-        panel.addAction(R.string.cancel, true, this::dismiss);
-        mDialog = panel.show(this::dismiss);
+                new TvBrowserPanel(mActivity, text(R.string.brave_tv_phone), description, 0);
+        panel.useAmbientStyle();
+        panel.useWideLayout();
+        panel.addDescription(text(R.string.brave_tv_phone_warning));
+        return panel;
+    }
+
+    private void showStarting() {
+        dismiss();
+        TvBrowserPanel panel = panel(text(R.string.brave_tv_phone_starting));
+        panel.addAction(R.string.cancel, true, this::close);
+        mDialog = panel.show(this::close);
+    }
+
+    private void fail(int reason) {
+        boolean visible = mDialog != null;
+        Runnable onReturn = mOnReturn;
+        stop();
+        if (visible && !mActivity.isFinishing() && !mActivity.isDestroyed()) {
+            mOnReturn = onReturn;
+            showError(reason);
+        }
+    }
+
+    private void showError(int reason) {
+        dismiss();
+        TvBrowserPanel panel = panel(text(reason));
+        panel.addAction(R.string.brave_tv_phone_start, true, this::start);
+        panel.addAction(R.string.cancel, true, this::finishPanel);
+        mDialog = panel.show(this::finishPanel);
     }
 
     private void start() {
+        dismiss();
         mAddress = lanAddress();
         if (mAddress == null) {
-            TvBrowserPanel panel =
-                    new TvBrowserPanel(
-                            mActivity,
-                            text(R.string.brave_tv_phone),
-                            text(R.string.brave_tv_phone_network),
-                            0);
-            panel.addAction(R.string.cancel, true, this::dismiss);
-            mDialog = panel.show(this::dismiss);
+            showError(R.string.brave_tv_phone_network);
             return;
         }
         try {
@@ -131,20 +170,27 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
             mCss = read(R.raw.tv_remote_css);
             mJs = read(R.raw.tv_remote_js);
         } catch (IOException exception) {
-            stop();
+            showError(R.string.brave_tv_phone_failed);
             return;
         }
         mNetwork = mConnectivity.getActiveNetwork();
         mSession = new TvRemoteSession(SystemClock.elapsedRealtime());
         mBrowser = new TvRemoteBrowser(mActivity, mControls);
+        setStatus(R.string.brave_tv_phone_connecting);
+        showStarting();
         mServer = new TvRemoteServer(mAddress, this);
         mUi.postDelayed(mTick, 500);
     }
 
     @Override
     public void onStarted(int port) {
-        if (port == 0 || mActivity.isFinishing() || mActivity.isDestroyed()) {
+        if (mSession == null) return;
+        if (mActivity.isFinishing() || mActivity.isDestroyed()) {
             stop();
+            return;
+        }
+        if (port == 0) {
+            fail(R.string.brave_tv_phone_failed);
             return;
         }
         mOrigin = "http://" + mAddress + ":" + port;
@@ -154,10 +200,14 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     private void showPairing() {
         if (mSession == null || mOrigin == null) return;
         dismiss();
+        setStatus(
+                mSession.approved()
+                        ? R.string.brave_tv_phone_connected
+                        : mSession.pending()
+                                ? R.string.brave_tv_phone_approval
+                                : R.string.brave_tv_phone_waiting);
         TvBrowserPanel panel =
-                new TvBrowserPanel(
-                        mActivity,
-                        text(R.string.brave_tv_phone),
+                panel(
                         mSession.approved()
                                 ? text(R.string.brave_tv_phone_connected)
                                 : mSession.pending()
@@ -166,9 +216,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                                                 + "\n"
                                                 + mOrigin
                                                 + "\n"
-                                                + mSession.code,
-                        0);
-        panel.useWideLayout();
+                                                + mSession.code);
         if (!mSession.pending() && !mSession.approved()) {
             try {
                 int sizeDp = 180;
@@ -208,13 +256,17 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                             return;
                         }
                         mSession.approve();
-                        dismiss();
+                        setStatus(R.string.brave_tv_phone_connected);
                         showBadge();
+                        finishPanel();
                     });
         if (mSession.approved())
-            panel.addAction(R.string.brave_tv_phone_continue, true, this::dismiss);
-        panel.addAction(R.string.brave_tv_phone_disconnect, true, this::stop);
-        mDialog = panel.show(mSession.approved() ? this::dismiss : this::stop);
+            panel.addAction(R.string.brave_tv_phone_continue, true, this::finishPanel);
+        panel.addAction(
+                mSession.approved() ? R.string.brave_tv_phone_disconnect : R.string.cancel,
+                true,
+                this::close);
+        mDialog = panel.show(mSession.approved() ? this::finishPanel : this::close);
     }
 
     private void showBadge() {
@@ -232,6 +284,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         FrameLayout parent = mActivity.findViewById(android.R.id.content);
         parent.addView(mBadge, params);
         parent.getViewTreeObserver().addOnGlobalLayoutListener(mBadgeLayoutObserver);
+        positionBadge();
     }
 
     private void positionBadge() {
@@ -239,6 +292,11 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 || mActivity.isDestroyed()
                 || mBadge == null
                 || !(mBadge.getLayoutParams() instanceof FrameLayout.LayoutParams params)) return;
+        var tab = mActivity.getActivityTab();
+        mBadge.setVisibility(
+                tab != null && tab.getNativePage() instanceof TvHomePage
+                        ? View.GONE
+                        : View.VISIBLE);
         float density = mActivity.getResources().getDisplayMetrics().density;
         int top = Math.round(60 * density);
         int loadingBottom = mControls.pageLoadingBottom();
@@ -256,7 +314,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         if (path.equals("/remote.css")) return mCss;
         if (path.equals("/remote.js")) return mJs;
         if (!sameNetwork()) {
-            mUi.post(this::stop);
+            mUi.post(() -> fail(R.string.brave_tv_phone_network));
             return error("revoked");
         }
         try {
@@ -273,7 +331,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
             if (!mSession.approved()) return error("approval");
             String op = request.getString("op");
             if (op.equals("disconnect")) {
-                mUi.post(this::stop);
+                mUi.post(this::close);
                 return "{\"ok\":true}";
             }
             boolean ok = true;
@@ -317,6 +375,22 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
             if (mBadge.getParent() instanceof ViewGroup parent) parent.removeView(mBadge);
         }
         mBadge = null;
+        mOnReturn = () -> {};
+        setStatus(R.string.brave_tv_phone);
+    }
+
+    private void finishPanel() {
+        dismiss();
+        Runnable onReturn = mOnReturn;
+        mOnReturn = () -> {};
+        onReturn.run();
+    }
+
+    private void close() {
+        boolean visible = mDialog != null;
+        Runnable onReturn = mOnReturn;
+        stop();
+        if (visible) onReturn.run();
     }
 
     private void dismiss() {

@@ -6,13 +6,15 @@
 package org.chromium.chrome.browser.tv.presentation
 
 import android.content.Context
-import android.view.KeyEvent
+import android.graphics.BitmapFactory
+import android.text.format.DateFormat
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.FocusDirection
@@ -48,6 +51,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
@@ -86,6 +92,10 @@ import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.LocalTextStyle
 import androidx.tv.material3.Text
 import androidx.tv.material3.darkColorScheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import java.util.Date
 
 /** Presentation only: callbacks retain native tab, profile and security ownership. */
 object TvPresentation {
@@ -101,7 +111,7 @@ object TvPresentation {
     /** UI-thread action state, owned by its native panel; never saved across sessions. */
     class Action @JvmOverloads constructor(
         label: String, enabled: Boolean, val run: Runnable, val key: Int = 0,
-        icon: Int = 0,
+        icon: Int = 0, val group: String = "",
     ) {
         var label by mutableStateOf(label)
         var enabled by mutableStateOf(enabled)
@@ -165,18 +175,20 @@ object TvPresentation {
         var subtitle by mutableStateOf(subtitle)
         var status by mutableStateOf(status)
         var actions by mutableStateOf(actions)
-        var expanded by mutableStateOf(false)
         var preferredKey by mutableStateOf(preferred)
     }
 
     /** Bounded presentation state; the attached native Home owns model observations. */
-    class HomeState(
+    class HomeState @JvmOverloads constructor(
         val showSections: Boolean,
         val favoritesTitle: String,
         val favoritesEmpty: String,
         val recentTitle: String,
         val recentEmpty: String,
         val loadingLabel: String,
+        val wallpaper: Int = 0,
+        val brand: String = "",
+        val photoCredit: String = "",
     ) {
         internal var focusRequest by mutableStateOf(0)
         internal var favorites by mutableStateOf<List<Action>>(emptyList())
@@ -215,25 +227,6 @@ object TvPresentation {
         (view.tag as? HomeState)?.let { it.focusRequest++ }
     }
 
-    /** Called only by this panel's dialog window, after the IME/native window owner. */
-    @JvmStatic
-    fun back(view: View, event: KeyEvent): Boolean {
-        val state = view.tag as? ControlsState ?: return false
-        if (event.keyCode != KeyEvent.KEYCODE_BACK || !state.expanded) return false
-        if (event.action == KeyEvent.ACTION_UP) collapseControls(view)
-        return true
-    }
-
-    /** UI thread only. Dialog Back first collapses More and restores its invoker focus. */
-    @JvmStatic
-    fun collapseControls(view: View): Boolean {
-        val state = view.tag as? ControlsState ?: return false
-        if (!state.expanded) return false
-        state.expanded = false
-        state.preferredKey = Int.MIN_VALUE
-        return true
-    }
-
     internal fun view(context: Context): ComposeView = ComposeView(context).apply {
         setViewTreeLifecycleOwner(context as LifecycleOwner)
         setViewTreeSavedStateRegistryOwner(context as SavedStateRegistryOwner)
@@ -255,38 +248,62 @@ object TvPresentation {
         require(actions.isNotEmpty() && actions.first().enabled)
         tag = state
         setContent {
-            Theme {
+            Theme(ambient = true) {
                 val initial = remember { FocusRequester() }
-                val shortcuts = remember { FocusRequester() }
-                Column(
-                    Modifier.fillMaxSize()
-                        .background(Brush.linearGradient(listOf(Color(0xFF222827), backgroundColor)))
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 48.dp, vertical = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                ) {
-                    Text(title, fontSize = 36.sp, fontWeight = FontWeight.Medium,
-                        modifier = Modifier.semantics { heading() })
-                    Text(subtitle, color = secondary, fontSize = 18.sp)
-                    ActionButton(actions.first(),
-                        Modifier.fillMaxWidth().focusRequester(initial).focusProperties {
-                            if (actions.size > 1) down = shortcuts
-                        })
-                    ActionRows(actions.drop(1), 4, 16.dp) { action, modifier ->
-                        ActionButton(action, modifier.then(
-                            if (action === actions.getOrNull(1)) Modifier.focusRequester(shortcuts)
-                            else Modifier), quiet = true)
-                    }
-                    if (state.showSections) {
-                        HomeSection(state.favoritesTitle,
-                            if (state.loadingFavorites) state.loadingLabel else state.favoritesEmpty,
-                            state.favorites, 3)
-                        HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 2)
-                    }
-                    Text(attribution, color = secondary, fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 16.dp))
-                    ActionRows(links, links.size, 16.dp) { action, modifier ->
-                        ActionButton(action, modifier, quiet = true)
+                val header = remember { FocusRequester() }
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                    AmbientBackdrop(context, state.wallpaper)
+                    // Fixed scrims bound contrast even over the brightest parts of the photo.
+                    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(
+                        Color(0xD9081924), Color(0x99081924), Color(0xF5081924)))))
+                    Column(
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                            .padding(horizontal = 40.dp, vertical = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            if (state.brand.isNotEmpty()) Text(state.brand,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold)
+                            Column(Modifier.weight(1f)) {
+                                ActionRows(actions.drop(1), 6, 8.dp, minimum = 72.dp) { action, modifier ->
+                                    ActionButton(action, modifier.then(
+                                        if (action === actions.getOrNull(1)) Modifier.focusRequester(header)
+                                        else Modifier), quiet = true, compact = true)
+                                }
+                            }
+                            LocalClock(context)
+                        }
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            Text(title, style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.semantics { heading() })
+                            if (subtitle.isNotEmpty()) Text(subtitle,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyLarge)
+                            ActionButton(actions.first(), Modifier.fillMaxWidth()
+                                .focusRequester(initial).focusProperties { up = header },
+                                search = true)
+                        }
+                        if (state.showSections) {
+                            HomeSection(state.favoritesTitle,
+                                if (state.loadingFavorites) state.loadingLabel else state.favoritesEmpty,
+                                state.favorites, 6)
+                            HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 4)
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                if (state.photoCredit.isNotEmpty()) Text(state.photoCredit,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.labelMedium)
+                                if (attribution.isNotEmpty()) Text(attribution,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    style = MaterialTheme.typography.labelSmall)
+                            }
+                            links.forEach { action -> ActionButton(action, quiet = true, compact = true) }
+                        }
                     }
                 }
                 LaunchedEffect(state.focusRequest) {
@@ -297,15 +314,50 @@ object TvPresentation {
         }
     }
 
+    // A single bounded, process-owned bitmap; no Activity or live feed is retained.
+    @Volatile private var ambientBitmap: ImageBitmap? = null
+
+    @Composable
+    private fun AmbientBackdrop(context: Context, resource: Int) {
+        var bitmap by remember { mutableStateOf(ambientBitmap) }
+        LaunchedEffect(resource) {
+            if (resource != 0 && bitmap == null) {
+                val resources = context.applicationContext.resources
+                bitmap = withContext(Dispatchers.IO) {
+                    synchronized(TvPresentation) {
+                        ambientBitmap ?: BitmapFactory.decodeResource(resources, resource,
+                            BitmapFactory.Options().apply { inScaled = false })
+                            ?.asImageBitmap()?.also { ambientBitmap = it }
+                    }
+                }
+            }
+        }
+        bitmap?.let { Image(it, contentDescription = null,
+            modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop) }
+    }
+
+    @Composable
+    private fun LocalClock(context: Context) {
+        var now by remember { mutableStateOf(Date()) }
+        LaunchedEffect(Unit) {
+            while (true) { delay(30_000); now = Date() }
+        }
+        Text(DateFormat.getTimeFormat(context).format(now),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+
     @Composable
     private fun HomeSection(title: String, emptyLabel: String, actions: List<Action>, columns: Int) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(title, fontSize = 20.sp, fontWeight = FontWeight.Medium,
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() })
-            if (actions.isEmpty()) Text(emptyLabel, color = secondary, fontSize = 16.sp,
+            if (actions.isEmpty()) Text(emptyLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
-            ActionRows(actions, columns, 16.dp) { action, modifier ->
-                ActionButton(action, modifier)
+            ActionRows(actions, columns, 12.dp) { action, modifier ->
+                ActionButton(action, modifier, card = true)
             }
         }
     }
@@ -320,42 +372,50 @@ object TvPresentation {
         status: String,
         actions: List<Action>,
         preferredKey: Int,
-        moreLabel: String,
     ): View = view(context).apply {
         val state = ControlsState(preferredKey, subtitle, status, actions)
         tag = state
         setContent {
-            Theme {
+            Theme(ambient = true) {
                 val initial = remember { FocusRequester() }
-                val actions = state.actions
-                val toggle = Action(if (state.expanded) title else moreLabel, true, Runnable {
-                    state.expanded = !state.expanded
-                    state.preferredKey = if (state.expanded) actions.getOrNull(7)?.key ?: 0
-                        else Int.MIN_VALUE
-                }, Int.MIN_VALUE)
-                val visible = (if (state.expanded) actions.drop(7) else actions.take(7)) + toggle
-                val selected = visible.firstOrNull { it.key == state.preferredKey && it.enabled }
-                    ?: if (!state.expanded && actions.any { it.key == state.preferredKey }) toggle
-                    else visible.firstOrNull { it.enabled }
+                val selected = state.actions.firstOrNull { it.key == state.preferredKey && it.enabled }
+                    ?: state.actions.firstOrNull { it.enabled }
+                val metrics = context.resources.displayMetrics
+                val maxHeight = (metrics.heightPixels * 0.9f / metrics.density).dp
                 Column(
-                    Modifier.fillMaxWidth().background(backgroundColor)
-                        .semantics { paneTitle = title }
-                        .verticalScroll(rememberScrollState()).padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    Modifier.fillMaxWidth().heightIn(max = maxHeight)
+                        .background(MaterialTheme.colorScheme.background, RoundedCornerShape(24.dp))
+                        .semantics { paneTitle = title }.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Text(title, fontSize = 24.sp, fontWeight = FontWeight.Medium,
+                    Text(title, style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.semantics { heading() })
-                    if (state.subtitle.isNotEmpty()) Text(state.subtitle, color = secondary,
-                        fontSize = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    if (state.status.isNotEmpty()) Text(state.status, color = secondary,
-                        fontSize = 16.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    ActionRows(visible, 4, 12.dp) { action, modifier ->
-                        ActionButton(action, modifier.then(
-                            if (action === selected) Modifier.focusRequester(initial)
-                            else Modifier))
+                    if (state.subtitle.isNotEmpty()) Text(state.subtitle,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (state.status.isNotEmpty()) Text(state.status,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                        state.actions.groupBy { it.group }.forEach { (group, actions) ->
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                if (group.isNotEmpty()) Text(group,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.semantics { heading() })
+                                ActionRows(actions, 3, 10.dp) { action, modifier ->
+                                    ActionButton(action, modifier.then(
+                                        if (action === selected) Modifier.focusRequester(initial)
+                                        else Modifier))
+                                }
+                            }
+                        }
                     }
                 }
-                LaunchedEffect(state.expanded) {
+                LaunchedEffect(Unit) {
                     withFrameNanos { }
                     if (selected != null) initial.requestFocus()
                 }
@@ -380,19 +440,20 @@ object TvPresentation {
      * No selection, failed focus, or disposal before restoration leaves it uncalled.
      * Native observers preserve captured selection until that acknowledgement. */
     @JvmStatic
+    @JvmOverloads
     fun panel(
         context: Context, title: String, subtitle: String, backHint: String,
         entries: List<PanelEntry>, preferredKey: Int, restorePreferredFocus: Boolean,
-        onFocusRestored: Runnable,
+        onFocusRestored: Runnable, ambient: Boolean = false,
     ): View = view(context).apply {
         val actions = entries.filterIsInstance<ActionRow>().flatMap { it.actions }
         val metrics = context.resources.displayMetrics
         val maxHeight = (metrics.heightPixels * 0.9f / metrics.density).dp
         setContent {
-            Theme {
+            Theme(ambient = ambient) {
                 val initialTargets = remember { actions.associateWith { FocusRequester() } }
                 Column(Modifier.fillMaxWidth().heightIn(max = maxHeight)
-                    .background(backgroundColor).padding(24.dp).semantics { paneTitle = title },
+                    .background(MaterialTheme.colorScheme.background, RoundedCornerShape(24.dp)).padding(24.dp).semantics { paneTitle = title },
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(title, fontSize = 26.sp, fontWeight = FontWeight.Medium,
                         maxLines = 2, overflow = TextOverflow.Ellipsis,
@@ -466,11 +527,14 @@ object TvPresentation {
     }
 
     @Composable
-    internal fun Theme(content: @Composable () -> Unit) {
+    internal fun Theme(ambient: Boolean = false, content: @Composable () -> Unit) {
         MaterialTheme(
             colorScheme = darkColorScheme(
-                primary = accent, onPrimary = backgroundColor, background = backgroundColor,
-                onBackground = text, surface = surface, onSurface = text,
+                primary = if (ambient) Color(0xFF9BDCF5) else accent,
+                onPrimary = if (ambient) Color(0xFF092230) else backgroundColor,
+                background = if (ambient) Color(0xFF0C1B26) else backgroundColor,
+                onBackground = text, surface = if (ambient) Color(0xFF203745) else surface,
+                onSurface = text, onSurfaceVariant = if (ambient) Color(0xFFCDDDE5) else secondary,
             ),
             content = {
                 CompositionLocalProvider(
@@ -485,12 +549,12 @@ object TvPresentation {
 
     @Composable
     private fun ActionRows(
-        actions: List<Action>, maxColumns: Int, spacing: Dp,
+        actions: List<Action>, maxColumns: Int, spacing: Dp, minimum: Dp = 120.dp,
         content: @Composable (Action, Modifier) -> Unit,
     ) {
         if (actions.isEmpty()) return
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val minimumWidth = 140.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)
+            val minimumWidth = minimum * LocalDensity.current.fontScale.coerceAtLeast(1f)
             val columns = ((maxWidth + spacing) / (minimumWidth + spacing)).toInt()
                 .coerceIn(1, maxColumns)
             Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
@@ -509,7 +573,10 @@ object TvPresentation {
     }
 
     @Composable
-    internal fun ActionButton(action: Action, modifier: Modifier = Modifier, quiet: Boolean = false) {
+    internal fun ActionButton(
+        action: Action, modifier: Modifier = Modifier, quiet: Boolean = false,
+        compact: Boolean = false, search: Boolean = false, card: Boolean = false,
+    ) {
         var hasFocus by remember { mutableStateOf(false) }
         var size by remember { mutableStateOf(IntSize.Zero) }
         val requested = remember { FocusRequester() }
@@ -545,12 +612,16 @@ object TvPresentation {
                     action.enabled
                 }
             },
-            shape = ButtonDefaults.shape(shape = RoundedCornerShape(12.dp)),
-            border = ButtonDefaults.border(focusedBorder = Border(BorderStroke(2.dp, text))),
+            shape = ButtonDefaults.shape(shape = RoundedCornerShape(if (search || compact) 32.dp else 14.dp)),
+            border = ButtonDefaults.border(focusedBorder = Border(BorderStroke(2.dp,
+                if (search) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface))),
             scale = ButtonDefaults.scale(focusedScale = 1.02f),
             colors = ButtonDefaults.colors(
-                containerColor = if (quiet) Color.Transparent else surface, contentColor = text,
-                focusedContainerColor = accent, focusedContentColor = backgroundColor,
+                containerColor = if (search) text else if (quiet) Color.Transparent
+                    else MaterialTheme.colorScheme.surface,
+                contentColor = if (search) MaterialTheme.colorScheme.background else text,
+                focusedContainerColor = if (search) text else MaterialTheme.colorScheme.primary,
+                focusedContentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
             if (action.icon != 0) {
@@ -559,8 +630,22 @@ object TvPresentation {
                     colorFilter = ColorFilter.tint(LocalContentColor.current))
                 Spacer(Modifier.width(10.dp))
             }
-            Text(action.label, fontSize = 18.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(vertical = 8.dp))
+            if (card) {
+                val lines = action.label.split("\n", limit = 2)
+                Column(Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(lines.first(), style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (lines.size > 1) Text(lines.last(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = LocalContentColor.current.copy(alpha = 0.85f),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            } else Text(action.label,
+                style = if (compact) MaterialTheme.typography.labelLarge
+                    else MaterialTheme.typography.bodyLarge,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(vertical = if (search) 14.dp else 8.dp))
         }
     }
 }

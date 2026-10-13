@@ -33,16 +33,16 @@ namespace {
 constexpr auto kTraffic =
     net::DefineNetworkTrafficAnnotation("tv_local_remote", R"(
   semantics {
-    sender: "TV local remote development experiment"
+    sender: "TV Phone connection"
     description: "Serves bundled remote controls and accepts explicitly paired local commands."
-    trigger: "User enables the development experiment and approves a phone on the TV."
+    trigger: "User opens Phone and approves a paired phone on the TV."
     data: "Normal tab metadata and input commands. No cookies or password fields."
     destination: LOCAL
   }
   policy {
     cookies_allowed: NO
-    setting: "Off by default; requires non-official local-channel build, process switch and TV opt-in."
-    policy_exception_justification: "Development-only user initiated local experiment."
+    setting: "Off by default; starts only when the user opens Phone in the foreground TV browser."
+    policy_exception_justification: "User initiated local connection with explicit TV approval."
   })");
 
 // All socket operations and destruction run on Chromium's IO thread. Java

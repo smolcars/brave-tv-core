@@ -179,6 +179,25 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void homePhoneWithoutExperimentRestoresFocusAndStopsInvitation() {
+        String phone = mActivity.getString(R.string.brave_tv_phone);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> assertEquals(R.string.brave_tv_phone, mActivity.tvPhoneStatusLabel()));
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.desc(phone)));
+        mDevice.findObject(By.desc(phone)).click();
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.tvPhoneStatusLabel() == R.string.brave_tv_phone_waiting);
+        CriteriaHelper.pollInstrumentationThread(
+                () -> mDevice.hasObject(By.desc(mActivity.getString(R.string.brave_tv_phone_qr))));
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.tvPhoneStatusLabel() == R.string.brave_tv_phone);
+        waitForFocus(By.desc(phone));
+        assertFalse(mDevice.hasObject(By.desc(mActivity.getString(R.string.brave_tv_phone_qr))));
+    }
+
+    @Test
+    @MediumTest
     public void televisionToolbarUsesNativeHiddenOffsets() {
         assertTelevisionViewport();
         mActivityTestRule.loadUrl(URL);
@@ -1718,11 +1737,9 @@ public class TvHomePageTest {
 
     private void openSettingsFromHome() {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
-        mDevice.pressDPadDown();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
-        mDevice.pressDPadRight();
-        mDevice.pressDPadRight();
-        mDevice.pressDPadRight();
+        mDevice.pressDPadUp();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_home)));
+        for (int i = 0; i < 4; i++) mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_settings)));
         mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_search_engine)));

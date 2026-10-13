@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2026 brave-tv contributors. MPL-2.0. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:pathData="M20,8A9,9 0,1 0,21 14 M20,3V8H15" android:fillColor="@android:color/transparent"
+        android:strokeColor="@android:color/white" android:strokeWidth="1.7"
+        android:strokeLineCap="round" android:strokeLineJoin="round" />
+</vector>
