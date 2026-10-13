@@ -550,15 +550,18 @@ public class TvHomePageTest {
                 ThreadUtils.runOnUiThreadBlocking(
                         () -> {
                             WindowInsetsCompat insets =
-                                    ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
-                            return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
+                                    ViewCompat.getRootWindowInsets(
+                                            mActivity.getWindow().getDecorView());
+                            return insets != null
+                                    && insets.isVisible(WindowInsetsCompat.Type.ime());
                         });
         if (keyboard) {
             mDevice.pressBack();
             CriteriaHelper.pollUiThread(
                     () -> {
                         WindowInsetsCompat insets =
-                                ViewCompat.getRootWindowInsets(mActivity.getWindow().getDecorView());
+                                ViewCompat.getRootWindowInsets(
+                                        mActivity.getWindow().getDecorView());
                         return insets != null && !insets.isVisible(WindowInsetsCompat.Type.ime());
                     });
         }
