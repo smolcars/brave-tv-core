@@ -3936,6 +3936,8 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_HOME_PHOTO" desc="Credit for the single bundled landscape photograph.">Photo: Luca Bravo / Unsplash</message>
     <message name="IDS_BRAVE_TV_HOME_CREDITS" desc="Compact Home footer credit to the independent TV browser's upstream projects.">Built on Brave and Chromium · Thanks to their open-source contributors</message>
     <message name="IDS_BRAVE_TV_GITHUB" desc="Home footer button opening the public TV browser project on GitHub.">GitHub</message>
+    <message name="IDS_BRAVE_TV_NAVIGATE" desc="TV browser control enabling directional selection on webpages.">Jump between elements</message>
+    <message name="IDS_BRAVE_TV_NAVIGATE_HINT" desc="Brief TV hint for directional webpage navigation and the pointer shortcut.">Arrows: jump or scroll · OK: select · Hold OK: pointer</message>
     <message name="IDS_BRAVE_TV_MENU_BROWSE" desc="Group for navigation and page controls in the TV drawer.">Browse</message>
     <message name="IDS_BRAVE_TV_MENU_LIBRARY" desc="Group for tabs, bookmarks, history and downloads in the TV drawer.">Your library</message>
     <message name="IDS_BRAVE_TV_MENU_PAGE" desc="Group for page tools in the TV drawer.">This page</message>
@@ -4110,7 +4112,7 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_PAUSE" desc="TV action to pause media in the current tab.">Pause</message>
     <message name="IDS_BRAVE_TV_SEEK_BACKWARD" desc="TV action to seek backward; the distance can depend on the site.">Seek backward</message>
     <message name="IDS_BRAVE_TV_SEEK_FORWARD" desc="TV action to seek forward; the distance can depend on the site.">Seek forward</message>
-    <message name="IDS_BRAVE_TV_POINTER_HINT" desc="Remote button hints for unified page browsing.">D-pad: move · Hold at top/bottom: scroll · OK: click · Back: controls</message>
+    <message name="IDS_BRAVE_TV_POINTER_HINT" desc="Remote button hints for unified page browsing.">Arrows: move · Hold at top/bottom: scroll · OK: click · Hold OK: jump</message>
     <message name="IDS_BRAVE_TV_SCROLL_HINT" desc="Remote button hints for scrolling content under the pointer.">D-pad: scroll here · OK: browse · Back: controls</message>
   </messages>
   </release>

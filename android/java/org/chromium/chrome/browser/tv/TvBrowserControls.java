@@ -11,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
@@ -33,9 +34,13 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.color.MaterialColors;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import org.chromium.base.BravePreferenceKeys;
 import org.chromium.base.Callback;
 import org.chromium.base.CallbackController;
+import org.chromium.base.CommandLine;
 import org.chromium.base.PackageUtils;
 import org.chromium.base.supplier.NonNullObservableSupplier;
 import org.chromium.chrome.R;
@@ -46,6 +51,7 @@ import org.chromium.chrome.browser.bookmarks.BookmarkModelObserver;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataBridge;
 import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
 import org.chromium.chrome.browser.browsing_data.TimePeriod;
+import org.chromium.chrome.browser.common.ChromeIsolatedWorldIds;
 import org.chromium.chrome.browser.download.DownloadManagerService;
 import org.chromium.chrome.browser.download.items.OfflineContentAggregatorFactory;
 import org.chromium.chrome.browser.omnibox.suggestions.AutocompleteController;
@@ -78,6 +84,7 @@ import org.chromium.content_public.browser.ImeAdapter;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.NavigationHandle;
 import org.chromium.content_public.browser.RenderCoordinates;
+import org.chromium.content_public.browser.RenderFrameHost;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.WebContentsObserver;
 import org.chromium.ui.base.PageTransition;
@@ -163,6 +170,25 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable TvBrowserSession.Context mPressedContext;
     private boolean mDestroyed;
     private final Runnable mHideCursor = this::hideCursor;
+    private @Nullable TvBrowserSession.Context mPageNavigationContext;
+    private @Nullable TvBrowserSession.Context mFocusContext;
+    private @Nullable WebContents mSpatialContents;
+    private boolean mSpatialDisabled;
+    private boolean mWakeSelect;
+    private long mFocusQuery;
+    private TvRemoteInput.Mode mPageMode = TvRemoteInput.Mode.ELEMENTS;
+    private final Runnable mSelectHold = this::handleSelectHold;
+
+    private void handleSelectHold() {
+        if (isAlive()
+                && mSession.isCurrent(mPressedContext)
+                && !keyboardVisible()
+                && !nativeUiOwnsInput(false)
+                && !isPageFullscreen()) {
+            mInput.onSelectHeld(SystemClock.uptimeMillis());
+        }
+    }
+
     private final View.OnAttachStateChangeListener mPageAttachmentListener =
             new View.OnAttachStateChangeListener() {
                 @Override
@@ -185,6 +211,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mScrimVisible = scrimVisible;
         mPrivateTabsLocked = privateTabsLocked;
         float density = activity.getResources().getDisplayMetrics().density;
+        CommandLine.getInstance().appendSwitch("enable-spatial-navigation");
         mInput = new TvRemoteInput(this, Math.max(1, Math.round(16 * density)));
         mCursor = new Cursor(density);
         mCursorView = new View(activity);
@@ -448,6 +475,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void cancelPagePress() {
+        mCursorView.removeCallbacks(mSelectHold);
+        mFocusQuery++;
+        mCursor.focus = null;
+        mFocusContext = null;
+        mWakeSelect = false;
         mInput.cancelPress();
         mCursor.edgeDirection = 0;
         mCursor.invalidateSelf();
@@ -514,25 +546,45 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             default:
                 return false;
         }
-        if (mPage != currentPage()) {
-            mInput.back();
+        if (mPage != currentPage() || mInput.getMode() == TvRemoteInput.Mode.CONTROLS) {
+            enterPageNavigation();
+            if (mPage != currentPage() || mInput.getMode() == TvRemoteInput.Mode.CONTROLS)
+                return false;
+        }
+        if (isPageFullscreen() && mInput.getMode() == TvRemoteInput.Mode.ELEMENTS) {
+            cancelPagePress();
+            setSpatialNavigation(true);
             return false;
         }
         if (event.getAction() != KeyEvent.ACTION_DOWN && event.getAction() != KeyEvent.ACTION_UP) {
             return false;
         }
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
-        if (key == TvRemoteInput.Key.SELECT && down) {
+        if (key == TvRemoteInput.Key.SELECT
+                && down
+                && mInput.getMode() != TvRemoteInput.Mode.ELEMENTS) {
             boolean hidden = mCursorView.getVisibility() != View.VISIBLE;
             mCursorView.setVisibility(View.VISIBLE);
             mCursorView.removeCallbacks(mHideCursor);
             if (hidden) {
                 cancelPagePress();
-                return true;
+                mWakeSelect = true;
             }
         }
         if (key == TvRemoteInput.Key.SELECT && down && event.getRepeatCount() == 0) {
             mPressedContext = mSession.capture();
+            mCursorView.postDelayed(mSelectHold, 650);
+        }
+        if (key == TvRemoteInput.Key.SELECT && !down && mWakeSelect) {
+            boolean toggled =
+                    !event.isCanceled()
+                            && mSession.isCurrent(mPressedContext)
+                            && mInput.onSelectHeld(event.getEventTime());
+            if (!toggled) cancelPagePress();
+            mCursorView.removeCallbacks(mSelectHold);
+            mWakeSelect = false;
+            mPressedContext = null;
+            return true;
         }
         boolean handled =
                 mInput.onKey(
@@ -544,7 +596,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                         && key == TvRemoteInput.Key.SELECT),
                         event.getEventTime());
         if (handled && key == TvRemoteInput.Key.SELECT && !down && mPage != null) showCursor();
-        if (key == TvRemoteInput.Key.SELECT && !down) mPressedContext = null;
+        if (key == TvRemoteInput.Key.SELECT && !down) {
+            mCursorView.removeCallbacks(mSelectHold);
+            mPressedContext = null;
+        }
         return handled;
     }
 
@@ -556,6 +611,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         } else {
             restoreModalPageFocus();
             restoreUsableHome(false);
+            mActivity.getWindow().getDecorView().post(this::enterPageNavigation);
         }
     }
 
@@ -571,6 +627,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     public void onResume() {
         mLoadIndicator.onResume();
+        mActivity.getWindow().getDecorView().post(this::enterPageNavigation);
     }
 
     public int phoneStatusLabel() {
@@ -815,6 +872,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPressedContext = null;
         mPhoneRemote.invalidate();
         if (!isAlive()) return;
+        mActivity.getWindow().getDecorView().post(this::enterPageNavigation);
         // HTML fullscreen exit precedes the authoritative WebContents transition.
         if (mPage != null && mPage == currentPage() && isPageFullscreen()) {
             if (mFullscreenCursorContext == null) mFullscreenCursorContext = mSession.capture();
@@ -906,6 +964,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         List<TvPresentation.Action> actions = new ArrayList<>();
         addComposeControl(actions, R.string.brave_tv_address, true, context);
         addComposeControl(actions, R.string.brave_tv_pointer, currentPage() != null, context);
+        addComposeControl(actions, R.string.brave_tv_navigate, canNavigatePage(), context);
         addComposeControl(actions, R.string.brave_tv_back, tab != null && tab.canGoBack(), context);
         addComposeControl(
                 actions, R.string.brave_tv_forward, tab != null && tab.canGoForward(), context);
@@ -979,6 +1038,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private static int controlIcon(int action) {
         if (action == R.string.brave_tv_address) return R.drawable.brave_tv_search;
         if (action == R.string.brave_tv_pointer) return R.drawable.ic_cursor;
+        if (action == R.string.brave_tv_navigate) return R.drawable.brave_tv_tabs;
         if (action == R.string.brave_tv_back) return R.drawable.brave_tv_back;
         if (action == R.string.brave_tv_forward) return R.drawable.brave_tv_forward;
         if (action == R.string.brave_tv_reload) return R.drawable.brave_tv_reload;
@@ -1051,7 +1111,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         dismissDialog();
         // The page can navigate or a tab can close while the native panel is open.
         boolean current =
-                (action == R.string.brave_tv_pointer || action == R.string.brave_tv_scroll)
+                (action == R.string.brave_tv_pointer
+                                || action == R.string.brave_tv_scroll
+                                || action == R.string.brave_tv_navigate)
                         ? mSession.isCurrent(context)
                         : mSession.isCurrentDocument(context);
         if (!current) {
@@ -1069,6 +1131,221 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                         || "http".equals(tab.getUrl().getScheme()));
     }
 
+    private boolean canNavigatePage() {
+        Tab tab = mActivity.getActivityTab();
+        if (tab == null || tab.isDestroyed() || tab.isNativePage() || currentPage() == null)
+            return false;
+        String scheme = tab.getUrl().getScheme();
+        return "https".equals(scheme)
+                || "http".equals(scheme)
+                || "data".equals(scheme)
+                || "blob".equals(scheme)
+                || "file".equals(scheme);
+    }
+
+    private void enterPageNavigation() {
+        if (!isAlive() || !mActivity.hasWindowFocus()) return;
+        if (!canNavigatePage()) {
+            setSpatialNavigation(true);
+            return;
+        }
+        if (keyboardVisible()
+                || nativeUiOwnsInput(false)
+                || (mDialog != null && mDialog.isShowing())
+                || (mActivity.getActivityTab().isIncognito() && mPrivateTabsLocked.getAsBoolean()))
+            return;
+        if (mPage == currentPage() && mSession.isCurrentDocument(mPageNavigationContext)) return;
+        activatePageMode(TvRemoteInput.Mode.ELEMENTS);
+    }
+
+    private void activatePageMode(TvRemoteInput.Mode mode) {
+        ContentView page = currentPage();
+        if (page == null
+                || nativeSecurityOwnsInput()
+                || keyboardVisible()
+                || !canAccessTabs(mActivity.getTabModelSelector().isIncognitoSelected())) return;
+        if (mPage != page && !attachCursor(page)) return;
+        cancelPagePress();
+        mCursor.focus = null;
+        mFocusContext = null;
+        page.requestFocus();
+        mPageNavigationContext = mSession.capture();
+        mPageMode = mode;
+        mInput.activate(mode);
+    }
+
+    private void setSpatialNavigation(boolean disabled) {
+        Tab tab = mActivity.getActivityTab();
+        WebContents contents = tab == null ? null : tab.getWebContents();
+        if (contents == null || contents.isDestroyed()) return;
+        if (contents != mSpatialContents) {
+            // Existing tabs computed preferences before the TV switch was appended.
+            contents.setSpatialNavigationDisabled(!disabled);
+            mSpatialContents = contents;
+            mSpatialDisabled = !disabled;
+        }
+        if (mSpatialDisabled != disabled) {
+            contents.setSpatialNavigationDisabled(disabled);
+            mSpatialDisabled = disabled;
+        }
+    }
+
+    @Override
+    public void showNavigation() {
+        setSpatialNavigation(isPageFullscreen());
+        mCursor.elements = true;
+        mCursor.edgeDirection = 0;
+        mCursor.hintTop = mActivity.getBrowserControlsManager().getContentOffset();
+        mCursor.hint = mActivity.getString(R.string.brave_tv_navigate_hint);
+        mCursor.setBounds(0, 0, getWidth(), getHeight());
+        showCursor();
+        refreshElementBounds();
+    }
+
+    @Override
+    public void navigate(TvRemoteInput.Key direction) {
+        int key =
+                switch (direction) {
+                    case UP -> KeyEvent.KEYCODE_DPAD_UP;
+                    case DOWN -> KeyEvent.KEYCODE_DPAD_DOWN;
+                    case LEFT -> KeyEvent.KEYCODE_DPAD_LEFT;
+                    case RIGHT -> KeyEvent.KEYCODE_DPAD_RIGHT;
+                    default -> KeyEvent.KEYCODE_UNKNOWN;
+                };
+        if (key == KeyEvent.KEYCODE_UNKNOWN) return;
+        setSpatialNavigation(false);
+        sendPageKey(key);
+        showCursor();
+        refreshElementBounds();
+    }
+
+    @Override
+    public void selectElement() {
+        sendPageKey(KeyEvent.KEYCODE_ENTER);
+        refreshElementBounds();
+    }
+
+    private void sendPageKey(int key) {
+        ContentView page = mPage;
+        if (page == null || page != currentPage() || !page.hasFocus()) return;
+        long now = SystemClock.uptimeMillis();
+        KeyEvent down =
+                new KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_DOWN,
+                        key,
+                        0,
+                        0,
+                        -1,
+                        0,
+                        0,
+                        InputDevice.SOURCE_DPAD);
+        page.dispatchKeyEvent(down);
+        page.dispatchKeyEvent(KeyEvent.changeAction(down, KeyEvent.ACTION_UP));
+    }
+
+    @Override
+    public void toggleNavigation() {
+        if (mInput.getMode() == TvRemoteInput.Mode.ELEMENTS) {
+            RectF selection = mCursor.focus;
+            TvBrowserSession.Context context = mFocusContext;
+            activatePageMode(TvRemoteInput.Mode.POINTER);
+            if (selection != null && mSession.isCurrent(context))
+                mInput.positionPointer(
+                        Math.round(selection.centerX()), Math.round(selection.centerY()));
+        } else {
+            activatePageMode(TvRemoteInput.Mode.ELEMENTS);
+        }
+    }
+
+    private void refreshElementBounds() {
+        ContentView page = mPage;
+        if (page == null) return;
+        TvBrowserSession.Context context = mSession.capture();
+        long query = ++mFocusQuery;
+        page.postDelayed(
+                () -> {
+                    WebContents contents = context.contents;
+                    if (query != mFocusQuery || !canReadSelection(context) || contents == null)
+                        return;
+                    RenderFrameHost frame = contents.getMainFrame();
+                    if (frame == null || !frame.isRenderFrameLive()) return;
+                    // Geometry only, in an isolated world; no page text or candidate enumeration.
+                    frame.executeJavaScriptInIsolatedWorld(
+                            "(()=>{let d=document,e=d.activeElement,x=0,y=0;for(let"
+                                + " n=0;n<16&&e;n++){"
+                                + "if(e.shadowRoot&&e.shadowRoot.activeElement){e=e.shadowRoot.activeElement;continue;}if(e.tagName==='IFRAME'){try{let"
+                                + " c=e.contentDocument;if(c){let"
+                                + " r=e.getBoundingClientRect();x+=r.left+e.clientLeft;y+=r.top+e.clientTop;"
+                                + "d=c;e=d.activeElement;continue;}}catch(_){}}break;}if(!e||e===d.body||e===d.documentElement)return"
+                                + " [];let"
+                                + " r=e.getBoundingClientRect(),v=window.visualViewport;return"
+                                + " [r.left+x-(v?v.offsetLeft:0),r.top+y-(v?v.offsetTop:0),r.width,r.height];})()",
+                            ChromeIsolatedWorldIds.ISOLATED_WORLD_ID_CHROME_INTERNAL,
+                            result -> {
+                                if (query != mFocusQuery || !canReadSelection(context)) return;
+                                mCursor.focus = null;
+                                mFocusContext = null;
+                                try {
+                                    JSONArray values = new JSONArray(result);
+                                    if (values.length() == 4) {
+                                        double left = values.getDouble(0),
+                                                top = values.getDouble(1);
+                                        double width = values.getDouble(2),
+                                                height = values.getDouble(3);
+                                        if (Double.isFinite(left)
+                                                && Double.isFinite(top)
+                                                && Double.isFinite(width)
+                                                && Double.isFinite(height)
+                                                && width > 0
+                                                && height > 0) {
+                                            RenderCoordinates coordinates =
+                                                    RenderCoordinates.fromWebContents(contents);
+                                            RectF rect =
+                                                    new RectF(
+                                                            coordinates.fromLocalCssToPix(
+                                                                    (float) left),
+                                                            getTop()
+                                                                    + coordinates.fromLocalCssToPix(
+                                                                            (float) top),
+                                                            coordinates.fromLocalCssToPix(
+                                                                    (float) (left + width)),
+                                                            getTop()
+                                                                    + coordinates.fromLocalCssToPix(
+                                                                            (float)
+                                                                                    (top
+                                                                                            + height)));
+                                            if (rect.intersect(
+                                                    0, getTop(), getWidth(), getBottom())) {
+                                                mCursor.focus = rect;
+                                                mFocusContext = context;
+                                            }
+                                        }
+                                    }
+                                } catch (JSONException ignored) {
+                                    // Missing or removed selection has no overlay.
+                                }
+                                mCursor.invalidateSelf();
+                            });
+                },
+                60);
+    }
+
+    private boolean canReadSelection(TvBrowserSession.Context context) {
+        return isAlive()
+                && mSession.isCurrent(context)
+                && mPage == currentPage()
+                && mActivity.hasWindowFocus()
+                && !keyboardVisible()
+                && !isPageFullscreen()
+                && !nativeUiOwnsInput(false)
+                && (context.tab == null
+                        || !context.tab.isIncognito()
+                        || !mPrivateTabsLocked.getAsBoolean())
+                && mInput.getMode() == TvRemoteInput.Mode.ELEMENTS;
+    }
+
     private void returnToControls() {
         if (!isAlive()) return;
         dismissDialog();
@@ -1082,7 +1359,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (tab != null && tab.getNativePage() instanceof TvHomePage home) {
             home.focusAddress();
         } else if (currentPage() != null) {
-            performAction(R.string.brave_tv_pointer);
+            activatePageMode(mPageMode);
         }
     }
 
@@ -1356,7 +1633,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 new LoadUrlParams(
                         match.getUrl().getSpec(),
                         match.getTransition() | PageTransition.FROM_ADDRESS_BAR));
-        performAction(R.string.brave_tv_pointer);
+        mActivity.getWindow().getDecorView().post(this::enterPageNavigation);
     }
 
     public void showTabs() {
@@ -2250,14 +2527,15 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void performAction(int action) {
         if (!isAlive()) return;
-        if (action == R.string.brave_tv_pointer || action == R.string.brave_tv_scroll) {
-            ContentView page = currentPage();
-            if (page == null || !attachCursor(page)) return;
-            page.requestFocus();
-            mInput.activate(
-                    action == R.string.brave_tv_pointer
-                            ? TvRemoteInput.Mode.POINTER
-                            : TvRemoteInput.Mode.SCROLL);
+        if (action == R.string.brave_tv_pointer
+                || action == R.string.brave_tv_scroll
+                || action == R.string.brave_tv_navigate) {
+            activatePageMode(
+                    action == R.string.brave_tv_navigate
+                            ? TvRemoteInput.Mode.ELEMENTS
+                            : action == R.string.brave_tv_pointer
+                                    ? TvRemoteInput.Mode.POINTER
+                                    : TvRemoteInput.Mode.SCROLL);
         } else if (action == R.string.brave_tv_address) {
             showAddress();
         } else if (action == R.string.brave_tv_home) {
@@ -2346,6 +2624,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     @Override
     public void showPointer(int x, int y, TvRemoteInput.Mode mode, int edgeDirection) {
+        setSpatialNavigation(true);
+        mCursor.elements = false;
+        mCursor.focus = null;
         showCursor();
         mCursor.x = x;
         mCursor.y = y;
@@ -2376,6 +2657,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void showCursor() {
+        mCursor.hintVisible = true;
         mCursorView.setVisibility(View.VISIBLE);
         mCursorView.removeCallbacks(mHideCursor);
         mCursorView.postDelayed(mHideCursor, 3000);
@@ -2383,7 +2665,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void hideCursor() {
         if (!isAlive()) return;
-        mCursorView.setVisibility(View.INVISIBLE);
+        if (mInput.getMode() == TvRemoteInput.Mode.ELEMENTS) {
+            mCursor.hintVisible = false;
+            mCursor.invalidateSelf();
+        } else {
+            mCursorView.setVisibility(View.INVISIBLE);
+        }
     }
 
     private void sendPointerEvent(int action, int x, int y, int dx, int dy, long downTime) {
@@ -2479,6 +2766,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         int hintTop;
         int edgeDirection;
         String hint = "";
+        boolean elements;
+        boolean hintVisible = true;
+        @Nullable RectF focus;
 
         Cursor(float density) {
             this.density = density;
@@ -2489,14 +2779,28 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             paint.setStyle(Paint.Style.FILL);
             paint.setTextSize(16 * density);
             paint.setColor(Color.BLACK);
-            canvas.drawRect(
-                    12 * density,
-                    hintTop + 12 * density,
-                    36 * density + paint.measureText(hint),
-                    hintTop + 48 * density,
-                    paint);
-            paint.setColor(Color.WHITE);
-            canvas.drawText(hint, 24 * density, hintTop + 36 * density, paint);
+            if (hintVisible) {
+                canvas.drawRect(
+                        12 * density,
+                        hintTop + 12 * density,
+                        36 * density + paint.measureText(hint),
+                        hintTop + 48 * density,
+                        paint);
+                paint.setColor(Color.WHITE);
+                canvas.drawText(hint, 24 * density, hintTop + 36 * density, paint);
+            }
+            if (elements) {
+                if (focus != null) {
+                    paint.setStyle(Paint.Style.STROKE);
+                    paint.setStrokeWidth(5 * density);
+                    paint.setColor(Color.rgb(25, 54, 46));
+                    canvas.drawRoundRect(focus, 6 * density, 6 * density, paint);
+                    paint.setStrokeWidth(3 * density);
+                    paint.setColor(Color.rgb(220, 235, 220));
+                    canvas.drawRoundRect(focus, 6 * density, 6 * density, paint);
+                }
+                return;
+            }
             canvas.drawCircle(x, y, 7 * density, paint);
             if (edgeDirection != 0) {
                 float tipY = y - edgeDirection * 12 * density;

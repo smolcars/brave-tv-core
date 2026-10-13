@@ -486,7 +486,9 @@ public abstract class BraveActivity extends ChromeActivity
             }
             Tab tab = getActivityTab();
             // A restored home tab may not have created its native view yet.
-            if (tab != null && !UrlUtilities.isNtpUrl(tab.getUrl().getSpec())) {
+            if (tab != null && !UrlUtilities.isNtpUrl(tab.getUrl().getSpec())
+                    && !"http".equals(tab.getUrl().getScheme())
+                    && !"https".equals(tab.getUrl().getScheme())) {
                 mTvBrowserControls.showControls();
             }
         }

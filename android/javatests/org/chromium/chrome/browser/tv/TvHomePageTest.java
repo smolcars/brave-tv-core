@@ -224,7 +224,10 @@ public class TvHomePageTest {
                 () ->
                         mActivity.getActivityTab() != null
                                 && mActivity.getActivityTab().getNativePage() instanceof TvHomePage
-                                && mActivity.getActivityTab().getNativePage().getView()
+                                && mActivity
+                                        .getActivityTab()
+                                        .getNativePage()
+                                        .getView()
                                         .isAttachedToWindow());
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
@@ -235,7 +238,8 @@ public class TvHomePageTest {
                     for (BookmarkId id : mOwnedBookmarks) {
                         if (mBookmarks.doesBookmarkExist(id)) {
                             assertFalse(
-                                    mBookmarks.getBookmarkById(id)
+                                    mBookmarks
+                                            .getBookmarkById(id)
                                             .getUrl()
                                             .getHost()
                                             .equals("www.youtube.com"));
@@ -263,7 +267,10 @@ public class TvHomePageTest {
                             mActivity.getActivityTab() != null
                                     && mActivity.getActivityTab().getNativePage()
                                             instanceof TvHomePage
-                                    && mActivity.getActivityTab().getNativePage().getView()
+                                    && mActivity
+                                            .getActivityTab()
+                                            .getNativePage()
+                                            .getView()
                                             .isAttachedToWindow());
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
@@ -292,7 +299,10 @@ public class TvHomePageTest {
                                     && mActivity.getActivityTab().isIncognito()
                                     && mActivity.getActivityTab().getNativePage()
                                             instanceof TvHomePage
-                                    && mActivity.getActivityTab().getNativePage().getView()
+                                    && mActivity
+                                            .getActivityTab()
+                                            .getNativePage()
+                                            .getView()
                                             .isAttachedToWindow());
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
@@ -1619,6 +1629,191 @@ public class TvHomePageTest {
         assertFalse(
                 mDevice.hasObject(
                         By.descStartsWith(TITLE + TvPresentation.MAX_HOME_FAVORITES + "\n")));
+    }
+
+    @Test
+    @MediumTest
+    public void elementsNavigateAndHeldOkSwitchesWithoutClicking() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<style>button{position:absolute;width:180px;height:90px}"
+                            + "#a{left:60px;top:60px}#b{left:320px;top:60px}"
+                            + "#c{left:60px;top:220px}#d{left:320px;top:220px}</style><button id=a"
+                            + " autofocus>A</button><button id=b>B</button><button"
+                            + " id=c>C</button><button id=d onclick='window.clicks++'>D</button>"
+                            + "<script>window.clicks=0</script>");
+        injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+        waitForElement(tab, "b");
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForElement(tab, "d");
+        injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+        assertEquals(
+                "1",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(tab.getWebContents(), "clicks"));
+        holdElementOk();
+        injectDpad(KeyEvent.KEYCODE_DPAD_LEFT);
+        waitForElement(tab, "d");
+        assertEquals(
+                "1",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(tab.getWebContents(), "clicks"));
+        Thread.sleep(3200);
+        holdElementOk();
+        injectDpad(KeyEvent.KEYCODE_DPAD_UP);
+        waitForElement(tab, "b");
+        mDevice.pressBack();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        mDevice.pressBack();
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForElement(tab, "d");
+        ThreadUtils.runOnUiThreadBlocking(() -> assertSame(tab, mActivity.getActivityTab()));
+    }
+
+    @Test
+    @MediumTest
+    public void elementsScrollVisibleEdgeAndStopAtDocumentEnd() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<style>body{height:2600px;margin:0}button{position:absolute;left:60px;width:200px;height:80px}"
+                            + "#a{top:60px}#b{top:220px}#later{top:1100px}#last{top:2480px}</style><button"
+                            + " id=a autofocus>A</button><button id=b>B</button><button"
+                            + " id=later>Later</button><button id=last>Last</button>");
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForElement(tab, "b");
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForScript(tab, "scrollY>0");
+        for (int i = 0; i < 18; i++) injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForScript(tab, "scrollY>300");
+        JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                tab.getWebContents(),
+                "last.focus();scrollTo(0,document.documentElement.scrollHeight);true");
+        waitForScript(tab, "scrollY+innerHeight>=document.documentElement.scrollHeight-2");
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForElement(tab, "last");
+        waitForScript(tab, "scrollY+innerHeight>=document.documentElement.scrollHeight-2");
+    }
+
+    @Test
+    @MediumTest
+    public void elementsNavigationCancelsOkAcrossDocumentChange() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<button id=a autofocus onclick='window.clicks++'>A</button>"
+                                + "<script>window.clicks=0</script>");
+        long now = SystemClock.uptimeMillis();
+        KeyEvent down =
+                new KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_DOWN,
+                        KeyEvent.KEYCODE_DPAD_CENTER,
+                        0,
+                        0,
+                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                        0,
+                        0,
+                        InputDevice.SOURCE_DPAD);
+        ThreadUtils.runOnUiThreadBlocking(() -> mActivity.dispatchKeyEvent(down));
+        Tab replacement =
+                loadElementFixture(
+                        "<button id=b autofocus onclick='window.clicks++'>B</button>"
+                                + "<script>window.clicks=0</script>");
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        mActivity.dispatchKeyEvent(
+                                new KeyEvent(
+                                        now,
+                                        SystemClock.uptimeMillis(),
+                                        KeyEvent.ACTION_UP,
+                                        KeyEvent.KEYCODE_DPAD_CENTER,
+                                        0,
+                                        0,
+                                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                                        0,
+                                        0,
+                                        InputDevice.SOURCE_DPAD)));
+        assertSame(tab, replacement);
+        assertEquals(
+                "0",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        replacement.getWebContents(), "window.clicks"));
+    }
+
+    @Test
+    @MediumTest
+    public void elementsScrollNestedPanelBeforePage() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<style>body{height:1800px;margin:50px}#panel{width:400px;height:220px;overflow:auto}"
+                            + "#inside{height:1000px;position:relative}button{width:180px;height:70px}"
+                            + "#b{position:absolute;top:140px;left:0}#c{position:absolute;top:800px;left:0}</style><div"
+                            + " id=panel><div id=inside><button id=a autofocus>A</button><button"
+                            + " id=b>B</button><button id=c>C</button></div></div>");
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForElement(tab, "b");
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForScript(tab, "panel.scrollTop>0&&scrollY===0");
+    }
+
+    private Tab loadElementFixture(String body) {
+        mActivityTestRule.loadUrl(
+                "data:text/html;charset=utf-8,"
+                        + Uri.encode(
+                                "<meta name=viewport content='width=device-width,initial-scale=1'>"
+                                        + body));
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        CriteriaHelper.pollUiThread(() -> !tab.isLoading() && tab.getContentView().hasFocus());
+        assertFalse(mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls))));
+        return tab;
+    }
+
+    private void waitForElement(Tab tab, String id) {
+        waitForScript(tab, "document.activeElement.id==='" + id + "'");
+    }
+
+    private void waitForScript(Tab tab, String script) {
+        CriteriaHelper.pollInstrumentationThread(
+                () -> {
+                    try {
+                        return "true"
+                                .equals(
+                                        JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                                                tab.getWebContents(), script));
+                    } catch (Exception exception) {
+                        return false;
+                    }
+                });
+    }
+
+    private void holdElementOk() {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    long now = SystemClock.uptimeMillis();
+                    KeyEvent down =
+                            new KeyEvent(
+                                    now,
+                                    now,
+                                    KeyEvent.ACTION_DOWN,
+                                    KeyEvent.KEYCODE_DPAD_CENTER,
+                                    0,
+                                    0,
+                                    KeyCharacterMap.VIRTUAL_KEYBOARD,
+                                    0,
+                                    0,
+                                    InputDevice.SOURCE_DPAD);
+                    mActivity.dispatchKeyEvent(down);
+                    mActivity.dispatchKeyEvent(
+                            new KeyEvent(
+                                    now,
+                                    now + 700,
+                                    KeyEvent.ACTION_UP,
+                                    KeyEvent.KEYCODE_DPAD_CENTER,
+                                    0,
+                                    0,
+                                    KeyCharacterMap.VIRTUAL_KEYBOARD,
+                                    0,
+                                    0,
+                                    InputDevice.SOURCE_DPAD));
+                });
     }
 
     @Test

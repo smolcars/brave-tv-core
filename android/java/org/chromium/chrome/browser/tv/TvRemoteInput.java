@@ -8,9 +8,11 @@ package org.chromium.chrome.browser.tv;
 /** Remote interaction policy; the target owns Android focus and Chromium input delivery. */
 public final class TvRemoteInput {
     private static final long EDGE_HOLD_MS = 450;
+    private static final long SELECT_HOLD_MS = 650;
 
     public enum Mode {
         CONTROLS,
+        ELEMENTS,
         POINTER,
         SCROLL
     }
@@ -43,6 +45,14 @@ public final class TvRemoteInput {
         void showControls();
 
         void scroll(int x, int y, int dx, int dy);
+
+        void showNavigation();
+
+        void navigate(Key direction);
+
+        void selectElement();
+
+        void toggleNavigation();
     }
 
     private final Target mTarget;
@@ -51,6 +61,7 @@ public final class TvRemoteInput {
     private int mX;
     private int mY;
     private boolean mSelectPressed;
+    private long mSelectSince = -1;
     private boolean mPositioned;
     private Key mHeldDirection = Key.OTHER;
     private long mEdgeSince = -1;
@@ -88,8 +99,24 @@ public final class TvRemoteInput {
 
     public void cancelPress() {
         mSelectPressed = false;
+        mSelectSince = -1;
         mHeldDirection = Key.OTHER;
         mEdgeSince = -1;
+    }
+
+    public Mode getMode() {
+        return mMode;
+    }
+
+    /** Called by the adapter's hold timer, or by a repeat/release on remotes without repeats. */
+    public boolean onSelectHeld(long eventTime) {
+        if (!mSelectPressed
+                || mMode == Mode.SCROLL
+                || mSelectSince < 0
+                || eventTime - mSelectSince < SELECT_HOLD_MS) return false;
+        cancelPress();
+        mTarget.toggleNavigation();
+        return true;
     }
 
     /** Share an external pointer position with subsequent physical input and viewport recovery. */
@@ -139,11 +166,20 @@ public final class TvRemoteInput {
             mEdgeSince = -1;
             showPointer();
             if (down) {
-                if (repeat == 0) mSelectPressed = true;
+                if (repeat == 0) {
+                    mSelectPressed = true;
+                    mSelectSince = eventTime;
+                } else {
+                    onSelectHeld(eventTime);
+                }
             } else if (mSelectPressed) {
+                if (onSelectHeld(eventTime)) return true;
                 mSelectPressed = false;
+                mSelectSince = -1;
                 if (mMode == Mode.SCROLL) {
                     activate(Mode.POINTER);
+                } else if (mMode == Mode.ELEMENTS) {
+                    mTarget.selectElement();
                 } else {
                     mTarget.click(mX, mY);
                 }
@@ -187,6 +223,10 @@ public final class TvRemoteInput {
             return true;
         }
         if (mSelectPressed) return true;
+        if (mMode == Mode.ELEMENTS) {
+            mTarget.navigate(key);
+            return true;
+        }
         boolean atEdge = (dy < 0 && mY == mTop) || (dy > 0 && mY == mBottom);
         if (atEdge) {
             if (mEdgeSince < 0) mEdgeSince = eventTime;
@@ -225,6 +265,10 @@ public final class TvRemoteInput {
     }
 
     private void showPointer() {
+        if (mMode == Mode.ELEMENTS) {
+            mTarget.showNavigation();
+            return;
+        }
         int edgeDirection = mEdgeSince < 0 ? 0 : mHeldDirection == Key.UP ? -1 : 1;
         mTarget.showPointer(mX, mY, mMode, edgeDirection);
     }
