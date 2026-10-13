@@ -623,7 +623,11 @@ public class TvHomePageTest {
                         !mDevice.hasObject(
                                 By.text(mActivity.getString(R.string.brave_tv_page_loading))));
         mActivityTestRule.loadUrl("http://127.0.0.1:18092/connection-refused");
-        ThreadUtils.runOnUiThreadBlocking(() -> assertFalse(tab.isLoading()));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertFalse(tab.isLoading());
+                    assertTrue(tab.isShowingErrorPage());
+                });
         CriteriaHelper.pollInstrumentationThread(
                 () ->
                         !mDevice.hasObject(
@@ -642,6 +646,48 @@ public class TvHomePageTest {
         } finally {
             release.disconnect();
         }
+    }
+
+    @Test
+    @MediumTest
+    public void pageLoadingYieldsToSameWindowFindAndRecovers() {
+        Tab tab = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> tab.loadUrl(new LoadUrlParams("http://127.0.0.1:18091/hold.html")));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(By.text("Resource pending"))
+                                && mDevice.hasObject(
+                                        By.text(
+                                                mActivity.getString(
+                                                        R.string.brave_tv_page_loading))));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.find_in_page_id, false));
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    View find = mActivity.findViewById(R.id.find_toolbar);
+                    return find != null && find.isShown();
+                });
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        !mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        ThreadUtils.runOnUiThreadBlocking(() -> assertTrue(tab.isLoading()));
+        mDevice.pressBack();
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    View find = mActivity.findViewById(R.id.find_toolbar);
+                    return find == null || !find.isShown();
+                });
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        ThreadUtils.runOnUiThreadBlocking(tab::stopLoading);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        !mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
     }
 
     @Test
