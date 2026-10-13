@@ -302,11 +302,13 @@ function disable(value) {
 async function poll() {
   if (!token || busy || document.hidden) return
   const credential = token
+  const sequence = seq
   busy = true
   try {
     polling = post('/api', { token: credential, op: 'state' })
     const result = await polling
-    if (token === credential) render(result)
+    if (token === credential && seq === sequence && !document.hidden)
+      render(result)
   } catch {
     if (token === credential) disconnected()
   } finally {
@@ -362,6 +364,7 @@ async function command(op, extra = {}) {
       return false
   }
   const credential = token
+  const sequence = ++seq
   busy = true
   if (op === 'edit' && (extra.edit === 'replace' || extra.edit === 'select')) {
     pendingEdit = {
@@ -376,11 +379,12 @@ async function command(op, extra = {}) {
       token: credential,
       op,
       epoch,
-      seq: ++seq,
+      seq: sequence,
       revision: state.revision,
       ...extra,
     })
-    if (token !== credential) return false
+    if (token !== credential || seq !== sequence || document.hidden)
+      return false
     render(result)
     return result.ok === true
   } catch {
