@@ -100,6 +100,8 @@ import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.test.util.DOMUtils;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.content_public.browser.test.util.WebContentsUtils;
+import org.chromium.net.ChromiumNetworkAdapter;
+import org.chromium.net.NetworkTrafficAnnotationTag;
 import org.chromium.url.GURL;
 
 import java.io.File;
@@ -631,7 +633,9 @@ public class TvHomePageTest {
     private void releaseLoadingFixture() throws Exception {
         java.net.HttpURLConnection release =
                 (java.net.HttpURLConnection)
-                        new java.net.URL("http://127.0.0.1:18091/release").openConnection();
+                        ChromiumNetworkAdapter.openConnection(
+                                new java.net.URL("http://127.0.0.1:18091/release"),
+                                NetworkTrafficAnnotationTag.TRAFFIC_ANNOTATION_FOR_TESTS);
         release.setConnectTimeout(5000);
         release.setReadTimeout(5000);
         release.setRequestMethod("POST");

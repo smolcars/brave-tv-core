@@ -1814,6 +1814,7 @@ if (is_android) {
       "//components/user_prefs/android:java",
       "//components/variations/android:variations_java",
       "//content/public/android:content_full_java",
+      "//net/android:net_java",
       "//third_party/android_deps:espresso_java",
       "//third_party/android_deps:material_design_java",
       "//third_party/androidx:androidx_activity_activity_java",
