@@ -317,6 +317,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mLoadIndicator.refresh();
     }
 
+    int pageLoadingBottom() {
+        return mLoadIndicator.bottom();
+    }
+
     private boolean canShowPageLoading() {
         if (!isAlive()
                 || nativeSecurityOwnsInput()

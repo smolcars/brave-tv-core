@@ -133,6 +133,10 @@ final class TvPageLoadIndicator {
         hide();
     }
 
+    int bottom() {
+        return mView == null ? 0 : mView.getBottom();
+    }
+
     void onResume() {
         mPaused = false;
         refresh();

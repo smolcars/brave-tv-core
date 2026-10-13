@@ -14,6 +14,7 @@ import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -48,6 +49,8 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     private TvRemoteBrowser mBrowser;
     private AlertDialog mDialog;
     private View mBadge;
+    private final ViewTreeObserver.OnGlobalLayoutListener mBadgeLayoutObserver =
+            this::positionBadge;
     private android.net.Network mNetwork;
     private String mAddress;
     private String mOrigin;
@@ -226,7 +229,21 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                         Gravity.TOP | Gravity.END);
         params.topMargin = Math.round(60 * mActivity.getResources().getDisplayMetrics().density);
         params.setMarginEnd(Math.round(24 * mActivity.getResources().getDisplayMetrics().density));
-        ((FrameLayout) mActivity.findViewById(android.R.id.content)).addView(mBadge, params);
+        FrameLayout parent = mActivity.findViewById(android.R.id.content);
+        parent.addView(mBadge, params);
+        parent.getViewTreeObserver().addOnGlobalLayoutListener(mBadgeLayoutObserver);
+    }
+
+    private void positionBadge() {
+        if (mBadge == null
+                || !(mBadge.getLayoutParams() instanceof FrameLayout.LayoutParams params)) return;
+        float density = mActivity.getResources().getDisplayMetrics().density;
+        int top = Math.round(60 * density);
+        int loadingBottom = mControls.pageLoadingBottom();
+        if (loadingBottom > 0) top = Math.max(top, loadingBottom + Math.round(16 * density));
+        if (params.topMargin == top) return;
+        params.topMargin = top;
+        mBadge.setLayoutParams(params);
     }
 
     @Override
@@ -290,6 +307,10 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
         mUi.removeCallbacksAndMessages(null);
         dismiss();
         if (mBadge != null) {
+            if (mBadge.getParent() instanceof ViewGroup parent
+                    && parent.getViewTreeObserver().isAlive()) {
+                parent.getViewTreeObserver().removeOnGlobalLayoutListener(mBadgeLayoutObserver);
+            }
             TvPresentation.dispose(mBadge);
             if (mBadge.getParent() instanceof ViewGroup parent) parent.removeView(mBadge);
         }
