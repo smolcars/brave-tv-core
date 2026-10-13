@@ -1669,6 +1669,102 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void elementsSkipHiddenAndCoveredTargets() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<style>button{position:absolute;width:180px;height:90px}"
+                            + "#a{left:60px;top:60px}#b{left:320px;top:60px}"
+                            + "#d{left:320px;top:220px}#hidden{display:none}"
+                            + "#cover{position:absolute;left:310px;top:50px;width:200px;"
+                            + "height:110px;background:black;z-index:2}</style><button id=a"
+                            + " autofocus>A</button><button id=hidden>Hidden</button><button"
+                            + " id=b>B</button><button id=d>D</button><div id=cover></div>");
+        injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+        waitForElement(tab, "d");
+        JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                tab.getWebContents(), "cover.remove();true");
+        injectDpad(KeyEvent.KEYCODE_DPAD_UP);
+        waitForElement(tab, "b");
+    }
+
+    @Test
+    @MediumTest
+    public void elementsKeepHeldDirectionAcrossTitleUpdates() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<style>button{display:block;width:180px;height:70px;margin:25px}</style><button"
+                            + " id=a autofocus>A</button><button id=b>B</button><button"
+                            + " id=c>C</button>"
+                            + "<script>document.addEventListener('focusin',e=>document.title=e.target.id)</script>");
+        long now = SystemClock.uptimeMillis();
+        KeyEvent down =
+                new KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_DOWN,
+                        KeyEvent.KEYCODE_DPAD_DOWN,
+                        0,
+                        0,
+                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                        0,
+                        0,
+                        InputDevice.SOURCE_DPAD);
+        ThreadUtils.runOnUiThreadBlocking(() -> mActivity.dispatchKeyEvent(down));
+        waitForElement(tab, "b");
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        mActivity.dispatchKeyEvent(
+                                KeyEvent.changeTimeRepeat(down, SystemClock.uptimeMillis(), 1)));
+        waitForElement(tab, "c");
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.dispatchKeyEvent(KeyEvent.changeAction(down, KeyEvent.ACTION_UP)));
+    }
+
+    @Test
+    @MediumTest
+    public void elementsNavigateSameOriginFrame() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<iframe id=frame style='width:650px;height:350px' srcdoc=\""
+                            + "<style>button{width:180px;height:70px;margin:20px}</style><button"
+                            + " id=a autofocus>A</button><button id=b>B</button>\"></iframe>");
+        waitForScript(tab, "frame.contentDocument.activeElement.id==='a'");
+        injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+        waitForScript(tab, "frame.contentDocument.activeElement.id==='b'");
+    }
+
+    @Test
+    @MediumTest
+    public void elementsFallBackForCrossOriginFrame() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<button id=outside>Outside</button><iframe id=frame sandbox=allow-scripts"
+                            + " style='display:block;width:650px;height:250px' srcdoc=\"<button"
+                            + " id=inside autofocus>Inside</button><script>"
+                            + "addEventListener('keydown',()=>parent.postMessage('key','*'));"
+                            + "inside.addEventListener('focus',()=>parent.postMessage('ready','*'))</script>\"></iframe><button"
+                            + " id=below>Below</button>"
+                            + "<script>window.keys=0;window.ready=false;addEventListener('message',"
+                            + "e=>{if(e.data==='key')keys++;if(e.data==='ready')ready=true})</script>");
+        waitForScript(tab, "ready");
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    var focused = tab.getWebContents().getFocusedFrame();
+                    return focused != null && !focused.isOutermostMainFrame();
+                });
+        injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+        assertEquals(
+                "0",
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(tab.getWebContents(), "keys"));
+        JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                tab.getWebContents(), "outside.focus();true");
+        holdElementOk();
+        injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+        waitForElement(tab, "below");
+    }
+
+    @Test
+    @MediumTest
     public void elementsScrollVisibleEdgeAndStopAtDocumentEnd() throws Exception {
         Tab tab =
                 loadElementFixture(

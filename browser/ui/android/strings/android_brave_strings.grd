@@ -4114,6 +4114,7 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_SEEK_FORWARD" desc="TV action to seek forward; the distance can depend on the site.">Seek forward</message>
     <message name="IDS_BRAVE_TV_POINTER_HINT" desc="Remote button hints for unified page browsing.">Arrows: move · Hold at top/bottom: scroll · OK: click · Hold OK: jump</message>
     <message name="IDS_BRAVE_TV_SCROLL_HINT" desc="Remote button hints for scrolling content under the pointer.">D-pad: scroll here · OK: browse · Back: controls</message>
+    <message name="IDS_BRAVE_TV_NAVIGATE_UNAVAILABLE" desc="TV pointer hint when embedded content cannot safely use directional navigation.">Embedded content · Use the pointer · Click outside to resume jumping</message>
   </messages>
   </release>
 </grit>

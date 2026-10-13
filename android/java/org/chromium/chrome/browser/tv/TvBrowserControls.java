@@ -89,6 +89,7 @@ import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.WebContentsObserver;
 import org.chromium.ui.base.PageTransition;
 import org.chromium.ui.modaldialog.ModalDialogManager;
+import org.chromium.url.Origin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -184,7 +185,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 && mSession.isCurrent(mPressedContext)
                 && !keyboardVisible()
                 && !nativeUiOwnsInput(false)
-                && !isPageFullscreen()) {
+                && !isPageFullscreen()
+                && canAccessTabs(mActivity.getTabModelSelector().isIncognitoSelected())) {
             mInput.onSelectHeld(SystemClock.uptimeMillis());
         }
     }
@@ -499,6 +501,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPhoneRemote.invalidate();
         if (!isAlive()) return false;
         if (event.isCanceled()) cancelPagePress();
+        if (mInput.getMode() == TvRemoteInput.Mode.ELEMENTS
+                && (isPageFullscreen() || !supportsElementNavigation())) setSpatialNavigation(true);
         InputDevice device = event.getDevice();
         if (!event.hasNoModifiers()
                 || (device != null
@@ -546,6 +550,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             default:
                 return false;
         }
+        Tab active = mActivity.getActivityTab();
+        if (active != null && active.isIncognito() && mPrivateTabsLocked.getAsBoolean()) {
+            cancelPagePress();
+            mPressedContext = null;
+            return true;
+        }
         if (mPage != currentPage() || mInput.getMode() == TvRemoteInput.Mode.CONTROLS) {
             enterPageNavigation();
             if (mPage != currentPage() || mInput.getMode() == TvRemoteInput.Mode.CONTROLS)
@@ -558,6 +568,14 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         }
         if (event.getAction() != KeyEvent.ACTION_DOWN && event.getAction() != KeyEvent.ACTION_UP) {
             return false;
+        }
+        if (mInput.getMode() == TvRemoteInput.Mode.ELEMENTS && !supportsElementNavigation()) {
+            WebContents contents = active == null ? null : active.getWebContents();
+            if (contents != null && contents.isFocusedElementEditable()) {
+                cancelPagePress();
+                return false;
+            }
+            activatePageMode(TvRemoteInput.Mode.POINTER);
         }
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         if (key == TvRemoteInput.Key.SELECT
@@ -868,10 +886,15 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void browserStateChanged() {
-        cancelPagePress();
-        mPressedContext = null;
         mPhoneRemote.invalidate();
         if (!isAlive()) return;
+        if (mPage != currentPage()
+                || !mSession.isCurrent(mPageNavigationContext)
+                || nativeUiOwnsInput(false)
+                || !supportsElementNavigation()) {
+            cancelPagePress();
+            mPressedContext = null;
+        }
         mActivity.getWindow().getDecorView().post(this::enterPageNavigation);
         // HTML fullscreen exit precedes the authoritative WebContents transition.
         if (mPage != null && mPage == currentPage() && isPageFullscreen()) {
@@ -1143,6 +1166,24 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 || "file".equals(scheme);
     }
 
+    private boolean supportsElementNavigation() {
+        Tab tab = mActivity.getActivityTab();
+        WebContents contents = tab == null ? null : tab.getWebContents();
+        if (contents == null || contents.isDestroyed()) return false;
+        RenderFrameHost focused = contents.getFocusedFrame();
+        if (focused == null || focused.isOutermostMainFrame()) return true;
+        RenderFrameHost main = contents.getMainFrame();
+        Origin origin = focused.getLastCommittedOrigin();
+        // Chromium spatial navigation cannot traverse remote or cross-origin focused frames.
+        return main != null
+                && main.isRenderFrameLive()
+                && focused.isRenderFrameLive()
+                && focused.getGlobalRenderFrameHostId().childId()
+                        == main.getGlobalRenderFrameHostId().childId()
+                && origin != null
+                && origin.equals(main.getLastCommittedOrigin());
+    }
+
     private void enterPageNavigation() {
         if (!isAlive() || !mActivity.hasWindowFocus()) return;
         if (!canNavigatePage()) {
@@ -1156,7 +1197,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             return;
         if (mPage == currentPage()
                 && mSession.isCurrentDocument(mPageNavigationContext)
-                && mInput.getMode() != TvRemoteInput.Mode.CONTROLS) return;
+                && mInput.getMode() != TvRemoteInput.Mode.CONTROLS) {
+            if (!mSession.isCurrent(mPageNavigationContext)) {
+                mPageNavigationContext = mSession.capture();
+                if (mInput.getMode() == TvRemoteInput.Mode.ELEMENTS) showNavigation();
+            }
+            return;
+        }
         activatePageMode(TvRemoteInput.Mode.ELEMENTS);
     }
 
@@ -1166,6 +1213,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 || nativeSecurityOwnsInput()
                 || keyboardVisible()
                 || !canAccessTabs(mActivity.getTabModelSelector().isIncognitoSelected())) return;
+        if (mode == TvRemoteInput.Mode.ELEMENTS
+                && !isPageFullscreen()
+                && !supportsElementNavigation()) mode = TvRemoteInput.Mode.POINTER;
         if (mPage != page && !attachCursor(page)) return;
         cancelPagePress();
         mCursor.focus = null;
@@ -1197,6 +1247,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mPageMode = TvRemoteInput.Mode.ELEMENTS;
         setSpatialNavigation(isPageFullscreen());
         mCursor.elements = true;
+        if (isPageFullscreen()) {
+            mCursorView.setVisibility(View.INVISIBLE);
+            mCursor.focus = null;
+            return;
+        }
         mCursor.edgeDirection = 0;
         mCursor.hintTop = mActivity.getBrowserControlsManager().getContentOffset();
         mCursor.hint = mActivity.getString(R.string.brave_tv_navigate_hint);
@@ -1267,7 +1322,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (page == null) return;
         TvBrowserSession.Context context = mSession.capture();
         long query = ++mFocusQuery;
-        page.postDelayed(
+        Runnable read =
                 () -> {
                     WebContents contents = context.contents;
                     if (query != mFocusQuery || !canReadSelection(context) || contents == null)
@@ -1283,8 +1338,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 + " r=e.getBoundingClientRect();x+=r.left+e.clientLeft;y+=r.top+e.clientTop;"
                                 + "d=c;e=d.activeElement;continue;}}catch(_){}}break;}if(!e||e===d.body||e===d.documentElement)return"
                                 + " [];let"
-                                + " r=e.getBoundingClientRect(),v=window.visualViewport;return"
-                                + " [r.left+x-(v?v.offsetLeft:0),r.top+y-(v?v.offsetTop:0),r.width,r.height];})()",
+                                + " r=e.getBoundingClientRect(),l=r.left,t=r.top,b=r.bottom,z=r.right;for(let"
+                                + " a=e.parentElement||e.getRootNode().host,n=0;a&&n<16;n++,a=a.parentElement||a.getRootNode().host){let"
+                                + " s=getComputedStyle(a),q=a.getBoundingClientRect();"
+                                + "if(/auto|scroll|hidden|clip/.test(s.overflowX)){l=Math.max(l,q.left+a.clientLeft);z=Math.min(z,q.left+a.clientLeft+a.clientWidth);}"
+                                + "if(/auto|scroll|hidden|clip/.test(s.overflowY)){t=Math.max(t,q.top+a.clientTop);b=Math.min(b,q.top+a.clientTop+a.clientHeight);}}let"
+                                + " v=window.visualViewport;return"
+                                + " [l+x-(v?v.offsetLeft:0),t+y-(v?v.offsetTop:0),Math.max(0,z-l),Math.max(0,b-t)];})()",
                             ChromeIsolatedWorldIds.ISOLATED_WORLD_ID_CHROME_INTERNAL,
                             result -> {
                                 if (query != mFocusQuery || !canReadSelection(context)) return;
@@ -1331,8 +1391,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                                 }
                                 mCursor.invalidateSelf();
                             });
-                },
-                60);
+                };
+        page.postDelayed(read, 60);
+        page.postDelayed(read, 320);
     }
 
     private boolean canReadSelection(TvBrowserSession.Context context) {
@@ -1343,6 +1404,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 && !keyboardVisible()
                 && !isPageFullscreen()
                 && !nativeUiOwnsInput(false)
+                && supportsElementNavigation()
                 && (context.tab == null
                         || !context.tab.isIncognito()
                         || !mPrivateTabsLocked.getAsBoolean())
@@ -2640,7 +2702,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 mActivity.getString(
                         mode == TvRemoteInput.Mode.SCROLL
                                 ? R.string.brave_tv_scroll_hint
-                                : R.string.brave_tv_pointer_hint);
+                                : !supportsElementNavigation()
+                                        ? R.string.brave_tv_navigate_unavailable
+                                        : R.string.brave_tv_pointer_hint);
         mCursor.setBounds(0, 0, getWidth(), getHeight());
         mCursor.invalidateSelf();
         sendPointerEvent(MotionEvent.ACTION_HOVER_MOVE, x, y, 0, 0, SystemClock.uptimeMillis());
@@ -2786,14 +2850,18 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             paint.setTextSize(16 * textDensity);
             paint.setColor(Color.BLACK);
             if (hintVisible) {
+                float captionTop =
+                        elements && (focus == null || focus.centerY() < getBounds().height() / 2f)
+                                ? getBounds().height() - 60 * density
+                                : hintTop;
                 canvas.drawRect(
                         12 * density,
-                        hintTop + 12 * density,
+                        captionTop + 12 * density,
                         36 * density + paint.measureText(hint),
-                        hintTop + 48 * density,
+                        captionTop + 48 * density,
                         paint);
                 paint.setColor(Color.WHITE);
-                canvas.drawText(hint, 24 * density, hintTop + 36 * density, paint);
+                canvas.drawText(hint, 24 * density, captionTop + 36 * density, paint);
             }
             if (elements) {
                 if (focus != null) {
