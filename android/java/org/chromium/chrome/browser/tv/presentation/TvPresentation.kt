@@ -116,6 +116,7 @@ object TvPresentation {
         var label by mutableStateOf(label)
         var enabled by mutableStateOf(enabled)
         var icon by mutableStateOf(icon)
+        var announceChanges = false
         internal var focused = false
         internal var focusRequest by mutableStateOf(0)
         fun hasFocus(): Boolean = focused
@@ -267,11 +268,14 @@ object TvPresentation {
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold)
                             Column(Modifier.weight(1f)) {
-                                ActionRows(actions.drop(1), 6, 8.dp, minimum = 72.dp) { action, modifier ->
+                                ActionRows(actions.drop(1).take(4), 4, 8.dp, minimum = 108.dp) { action, modifier ->
                                     ActionButton(action, modifier.then(
                                         if (action === actions.getOrNull(1)) Modifier.focusRequester(header)
                                         else Modifier), quiet = true, compact = true)
                                 }
+                            }
+                            actions.drop(5).forEach { action ->
+                                ActionButton(action, compact = true, quiet = true, iconOnly = true)
                             }
                             LocalClock(context)
                         }
@@ -576,6 +580,7 @@ object TvPresentation {
     internal fun ActionButton(
         action: Action, modifier: Modifier = Modifier, quiet: Boolean = false,
         compact: Boolean = false, search: Boolean = false, card: Boolean = false,
+        iconOnly: Boolean = false,
     ) {
         var hasFocus by remember { mutableStateOf(false) }
         var size by remember { mutableStateOf(IntSize.Zero) }
@@ -605,6 +610,7 @@ object TvPresentation {
             }.clearAndSetSemantics {
                 role = Role.Button
                 contentDescription = action.label
+                if (action.announceChanges) liveRegion = LiveRegionMode.Polite
                 focused = hasFocus
                 if (!action.enabled) disabled()
                 onClick {
@@ -628,7 +634,7 @@ object TvPresentation {
                 Image(painterResource(action.icon), contentDescription = null,
                     modifier = Modifier.size(20.dp),
                     colorFilter = ColorFilter.tint(LocalContentColor.current))
-                Spacer(Modifier.width(10.dp))
+                if (!iconOnly) Spacer(Modifier.width(10.dp))
             }
             if (card) {
                 val lines = action.label.split("\n", limit = 2)
@@ -641,7 +647,7 @@ object TvPresentation {
                         color = LocalContentColor.current.copy(alpha = 0.85f),
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-            } else Text(action.label,
+            } else if (!iconOnly) Text(action.label,
                 style = if (compact) MaterialTheme.typography.labelLarge
                     else MaterialTheme.typography.bodyLarge,
                 maxLines = 2, overflow = TextOverflow.Ellipsis,

@@ -17,6 +17,8 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 
@@ -129,13 +131,13 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 new TvBrowserPanel(mActivity, text(R.string.brave_tv_phone), description, 0);
         panel.useAmbientStyle();
         panel.useWideLayout();
-        panel.addDescription(text(R.string.brave_tv_phone_warning));
         return panel;
     }
 
     private void showStarting() {
         dismiss();
         TvBrowserPanel panel = panel(text(R.string.brave_tv_phone_starting));
+        panel.addDescription(text(R.string.brave_tv_phone_warning));
         panel.addAction(R.string.cancel, true, this::close);
         mDialog = panel.show(this::close);
     }
@@ -153,6 +155,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
     private void showError(int reason) {
         dismiss();
         TvBrowserPanel panel = panel(text(reason));
+        panel.addDescription(text(R.string.brave_tv_phone_warning));
         panel.addAction(R.string.brave_tv_phone_start, true, this::start);
         panel.addAction(R.string.cancel, true, this::finishPanel);
         mDialog = panel.show(this::finishPanel);
@@ -206,17 +209,18 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                         : mSession.pending()
                                 ? R.string.brave_tv_phone_approval
                                 : R.string.brave_tv_phone_waiting);
-        TvBrowserPanel panel =
-                panel(
-                        mSession.approved()
-                                ? text(R.string.brave_tv_phone_connected)
-                                : mSession.pending()
-                                        ? text(R.string.brave_tv_phone_approve_description)
-                                        : text(R.string.brave_tv_phone_pair)
-                                                + "\n"
-                                                + mOrigin
-                                                + "\n"
-                                                + mSession.code);
+        boolean invitation = !mSession.pending() && !mSession.approved();
+        String description =
+                mSession.approved()
+                        ? text(R.string.brave_tv_phone_connected)
+                        : mSession.pending()
+                                ? text(R.string.brave_tv_phone_approve_description)
+                                : text(R.string.brave_tv_phone_pair)
+                                        + "\n\n"
+                                        + mOrigin
+                                        + "\n"
+                                        + mSession.code;
+        TvBrowserPanel panel = panel(invitation ? "" : description);
         if (!mSession.pending() && !mSession.approved()) {
             try {
                 int sizeDp = 180;
@@ -241,11 +245,34 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 image.setScaleType(ImageView.ScaleType.CENTER);
                 image.setImageBitmap(bitmap);
                 image.setContentDescription(text(R.string.brave_tv_phone_qr));
-                panel.addContent(image, sizeDp);
+                LinearLayout row = new LinearLayout(mActivity);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.addView(image, new LinearLayout.LayoutParams(sizePx, sizePx));
+                TextView instructions = new TextView(mActivity);
+                instructions.setText(description);
+                instructions.setTextSize(16);
+                instructions.setTextColor(Color.rgb(205, 221, 229));
+                var params =
+                        new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+                params.setMarginStart(
+                        Math.round(24 * mActivity.getResources().getDisplayMetrics().density));
+                row.addView(instructions, params);
+                int height =
+                        Math.round(
+                                sizeDp
+                                        * Math.max(
+                                                1,
+                                                mActivity
+                                                        .getResources()
+                                                        .getConfiguration()
+                                                        .fontScale));
+                panel.addContent(row, height);
             } catch (WriterException exception) {
-                /* Manual pairing remains available. */
+                panel.addDescription(description);
             }
         }
+        panel.addDescription(text(R.string.brave_tv_phone_warning));
         if (mSession.pending())
             panel.addAction(
                     R.string.brave_tv_phone_approve,

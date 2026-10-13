@@ -145,6 +145,7 @@ public final class TvHomePage extends BasicNativePage {
         mSettingsAction = action(R.string.brave_tv_settings, () -> activity.showTvSettings(this));
         mPhoneAction = action(R.string.brave_tv_phone, () -> activity.showTvPhoneRemote(this));
         mPhoneAction.setEnabled(!tab.isIncognito());
+        mPhoneAction.setAnnounceChanges(true);
         mContent =
                 TvPresentation.home(
                         activity,

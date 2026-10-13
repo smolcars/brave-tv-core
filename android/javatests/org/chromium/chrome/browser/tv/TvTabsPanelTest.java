@@ -156,11 +156,10 @@ public class TvTabsPanelTest {
         CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text(title(survivor))));
         mDevice.pressBack();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_tabs)));
+        for (int i = 0; i < 4; i++) mDevice.pressDPadDown();
         mDevice.pressDPadRight();
         mDevice.pressDPadRight();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_controls)));
-        mDevice.pressDPadCenter();
-        focusDown(By.desc(mActivity.getString(R.string.brave_tv_close_tab)));
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_close_tab)));
         mDevice.pressDPadCenter();
         CriteriaHelper.pollUiThread(
                 () ->

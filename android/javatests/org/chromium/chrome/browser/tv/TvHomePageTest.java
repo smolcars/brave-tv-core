@@ -1424,8 +1424,6 @@ public class TvHomePageTest {
     private void focusFirstFavorite() {
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         mDevice.pressDPadDown();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_controls)));
-        mDevice.pressDPadDown();
         waitForFocus(By.descStartsWith(TITLE + "0\n"));
     }
 
@@ -1706,15 +1704,13 @@ public class TvHomePageTest {
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         mDevice.pressDPadDown();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_reload)));
-        mDevice.pressDPadRight();
-        mDevice.pressDPadRight();
-        mDevice.pressDPadRight();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_controls)));
-        mDevice.pressDPadCenter();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_history)));
-        mDevice.pressDPadRight();
-        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_forward)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_tabs)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_downloads)));
+        mDevice.pressDPadDown();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_shields)));
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.menu_page_info)));
         mDevice.pressDPadCenter();
@@ -1732,7 +1728,7 @@ public class TvHomePageTest {
                     assertEquals(new GURL(url), original.getUrl());
                 });
         mDevice.pressBack();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_controls)));
+        waitForFocus(By.desc(mActivity.getString(R.string.menu_page_info)));
     }
 
     private void openSettingsFromHome() {
@@ -2630,7 +2626,7 @@ public class TvHomePageTest {
                 });
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         focusFirstFavorite();
-        mDevice.pressDPadDown();
+        for (int i = 0; i < 3; i++) mDevice.pressDPadRight();
         waitForFocus(By.descStartsWith(TITLE + "3\n"));
         mDevice.pressDPadDown();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_source)));

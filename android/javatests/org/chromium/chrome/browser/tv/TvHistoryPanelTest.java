@@ -191,14 +191,12 @@ public class TvHistoryPanelTest {
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
         mDevice.pressDPadDown();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_reload)));
-        mDevice.pressDPadRight();
+        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_forward)));
+        mDevice.pressDPadDown();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_tabs)));
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_bookmarks)));
         mDevice.pressDPadRight();
-        waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_more_controls)));
-        mDevice.pressDPadCenter();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_history)));
         mDevice.pressDPadCenter();
     }
