@@ -179,6 +179,135 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void starterFavoritesPreserveExistingAndStayRemovedAfterRecreation() {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    for (BookmarkId id : starterIds()) mBookmarks.deleteBookmark(id);
+                    BookmarkId netflix =
+                            mBookmarks.addBookmark(
+                                    mBookmarks.getDefaultBookmarkFolder(),
+                                    0,
+                                    "My Netflix",
+                                    new GURL("https://www.netflix.com/"));
+                    assertNotNull(netflix);
+                    mOwnedBookmarks.add(netflix);
+                    UserPrefs.get(mActivity.getActivityTab().getProfile())
+                            .setBoolean(TvHomePage.STARTER_FAVORITES_PREF, false);
+                });
+        mActivity = ApplicationTestUtils.recreateActivity(mActivity);
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    List<BookmarkId> sites = starterIds();
+                    assertEquals(4, sites.size());
+                    for (BookmarkId id : sites) {
+                        BookmarkItem item = mBookmarks.getBookmarkById(id);
+                        assertNotNull(item);
+                        if (item.getUrl().getHost().equals("www.netflix.com")) {
+                            assertEquals("My Netflix", item.getTitle());
+                        } else {
+                            mOwnedBookmarks.add(id);
+                        }
+                        if (item.getUrl().getHost().equals("www.youtube.com")) {
+                            mBookmarks.deleteBookmark(id);
+                        }
+                    }
+                });
+        mActivity = ApplicationTestUtils.recreateActivity(mActivity);
+        CriteriaHelper.pollUiThread(
+                () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertEquals(3, starterIds().size());
+                    assertTrue(
+                            UserPrefs.get(mActivity.getActivityTab().getProfile())
+                                    .getBoolean(TvHomePage.STARTER_FAVORITES_PREF));
+                    for (BookmarkId id : mOwnedBookmarks) {
+                        if (mBookmarks.doesBookmarkExist(id)) {
+                            assertFalse(
+                                    mBookmarks.getBookmarkById(id)
+                                            .getUrl()
+                                            .getHost()
+                                            .equals("www.youtube.com"));
+                        }
+                    }
+                });
+    }
+
+    @Test
+    @MediumTest
+    public void starterFavoritesRespectEditingPolicyAndPrivateHome() {
+        var prefs =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> UserPrefs.get(mActivity.getActivityTab().getProfile()));
+        try {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        for (BookmarkId id : starterIds()) mBookmarks.deleteBookmark(id);
+                        prefs.setBoolean(TvHomePage.STARTER_FAVORITES_PREF, false);
+                        prefs.setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, false);
+                    });
+            mActivity = ApplicationTestUtils.recreateActivity(mActivity);
+            CriteriaHelper.pollUiThread(
+                    () -> mActivity.getActivityTab().getNativePage() instanceof TvHomePage);
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertTrue(starterIds().isEmpty());
+                        assertFalse(prefs.getBoolean(TvHomePage.STARTER_FAVORITES_PREF));
+                        // Private Home must not seed even with editing restored.
+                        prefs.setBoolean(TvHomePage.STARTER_FAVORITES_PREF, true);
+                        prefs.setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, true);
+                        mActivity.onMenuOrKeyboardAction(R.id.new_incognito_tab_menu_id, false);
+                    });
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            mActivity.getActivityTab().isIncognito()
+                                    && mActivity.getActivityTab().getNativePage()
+                                            instanceof TvHomePage);
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> prefs.setBoolean(TvHomePage.STARTER_FAVORITES_PREF, false));
+            mActivityTestRule.loadUrl("chrome-native://newtab/");
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            mActivity.getActivityTab().isIncognito()
+                                    && mActivity.getActivityTab().getNativePage()
+                                            instanceof TvHomePage);
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertTrue(starterIds().isEmpty());
+                        assertFalse(prefs.getBoolean(TvHomePage.STARTER_FAVORITES_PREF));
+                    });
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        prefs.setBoolean(TvHomePage.STARTER_FAVORITES_PREF, true);
+                        prefs.setBoolean(Pref.EDIT_BOOKMARKS_ENABLED, true);
+                    });
+        }
+    }
+
+    private List<BookmarkId> starterIds() {
+        List<String> urls =
+                List.of(
+                        "https://www.youtube.com/",
+                        "https://www.netflix.com/",
+                        "https://www.primevideo.com/",
+                        "https://www.twitch.tv/");
+        List<BookmarkId> result = new ArrayList<>();
+        BookmarkId folder = mBookmarks.getDefaultBookmarkFolder();
+        for (int i = 0; i < mBookmarks.getChildCount(folder); i++) {
+            BookmarkId id = mBookmarks.getChildAt(folder, i);
+            BookmarkItem item = mBookmarks.getBookmarkById(id);
+            if (item != null && !item.isFolder() && urls.contains(item.getUrl().getSpec())) {
+                result.add(id);
+            }
+        }
+        return result;
+    }
+
+    @Test
+    @MediumTest
     public void homePhoneWithoutExperimentRestoresFocusAndStopsInvitation() {
         String phone = mActivity.getString(R.string.brave_tv_phone);
         ThreadUtils.runOnUiThreadBlocking(

@@ -416,6 +416,9 @@ void RegisterProfilePrefsForMigration(
 }
 
 void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry) {
+#if BUILDFLAG(IS_ANDROID)
+  registry->RegisterBooleanPref("brave.tv.starter_favorites_added", false);
+#endif
   brave_shields::BraveShieldsWebContentsObserver::RegisterProfilePrefs(
       registry);
 

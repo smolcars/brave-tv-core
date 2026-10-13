@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Official Glitch: https://brand.twitch.com/uploads/Twitch-Brand.zip -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="28dp"
+    android:viewportWidth="2400" android:viewportHeight="2800">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M2200,1300L1800,1700L1400,1700L1050,2050L1050,1700L600,1700L600,200L2200,200Z" />
+    <path android:fillColor="#9146FF"
+        android:pathData="M500,0L0,500v1800h600v500l500,-500h400l900,-900V0H500z M2200,1300l-400,400h-400l-350,350v-350H600V200h1600V1300z" />
+    <path android:fillColor="#9146FF" android:pathData="M1700,550h200v600h-200Z" />
+    <path android:fillColor="#9146FF" android:pathData="M1150,550h200v600h-200Z" />
+</vector>

@@ -84,6 +84,9 @@ android_library("qrreader_java") {
 android_resources("java_resources") {
   sources = [
     "java/brave-res/drawable-nodpi/brave_tv_ambient.jpg",
+    "java/brave-res/drawable-nodpi/brave_tv_netflix.png",
+    "java/brave-res/drawable-nodpi/brave_tv_prime_video.png",
+    "java/brave-res/drawable-nodpi/brave_tv_youtube.png",
     "java/brave-res/drawable/brave_tv_playback.xml",
     "java/brave-res/drawable/brave_tv_scroll.xml",
     "java/brave-res/drawable/brave_tv_info.xml",
@@ -99,6 +102,7 @@ android_resources("java_resources") {
     "java/brave-res/drawable/brave_tv_settings.xml",
     "java/brave-res/drawable/brave_tv_phone.xml",
     "java/brave-res/drawable/brave_tv_bookmark.xml",
+    "java/brave-res/drawable/brave_tv_twitch.xml",
     "java/brave-res/drawable/brave_tv_tabs.xml",
     "java/brave-res/drawable/brave_tv_home.xml",
     "java/brave-res/drawable/brave_tv_search.xml",

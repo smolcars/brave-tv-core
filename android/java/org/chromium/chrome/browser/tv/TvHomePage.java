@@ -27,15 +27,27 @@ import org.chromium.chrome.browser.ui.native_page.NativePage;
 import org.chromium.chrome.browser.ui.native_page.NativePageHost;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.bookmarks.BookmarkItem;
+import org.chromium.components.prefs.PrefService;
+import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
+import org.chromium.url.GURL;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** A native home with no feed, promotions, analytics, or web renderer. */
 public final class TvHomePage extends BasicNativePage {
+    static final String STARTER_FAVORITES_PREF = "brave.tv.starter_favorites_added";
+    private static final String[][] STARTER_FAVORITES = {
+        {"YouTube", "https://www.youtube.com/"},
+        {"Netflix", "https://www.netflix.com/"},
+        {"Prime Video", "https://www.primevideo.com/"},
+        {"Twitch", "https://www.twitch.tv/"},
+    };
     private final BraveActivity mActivity;
     private final Tab mTab;
     private final View mContent;
@@ -234,6 +246,7 @@ public final class TvHomePage extends BasicNativePage {
             mState.setFavorites(List.of(), true);
             return;
         }
+        seedStarterFavorites();
         BookmarkId folder = mBookmarks.getDefaultBookmarkFolder();
         List<TvPresentation.Action> actions = new ArrayList<>();
         List<BookmarkId> ids = new ArrayList<>();
@@ -259,6 +272,7 @@ public final class TvHomePage extends BasicNativePage {
                 }
                 saved.url = url;
                 saved.action.setLabel(item.getTitle() + "\n" + item.getUrl().getHost());
+                saved.action.setIcon(favoriteLogo(item.getUrl().getHost()));
                 ids.add(id);
                 actions.add(saved.action);
                 if (actions.size() == TvPresentation.MAX_HOME_FAVORITES) break;
@@ -266,6 +280,39 @@ public final class TvHomePage extends BasicNativePage {
         }
         mFavorites.keySet().retainAll(ids);
         mState.setFavorites(List.copyOf(actions), false);
+    }
+
+    private void seedStarterFavorites() {
+        if (mBookmarks == null || mTab.isIncognito()) return;
+        PrefService prefs = UserPrefs.get(mTab.getProfile());
+        if (prefs.getBoolean(STARTER_FAVORITES_PREF) || !mBookmarks.isEditBookmarksEnabled()) return;
+        BookmarkId folder = mBookmarks.getDefaultBookmarkFolder();
+        if (folder == null) return;
+        Set<Integer> existing = new HashSet<>();
+        for (int i = 0; i < mBookmarks.getChildCount(folder); i++) {
+            BookmarkItem item = mBookmarks.getBookmarkById(mBookmarks.getChildAt(folder, i));
+            if (item != null && !item.isFolder()) existing.add(favoriteLogo(item.getUrl().getHost()));
+        }
+        // Bookmark writes notify Home synchronously; prevent reentry and later resurrection.
+        prefs.setBoolean(STARTER_FAVORITES_PREF, true);
+        for (String[] site : STARTER_FAVORITES) {
+            GURL url = new GURL(site[1]);
+            if (existing.contains(favoriteLogo(url.getHost()))) continue;
+            if (mBookmarks.addBookmark(folder, mBookmarks.getChildCount(folder), site[0], url) == null) {
+                prefs.setBoolean(STARTER_FAVORITES_PREF, false);
+                return;
+            }
+        }
+    }
+
+    private static int favoriteLogo(String host) {
+        return switch (host) {
+            case "youtube.com", "www.youtube.com", "m.youtube.com" -> R.drawable.brave_tv_youtube;
+            case "netflix.com", "www.netflix.com" -> R.drawable.brave_tv_netflix;
+            case "primevideo.com", "www.primevideo.com" -> R.drawable.brave_tv_prime_video;
+            case "twitch.tv", "www.twitch.tv", "m.twitch.tv" -> R.drawable.brave_tv_twitch;
+            default -> 0;
+        };
     }
 
     private void openFavorite(BookmarkId id) {

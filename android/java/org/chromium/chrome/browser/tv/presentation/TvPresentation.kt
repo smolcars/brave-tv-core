@@ -608,7 +608,11 @@ object TvPresentation {
     }
 
     @Composable
-    private fun SiteInitial(host: String) {
+    private fun SiteInitial(host: String, logo: Int = 0) {
+        if (logo != 0) {
+            Image(painterResource(logo), contentDescription = null, modifier = Modifier.size(28.dp))
+            return
+        }
         Box(Modifier.size(28.dp).background(LocalContentColor.current.copy(alpha = 0.12f),
             RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
             Text(host.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "",
@@ -675,7 +679,7 @@ object TvPresentation {
                 focusedContentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
-            if (action.icon != 0 && !hideIcon) {
+            if (action.icon != 0 && !hideIcon && !card) {
                 Image(painterResource(action.icon), contentDescription = null,
                     modifier = Modifier.size(20.dp),
                     colorFilter = ColorFilter.tint(LocalContentColor.current))
@@ -686,7 +690,7 @@ object TvPresentation {
                 if (recentCard) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        SiteInitial(lines.last())
+                        SiteInitial(lines.last(), action.icon)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(lines.first(), style = MaterialTheme.typography.titleMedium,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -698,7 +702,7 @@ object TvPresentation {
                     }
                 } else {
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        SiteInitial(lines.last())
+                        SiteInitial(lines.last(), action.icon)
                         Text(lines.first(), style = MaterialTheme.typography.titleMedium,
                             maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
