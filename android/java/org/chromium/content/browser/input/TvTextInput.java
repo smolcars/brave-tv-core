@@ -217,9 +217,10 @@ public final class TvTextInput {
                         || input.mFlags != flags
                         || input.mMode != mode
                         || input.mAction != action;
-        if (input.mEligible != eligible || configurationChanged) {
+        boolean eligibilityChanged = input.mEligible != eligible;
+        if (eligibilityChanged || configurationChanged) {
             input.mRevision++;
-            input.mPendingEdit = null;
+            if (input.mPendingEdit != null) input.mPendingEdit.phase = Phase.DRAIN;
         }
         boolean replacementChanged =
                 configurationChanged
@@ -236,7 +237,7 @@ public final class TvTextInput {
         input.mFlags = flags;
         input.mMode = mode;
         input.mAction = action;
-        if (eligible && configurationChanged) {
+        if (eligible && (configurationChanged || eligibilityChanged)) {
             EditorInfo info = new EditorInfo();
             ImeUtils.computeEditorInfo(type, flags, mode, action, start, end, text, info);
             input.mEditorAction = info.imeOptions & EditorInfo.IME_MASK_ACTION;
@@ -358,7 +359,11 @@ public final class TvTextInput {
     public boolean edit(
             long revision, String operation, String text, int start, int end, boolean composing) {
         ThreadUtils.assertOnUiThread();
-        if (!eligible() || !ready() || revision != mRevision || text.length() > 2048) return false;
+        if (!eligible()
+                || !ready()
+                || !mAdapter.isValid()
+                || revision != mRevision
+                || text.length() > 2048) return false;
         boolean result;
         switch (operation) {
             case "enter":

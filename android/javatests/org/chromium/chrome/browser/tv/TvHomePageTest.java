@@ -18,6 +18,7 @@ import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -94,6 +95,7 @@ import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 import org.chromium.components.bookmarks.BookmarkId;
 import org.chromium.components.security_state.SecurityStateModel;
 import org.chromium.components.user_prefs.UserPrefs;
+import org.chromium.content.browser.input.TvTextInput;
 import org.chromium.content_public.browser.ImeAdapter;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
@@ -185,6 +187,84 @@ public class TvHomePageTest {
         mDevice.pressBack();
         CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
         assertTelevisionViewport();
+    }
+
+    @Test
+    @MediumTest
+    public void phoneEnterUsesNativeFieldActionsAndMultiline() throws Exception {
+        String fixture =
+                "<form id='form'><input id='query' type='search' enterkeyhint='search'>"
+                        + "<button>Search</button></form><textarea id='lines'></textarea>"
+                        + "<script>window.submitted=0;window.keys=0;"
+                        + "form.onsubmit=e=>{e.preventDefault();submitted++;};"
+                        + "query.onkeydown=e=>{if(e.key==='Enter')keys++;};"
+                        + "query.value='x'.repeat(2049);</script>";
+        mActivityTestRule.loadUrl("data:text/html," + Uri.encode(fixture));
+        WebContents contents =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> mActivity.getActivityTab().getWebContents());
+        TvTextInput input = ThreadUtils.runOnUiThreadBlocking(() -> new TvTextInput(contents));
+        try {
+            long initialRevision = ThreadUtils.runOnUiThreadBlocking(input::revision);
+            JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "query.focus();true");
+            ThreadUtils.runOnUiThreadBlocking(input::requestStateUpdate);
+            CriteriaHelper.pollUiThread(
+                    () ->
+                            input.ready()
+                                    && !input.eligible()
+                                    && input.revision() != initialRevision);
+            JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "query.value='ok';true");
+            ThreadUtils.runOnUiThreadBlocking(input::requestStateUpdate);
+            CriteriaHelper.pollUiThread(
+                    () -> input.ready() && input.eligible() && input.text().equals("ok"));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertEquals("search", input.action());
+                        assertFalse(input.multiline());
+                        assertTrue(input.edit(input.revision(), "enter", "", 0, 0, false));
+                        assertFalse(input.ready());
+                        assertFalse(input.edit(input.revision(), "enter", "", 0, 0, false));
+                    });
+            CriteriaHelper.pollUiThread(input::ready);
+            assertEquals(
+                    "[1,1,\"ok\"]",
+                    JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                            contents, "[submitted,keys,query.value]"));
+
+            String[] hints = {"go", "send", "done", "enter", "next", "previous", "search"};
+            for (String hint : hints) {
+                long revision = ThreadUtils.runOnUiThreadBlocking(input::revision);
+                JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                        contents, "query.enterKeyHint='" + hint + "';true");
+                ThreadUtils.runOnUiThreadBlocking(input::requestStateUpdate);
+                CriteriaHelper.pollUiThread(() -> input.ready() && input.revision() != revision);
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> {
+                            assertEquals(
+                                    hint.equals("next") || hint.equals("previous") ? "enter" : hint,
+                                    input.action());
+                            assertEquals("ok", input.text());
+                        });
+            }
+            JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "lines.focus();true");
+            ThreadUtils.runOnUiThreadBlocking(input::requestStateUpdate);
+            CriteriaHelper.pollUiThread(
+                    () -> input.ready() && input.eligible() && input.multiline());
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        assertEquals("enter", input.action());
+                        assertTrue(input.edit(input.revision(), "replace", "one", 3, 3, false));
+                    });
+            CriteriaHelper.pollUiThread(() -> input.ready() && input.text().equals("one"));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> assertTrue(input.edit(input.revision(), "enter", "", 0, 0, false)));
+            CriteriaHelper.pollUiThread(() -> input.ready() && input.text().equals("one\n"));
+            assertEquals(
+                    "\"one\\n\"",
+                    JavaScriptUtils.executeJavaScriptAndWaitForResult(contents, "lines.value"));
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(input::destroy);
+        }
     }
 
     private void assertTelevisionViewport() {
