@@ -22,7 +22,9 @@ let gesture = null,
   pendingEdit = null,
   enterIntent = null,
   enterNotice = '',
-  advancingEnter = false
+  advancingEnter = false,
+  typingRequested = false,
+  typingFocus = false
 const actionLabels = {
   enter: 'Enter',
   search: 'Search',
@@ -70,6 +72,7 @@ function clearPage() {
 function render(result) {
   if (!result.state && !result.error) result = { error: 'revoked' }
   if (result.error) {
+    typingRequested = typingFocus = false
     connected = false
     state = null
     resetInput()
@@ -138,6 +141,7 @@ function render(result) {
   )
   disable(state.paused)
   if (state.paused) {
+    typingRequested = typingFocus = false
     clearPage()
     $('title').textContent = 'Control paused'
     resetInput()
@@ -241,9 +245,13 @@ function render(result) {
       || (enterIntent
         ? `Sending ${actionLabels[enterIntent.action]} to the TV…`
         : editable.ready
-          ? editable.multiline
-            ? 'Editing the selected TV field. Enter may add a new line.'
-            : 'Editing the selected TV field'
+          ? !editable.phoneTyping
+            ? editable.composing
+              ? 'Finish composition to type with your phone.'
+              : 'Tap the editor to type with your phone.'
+            : editable.multiline
+              ? 'Editing the selected TV field. Enter may add a new line.'
+              : 'Editing the selected TV field'
           : 'Reading the selected TV field…')
     if (!dirty && !composing && editable.ready) {
       $('editor').value = editable.text
@@ -252,21 +260,33 @@ function render(result) {
     }
   }
   updateEnter()
+  if (typingFocus && editable?.phoneTyping && editable.ready) {
+    typingFocus = false
+    $('editor').focus({ preventScroll: true })
+  }
 }
 function updateEnter() {
   const editable = state?.editable
-  $('editor').readOnly = !!enterIntent
+  $('editor').readOnly =
+    !!enterIntent
+    || !editable?.phoneTyping
+    || (!editable.ready && pendingEdit?.field !== editable.revision)
   $('enter').disabled =
     !connected
     || state?.paused
     || !editable
+    || !editable.phoneTyping
     || composing
     || !!enterIntent
     || !!editable.composing
     || (!editable.ready && pendingEdit?.field !== editable.revision)
   for (const id of ['delete', 'finish'])
     $(id).disabled =
-      !connected || state?.paused || !editable?.ready || !!enterIntent
+      !connected
+      || state?.paused
+      || !editable?.ready
+      || !!enterIntent
+      || (id === 'delete' && !editable.phoneTyping)
 }
 function disable(value) {
   document.body.classList.toggle('paused', value)
@@ -292,6 +312,7 @@ async function poll() {
   }
 }
 function disconnected() {
+  typingRequested = typingFocus = false
   if (!epoch) {
     render({ error: 'revoked' })
     return
@@ -401,6 +422,9 @@ $('addressForm').onsubmit = (e) => {
 $('reload').onclick = () => command(state?.loading ? 'stop' : 'reload')
 const taskTabs = [...document.querySelectorAll('[role="tab"]')]
 function showView(id) {
+  typingRequested = id === 'typeView'
+  typingFocus = false
+  if (id !== 'typeView' && state?.editable?.phoneTyping) command('stopTyping')
   // A task change must not carry an unfinished gesture or unsent field edit.
   resetInput()
   if (connected && state) render({ state, epoch })
@@ -412,6 +436,41 @@ function showView(id) {
     tab.tabIndex = selected ? 0 : -1
   }
 }
+function requestTyping() {
+  if (!connected || state?.paused || !state?.editable || $('typeView').hidden)
+    return
+  typingRequested = true
+  typingFocus = true
+  prepareTyping()
+}
+async function prepareTyping() {
+  const editable = state?.editable
+  if (
+    !typingRequested
+    || busy
+    || !connected
+    || state?.paused
+    || $('typeView').hidden
+    || !editable?.ready
+    || editable.composing
+  )
+    return
+  typingRequested = false
+  if (editable.phoneTyping) return
+  const accepted = await command('edit', {
+    editable: editable.revision,
+    version: editable.version,
+    edit: 'prepare',
+  })
+  if (!accepted) typingFocus = false
+}
+$('editor').addEventListener('pointerdown', () => {
+  if (!state?.editable?.phoneTyping) requestTyping()
+})
+$('editor').addEventListener('focus', () => {
+  if (!state?.editable?.phoneTyping) requestTyping()
+})
+setInterval(prepareTyping, 80)
 for (const button of document.querySelectorAll('[data-view]'))
   button.onclick = () => {
     showView(button.dataset.view)
@@ -533,6 +592,7 @@ async function flushEditor() {
     || pendingEdit
     || !connected
     || !state?.editable?.ready
+    || !state.editable.phoneTyping
     || field !== state.editable.revision
   )
     return
@@ -559,6 +619,7 @@ function requestEnter() {
     || enterIntent
     || composing
     || !editable
+    || !editable.phoneTyping
     || field !== editable.revision
     || (editable.composing && !dirty && !pendingEdit)
     || (!editable.ready && pendingEdit?.field !== field)
@@ -604,6 +665,7 @@ async function advanceEnter() {
     || epoch !== intent.epoch
     || state.revision !== intent.revision
     || editable?.revision !== intent.field
+    || !editable?.phoneTyping
     || composing
     || performance.now() > intent.deadline
   ) {
@@ -683,6 +745,7 @@ $('editor').onselect = () => {
     && !composing
     && !enterIntent
     && state?.editable?.ready
+    && state.editable.phoneTyping
   )
     command('edit', {
       editable: field,
@@ -707,6 +770,16 @@ $('finish').onclick = () =>
     version: state?.editable?.version,
   })
 document.addEventListener('visibilitychange', () => {
+  typingRequested = typingFocus = false
+  // Release the session's keyboard lease even when a field/request has just changed.
+  if (document.hidden && token && epoch)
+    post('/api', {
+      token,
+      epoch,
+      seq: ++seq,
+      op: 'stopTyping',
+      revision: state?.revision,
+    }).catch(() => {})
   resetInput()
   connected = false
   disable(true)
