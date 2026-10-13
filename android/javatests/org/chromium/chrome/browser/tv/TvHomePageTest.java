@@ -1740,12 +1740,14 @@ public class TvHomePageTest {
                 loadElementFixture(
                         "<button id=outside>Outside</button><iframe id=frame sandbox=allow-scripts"
                             + " style='display:block;width:650px;height:250px' srcdoc=\"<button"
-                            + " id=inside autofocus>Inside</button><script>"
+                            + " id=inside"
+                            + " style='position:fixed;inset:0;width:100%;height:100%'>Inside</button><script>"
                             + "addEventListener('keydown',()=>parent.postMessage('key','*'));"
                             + "inside.addEventListener('focus',()=>parent.postMessage('ready','*'))</script>\"></iframe><button"
                             + " id=below>Below</button>"
                             + "<script>window.keys=0;window.ready=false;addEventListener('message',"
                             + "e=>{if(e.data==='key')keys++;if(e.data==='ready')ready=true})</script>");
+        assertTrue(DOMUtils.clickNode(tab.getWebContents(), "frame"));
         waitForScript(tab, "ready");
         CriteriaHelper.pollUiThread(
                 () -> {
@@ -1899,36 +1901,29 @@ public class TvHomePageTest {
                 });
     }
 
-    private void holdElementOk() {
+    private void holdElementOk() throws InterruptedException {
+        long now = SystemClock.uptimeMillis();
+        KeyEvent down =
+                new KeyEvent(
+                        now,
+                        now,
+                        KeyEvent.ACTION_DOWN,
+                        KeyEvent.KEYCODE_DPAD_CENTER,
+                        0,
+                        0,
+                        KeyCharacterMap.VIRTUAL_KEYBOARD,
+                        0,
+                        0,
+                        InputDevice.SOURCE_DPAD);
+        ThreadUtils.runOnUiThreadBlocking(() -> mActivity.dispatchKeyEvent(down));
+        Thread.sleep(750);
         ThreadUtils.runOnUiThreadBlocking(
-                () -> {
-                    long now = SystemClock.uptimeMillis();
-                    KeyEvent down =
-                            new KeyEvent(
-                                    now,
-                                    now,
-                                    KeyEvent.ACTION_DOWN,
-                                    KeyEvent.KEYCODE_DPAD_CENTER,
-                                    0,
-                                    0,
-                                    KeyCharacterMap.VIRTUAL_KEYBOARD,
-                                    0,
-                                    0,
-                                    InputDevice.SOURCE_DPAD);
-                    mActivity.dispatchKeyEvent(down);
-                    mActivity.dispatchKeyEvent(
-                            new KeyEvent(
-                                    now,
-                                    now + 700,
-                                    KeyEvent.ACTION_UP,
-                                    KeyEvent.KEYCODE_DPAD_CENTER,
-                                    0,
-                                    0,
-                                    KeyCharacterMap.VIRTUAL_KEYBOARD,
-                                    0,
-                                    0,
-                                    InputDevice.SOURCE_DPAD));
-                });
+                () ->
+                        mActivity.dispatchKeyEvent(
+                                KeyEvent.changeAction(
+                                        KeyEvent.changeTimeRepeat(
+                                                down, SystemClock.uptimeMillis(), 0),
+                                        KeyEvent.ACTION_UP)));
     }
 
     @Test
