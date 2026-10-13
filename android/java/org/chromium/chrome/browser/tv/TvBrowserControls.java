@@ -934,7 +934,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         addComposeControl(actions, R.string.brave_tv_close_tab, tab != null, context);
         actions.add(
                 new TvPresentation.Action(
-                        mActivity.getString(mPhoneRemote.statusLabel()),
+                        mActivity.getString(R.string.brave_tv_phone),
                         tab != null && !tab.isIncognito(),
                         this::showPhoneRemote,
                         R.string.brave_tv_phone,
