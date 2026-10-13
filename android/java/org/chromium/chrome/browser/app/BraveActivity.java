@@ -464,6 +464,7 @@ public abstract class BraveActivity extends ChromeActivity
             }
         }
 
+        if (mTvBrowserControls != null) mTvBrowserControls.onResume();
         BraveSafeBrowsingApiHandler.getInstance()
                 .setDelegate(BraveActivityJni.get().getSafeBrowsingApiKey(), this);
 

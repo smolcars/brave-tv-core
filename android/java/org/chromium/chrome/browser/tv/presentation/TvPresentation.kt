@@ -8,6 +8,7 @@ package org.chromium.chrome.browser.tv.presentation
 import android.content.Context
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
@@ -37,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.FocusDirection
@@ -113,6 +115,48 @@ object TvPresentation {
     sealed interface PanelEntry
     class Description(text: String, val announceChanges: Boolean) : PanelEntry {
         var text by mutableStateOf(text)
+    }
+    /** UI-thread engine progress; never persisted or estimated from elapsed time. */
+    class LoadingState {
+        internal var progress by mutableStateOf(0f)
+        fun setProgress(value: Float) {
+            progress = if (value.isFinite()) value.coerceIn(0f, 1f) else 0f
+        }
+    }
+
+    /** Display-only status. Native Tab observation owns attachment and completion. */
+    @JvmStatic
+    fun loading(context: Context, label: String, state: LoadingState): View = view(context).apply {
+        isFocusable = false
+        isFocusableInTouchMode = false
+        descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        setContent {
+            Theme {
+                Column(
+                    Modifier.fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(label, style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+                    if (state.progress > 0f) {
+                        LinearProgressIndicator(
+                            progress = { state.progress },
+                            modifier = Modifier.fillMaxWidth().height(4.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        )
+                    } else {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth().height(4.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                        )
+                    }
+                }
+            }
+        }
     }
     class ActionRow(val actions: List<Action>) : PanelEntry
     class NativeContent(val view: View, val heightDp: Int) : PanelEntry

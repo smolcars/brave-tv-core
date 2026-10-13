@@ -4088,6 +4088,7 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_ADDRESS_CHANGED" desc="TV address editor error if its underlying tab or document changed while editing.">The page changed while you were editing. Return to the page and open Address again.</message>
     <message name="IDS_BRAVE_TV_MORE_CONTROLS" desc="TV control opening secondary browser actions.">More controls</message>
     <message name="IDS_BRAVE_TV_POINTER" desc="TV control to move a pointer and scroll by holding an arrow at a page edge.">Browse page</message>
+    <message name="IDS_BRAVE_TV_PAGE_LOADING" desc="Display-only TV browser status shown while the selected webpage is loading.">Loading page…</message>
     <message name="IDS_BRAVE_TV_SCROLL" desc="Secondary TV control to scroll nested or horizontal content at the pointer position.">Scroll here</message>
     <message name="IDS_BRAVE_TV_RELOAD" desc="TV control to reload the current page.">Reload page</message>
     <message name="IDS_BRAVE_TV_PLAYBACK" desc="Title of the native TV media controls.">Playback</message>

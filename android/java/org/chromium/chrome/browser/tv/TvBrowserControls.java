@@ -101,6 +101,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final TvRemoteInput mInput;
     private final TvPhoneRemote mPhoneRemote;
     private final TvBrowserSession mSession;
+    private final TvPageLoadIndicator mLoadIndicator;
     private @Nullable View mControlsView;
     private @Nullable TvAddressEditor.State mAddressState;
     private @Nullable TvBrowserSession.Context mAddressContext;
@@ -121,6 +122,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private final Callback<Boolean> mFilePickerScrimObserver =
             visible -> {
                 if (visible) cancelFilePickerGuide();
+                refreshLoading();
             };
     private @Nullable CallbackController mSearchCallbacks;
     private @Nullable TvHistoryPanel mHistoryPanel;
@@ -135,6 +137,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 @Override
                 public void onDialogShown(View dialogView) {
                     if (!isAlive()) return;
+                    mLoadIndicator.refresh();
                     cancelFilePickerGuide();
                     if (mModalReturnPage == null) {
                         mModalReturnPage = currentPage();
@@ -149,6 +152,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
                 @Override
                 public void onLastDialogDismissed() {
+                    mLoadIndicator.refresh();
                     restoreModalPageFocus();
                 }
             };
@@ -214,6 +218,14 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     }
                 };
         mSession = new TvBrowserSession(activity, this::browserStateChanged);
+        mLoadIndicator =
+                new TvPageLoadIndicator(
+                        activity,
+                        () ->
+                                isAlive()
+                                        && !nativeSecurityOwnsInput()
+                                        && (!mActivity.getTabModelSelector().isIncognitoSelected()
+                                                || !mPrivateTabsLocked.getAsBoolean()));
         mScrimVisible.addSyncObserver(mFilePickerScrimObserver);
         mActivity.getWindow().getDecorView().post(() -> restoreUsableHome(false));
     }
@@ -305,6 +317,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private boolean isAlive() {
         return !mDestroyed && !mActivity.isFinishing() && !mActivity.isDestroyed();
+    }
+
+    private void refreshLoading() {
+        mLoadIndicator.refresh();
     }
 
     private void focusNativeDialog(View dialog) {
@@ -513,6 +529,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     public void onWindowFocusChanged(boolean focused) {
+        mLoadIndicator.refresh();
         if (!focused) {
             cancelPagePress();
             mPressedContext = null;
@@ -523,12 +540,17 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     public void onPause() {
+        mLoadIndicator.onPause();
         mPhoneRemote.stop();
         mSession.invalidate();
         mModalReturnPage = null;
         mModalReturnContext = null;
         dismissDialog();
         detachCursor();
+    }
+
+    public void onResume() {
+        mLoadIndicator.onResume();
     }
 
     public void showPhoneRemote() {
@@ -2336,6 +2358,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     public void destroy() {
         mPhoneRemote.stop();
         mDestroyed = true;
+        mLoadIndicator.destroy();
         mModalReturnPage = null;
         mModalReturnContext = null;
         if (mModalDialogs != null) mModalDialogs.removeObserver(mModalObserver);

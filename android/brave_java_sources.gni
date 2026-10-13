@@ -451,6 +451,7 @@ brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserControls.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserSession.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvPageLoadIndicator.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvDownloadsPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvHomePage.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvFilterPanel.java",

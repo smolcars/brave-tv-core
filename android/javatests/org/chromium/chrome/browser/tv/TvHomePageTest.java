@@ -42,6 +42,12 @@ import androidx.test.uiautomator.StaleObjectException;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import org.chromium.base.ActivityState;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.Callback;
@@ -80,6 +86,7 @@ import org.chromium.chrome.browser.tab.TvBrowserControlsVisibilityDelegate;
 import org.chromium.chrome.browser.tab_ui.TabContentManager;
 import org.chromium.chrome.browser.tabmodel.TabClosureParams;
 import org.chromium.chrome.browser.tabmodel.TabModel;
+import org.chromium.chrome.browser.tabmodel.TabModelUtils;
 import org.chromium.chrome.browser.tv.presentation.TvPresentation;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
@@ -94,11 +101,6 @@ import org.chromium.content_public.browser.test.util.DOMUtils;
 import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.content_public.browser.test.util.WebContentsUtils;
 import org.chromium.url.GURL;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -419,8 +421,16 @@ public class TvHomePageTest {
         CriteriaHelper.pollInstrumentationThread(
                 () -> mDevice.hasObject(By.text("Native loading click")));
         CriteriaHelper.pollUiThread(() -> page.isLoading() && slow.equals(page.getUrl().getSpec()));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
         ThreadUtils.runOnUiThreadBlocking(mActivity::showTvBrowserControls);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_address)));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        !mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
         mDevice.pressDPadRight();
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
         mDevice.pressDPadCenter();
@@ -436,6 +446,10 @@ public class TvHomePageTest {
                 });
         CriteriaHelper.pollInstrumentationThread(
                 () -> fixtureCenterColor(page, slow) == Color.WHITE);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
         assertEquals(
                 "0",
                 JavaScriptUtils.executeJavaScriptAndWaitForResult(
@@ -456,8 +470,70 @@ public class TvHomePageTest {
                     assertTrue(page.isLoading());
                     page.stopLoading();
                 });
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        !mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
         injectDpad(KeyEvent.KEYCODE_BACK);
         waitForFocus(By.desc(mActivity.getString(R.string.brave_tv_pointer)));
+    }
+
+    @Test
+    @MediumTest
+    public void pageLoadingFollowsSelectedTabAndActivityResume() {
+        // Controlled pending resource, bounded by the owned fixture's watchdog.
+        String url = "http://127.0.0.1:18091/hold.html";
+        Tab loading = ThreadUtils.runOnUiThreadBlocking(mActivity::getActivityTab);
+        ThreadUtils.runOnUiThreadBlocking(() -> loading.loadUrl(new LoadUrlParams(url)));
+        CriteriaHelper.pollUiThread(loading::isLoading);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> mActivity.onMenuOrKeyboardAction(R.id.new_tab_menu_id, false));
+        CriteriaHelper.pollUiThread(
+                () ->
+                        mActivity.getActivityTab() != loading
+                                && mActivity.getActivityTab().getNativePage()
+                                        instanceof TvHomePage);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        !mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertTrue(loading.isLoading());
+                    TabModel model = mActivity.getTabModelSelector().getModel(false);
+                    TabModelUtils.setIndex(model, model.indexOf(loading));
+                });
+        CriteriaHelper.pollUiThread(() -> mActivity.getActivityTab() == loading);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        mDevice.pressHome();
+        CriteriaHelper.pollUiThread(
+                () -> {
+                    int state = ApplicationStatus.getStateForActivity(mActivity);
+                    return state == ActivityState.PAUSED || state == ActivityState.STOPPED;
+                });
+        mActivityTestRule.resumeMainActivityFromLauncher();
+        CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        if (mDevice.hasObject(By.text(mActivity.getString(R.string.brave_tv_controls)))) {
+            mDevice.pressBack();
+            CriteriaHelper.pollUiThread(mActivity::hasWindowFocus);
+        }
+        ThreadUtils.runOnUiThreadBlocking(() -> assertTrue(loading.isLoading()));
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
+        ThreadUtils.runOnUiThreadBlocking(loading::stopLoading);
+        CriteriaHelper.pollInstrumentationThread(
+                () ->
+                        !mDevice.hasObject(
+                                By.text(mActivity.getString(R.string.brave_tv_page_loading))));
     }
 
     @Test
