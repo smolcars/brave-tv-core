@@ -231,7 +231,9 @@ public class TvHomePageTest {
                         .getBytes(java.nio.charset.StandardCharsets.UTF_8);
         var connection =
                 (java.net.HttpURLConnection)
-                        java.net.URI.create(origin + "/pair").toURL().openConnection();
+                        ChromiumNetworkAdapter.openConnection(
+                                java.net.URI.create(origin + "/pair").toURL(),
+                                NetworkTrafficAnnotationTag.TRAFFIC_ANNOTATION_FOR_TESTS);
         connection.setConnectTimeout(3000);
         connection.setReadTimeout(3000);
         connection.setRequestMethod("POST");

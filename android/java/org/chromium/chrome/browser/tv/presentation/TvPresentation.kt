@@ -255,6 +255,8 @@ object TvPresentation {
             Theme(ambient = true) {
                 val initial = remember { FocusRequester() }
                 val header = remember { FocusRequester() }
+                val favoritesFocus = remember { FocusRequester() }
+                val recentFocus = remember { FocusRequester() }
                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     AmbientBackdrop(context, state.wallpaper)
                     // Fixed scrims bound contrast even over the brightest parts of the photo.
@@ -294,14 +296,21 @@ object TvPresentation {
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyLarge)
                             ActionButton(actions.first(), Modifier.widthIn(max = 680.dp).fillMaxWidth()
-                                .focusRequester(initial).focusProperties { up = header },
+                                .focusRequester(initial).focusProperties {
+                                    up = header
+                                    down = when {
+                                        state.favorites.isNotEmpty() -> favoritesFocus
+                                        state.recentTabs.isNotEmpty() -> recentFocus
+                                        else -> FocusRequester.Default
+                                    }
+                                },
                                 search = true)
                         }
                         if (state.showSections) {
                             HomeSection(state.favoritesTitle,
                                 if (state.loadingFavorites) state.loadingLabel else state.favoritesEmpty,
-                                state.favorites, 6)
-                            HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 4, recent = true)
+                                state.favorites, 6, initial = favoritesFocus)
+                            HomeSection(state.recentTitle, state.recentEmpty, state.recentTabs, 4, recent = true, initial = recentFocus)
                         }
                         if (attribution.isNotEmpty() || links.isNotEmpty())
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(20.dp),
@@ -364,7 +373,7 @@ object TvPresentation {
     @Composable
     private fun HomeSection(
         title: String, emptyLabel: String, actions: List<Action>, columns: Int,
-        recent: Boolean = false,
+        recent: Boolean = false, initial: FocusRequester? = null,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium,
@@ -374,7 +383,9 @@ object TvPresentation {
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
             ActionRows(actions, columns, 12.dp, minimum = 120.dp) { action, modifier ->
-                ActionButton(action, modifier, card = true, recentCard = recent)
+                ActionButton(action, modifier.then(
+                    if (initial != null && action === actions.firstOrNull()) Modifier.focusRequester(initial)
+                    else Modifier), card = true, recentCard = recent)
             }
         }
     }
