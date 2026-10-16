@@ -113,6 +113,7 @@ import org.chromium.content_public.browser.test.util.JavaScriptUtils;
 import org.chromium.content_public.browser.test.util.WebContentsUtils;
 import org.chromium.net.ChromiumNetworkAdapter;
 import org.chromium.net.NetworkTrafficAnnotationTag;
+import org.chromium.ui.KeyboardVisibilityDelegate;
 import org.chromium.url.GURL;
 
 import java.io.File;
@@ -1828,8 +1829,8 @@ public class TvHomePageTest {
                 loadElementFixture(
                         "<style>button,input{position:absolute;top:60px;width:180px;height:70px}"
                                 + "#a{left:30px}#field{left:260px}#b{left:490px}</style>"
-                                + "<button id=a autofocus>A</button><input id=field>"
-                                + "<button id=b>B</button><script>window.submits=0;"
+                                + "<form><button type=button id=a autofocus>A</button><input id=field>"
+                                + "<button type=button id=b>B</button></form><script>window.submits=0;"
                                 + "addEventListener('submit',e=>{e.preventDefault();submits++})</script>");
         ImeAdapter adapter =
                 ThreadUtils.runOnUiThreadBlocking(
@@ -1837,7 +1838,11 @@ public class TvHomePageTest {
         InputMethodManagerWrapper original =
                 ThreadUtils.runOnUiThreadBlocking(adapter::getInputMethodManagerWrapper);
         InputMethodManagerWrapper observed = spy(original);
+        KeyboardVisibilityDelegate originalKeyboard = KeyboardVisibilityDelegate.getInstance();
+        KeyboardVisibilityDelegate observedKeyboard = spy(originalKeyboard);
         ThreadUtils.runOnUiThreadBlocking(() -> adapter.setInputMethodManagerWrapper(observed));
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> KeyboardVisibilityDelegate.setInstanceForTesting(observedKeyboard));
         try {
             injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
             waitForElement(tab, "field");
@@ -1850,6 +1855,7 @@ public class TvHomePageTest {
             Thread.sleep(350);
             verify(observed, never()).showSoftInput(any(), anyInt(), any());
             injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+            verify(observedKeyboard).showKeyboard(tab.getContentView());
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
                         var connection =
@@ -1860,7 +1866,55 @@ public class TvHomePageTest {
             waitForScript(tab, "field.value==='Explicit edit'&&submits===0");
         } finally {
             ThreadUtils.runOnUiThreadBlocking(
-                    () -> adapter.setInputMethodManagerWrapper(original));
+                    () -> {
+                        adapter.setInputMethodManagerWrapper(original);
+                        KeyboardVisibilityDelegate.setInstanceForTesting(originalKeyboard);
+                    });
+        }
+    }
+
+    @Test
+    @MediumTest
+    public void elementsArrowsTraverseTextFieldsWithoutEditing() throws Exception {
+        for (String field :
+                new String[] {
+                    "<input id=field>",
+                    "<input id=field type=search>",
+                    "<input id=field type=password>",
+                    "<textarea id=field></textarea>",
+                    "<div id=field contenteditable=true>Rich text</div>"
+                }) {
+            Tab tab =
+                    loadElementFixture(
+                            "<style>button,input,textarea,[contenteditable]{position:absolute;"
+                                    + "left:40px;width:240px;height:70px}"
+                                    + "#a{top:20px}#field{top:130px}#b{top:240px}</style>"
+                                    + "<button id=a autofocus>A</button>"
+                                    + field
+                                    + "<button id=b>B</button><script>window.edits=0;"
+                                    + "addEventListener('input',()=>edits++)</script>");
+            ImeAdapter adapter =
+                    ThreadUtils.runOnUiThreadBlocking(
+                            () -> ImeAdapter.fromWebContents(tab.getWebContents()));
+            InputMethodManagerWrapper original =
+                    ThreadUtils.runOnUiThreadBlocking(adapter::getInputMethodManagerWrapper);
+            InputMethodManagerWrapper observed = spy(original);
+            ThreadUtils.runOnUiThreadBlocking(() -> adapter.setInputMethodManagerWrapper(observed));
+            try {
+                injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+                waitForElement(tab, "field");
+                injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
+                waitForElement(tab, "b");
+                injectDpad(KeyEvent.KEYCODE_DPAD_UP);
+                waitForElement(tab, "field");
+                injectDpad(KeyEvent.KEYCODE_DPAD_UP);
+                waitForElement(tab, "a");
+                verify(observed, never()).showSoftInput(any(), anyInt(), any());
+                waitForScript(tab, "edits===0");
+            } finally {
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> adapter.setInputMethodManagerWrapper(original));
+            }
         }
     }
 

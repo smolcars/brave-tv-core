@@ -87,6 +87,7 @@ import org.chromium.content_public.browser.RenderCoordinates;
 import org.chromium.content_public.browser.RenderFrameHost;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.WebContentsObserver;
+import org.chromium.ui.KeyboardVisibilityDelegate;
 import org.chromium.ui.base.PageTransition;
 import org.chromium.ui.modaldialog.ModalDialogManager;
 import org.chromium.url.Origin;
@@ -145,6 +146,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                 @Override
                 public void onDialogShown(View dialogView) {
                     if (!isAlive()) return;
+                    releaseKeyboardSuppression();
                     mLoadIndicator.refresh();
                     cancelFilePickerGuide();
                     if (mModalReturnPage == null) {
@@ -174,6 +176,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private @Nullable TvBrowserSession.Context mPageNavigationContext;
     private @Nullable TvBrowserSession.Context mFocusContext;
     private @Nullable WebContents mSpatialContents;
+    private @Nullable TvBrowserSession.Context mKeyboardSuppression;
     private boolean mSpatialDisabled;
     private boolean mWakeSelect;
     private long mFocusQuery;
@@ -513,6 +516,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             return false;
         }
         if (nativeUiOwnsInput(false)) {
+            releaseKeyboardSuppression();
             cancelPagePress();
             View focus = mActivity.getCurrentFocus();
             if (!nativeSecurityOwnsInput()
@@ -624,6 +628,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     public void onWindowFocusChanged(boolean focused) {
         mLoadIndicator.refresh();
         if (!focused) {
+            releaseKeyboardSuppression();
             cancelPagePress();
             mPressedContext = null;
         } else {
@@ -888,6 +893,11 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private void browserStateChanged() {
         mPhoneRemote.invalidate();
         if (!isAlive()) return;
+        if (mKeyboardSuppression != null
+                && (!mSession.isCurrentDocument(mKeyboardSuppression)
+                        || nativeUiOwnsInput(false)
+                        || isPageFullscreen()
+                        || !supportsElementNavigation())) releaseKeyboardSuppression();
         if (mPage != currentPage()
                 || !mSession.isCurrent(mPageNavigationContext)
                 || nativeUiOwnsInput(false)
@@ -1186,6 +1196,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     private void enterPageNavigation() {
         if (!isAlive() || !mActivity.hasWindowFocus()) return;
+        mActivity.finishTvStartupControls();
         if (!canNavigatePage()) {
             setSpatialNavigation(true);
             return;
@@ -1220,6 +1231,8 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         cancelPagePress();
         mCursor.focus = null;
         mFocusContext = null;
+        if (mode == TvRemoteInput.Mode.ELEMENTS && !isPageFullscreen()) suppressPageKeyboard();
+        else releaseKeyboardSuppression();
         page.requestFocus();
         mPageNavigationContext = mSession.capture();
         mPageMode = mode;
@@ -1271,6 +1284,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
                     default -> KeyEvent.KEYCODE_UNKNOWN;
                 };
         if (key == KeyEvent.KEYCODE_UNKNOWN) return;
+        suppressPageKeyboard();
         setSpatialNavigation(false);
         sendPageKey(key);
         showCursor();
@@ -1279,8 +1293,43 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     @Override
     public void selectElement() {
+        Tab tab = mActivity.getActivityTab();
+        WebContents contents = tab == null ? null : tab.getWebContents();
+        ImeAdapter input =
+                contents == null || contents.isDestroyed()
+                        ? null
+                        : ImeAdapter.fromWebContents(contents);
+        if (contents != null && input != null && input.focusedNodeEditable()) {
+            if (mPage == null || mPage != currentPage() || !mPage.hasFocus()) return;
+            releaseKeyboardSuppression();
+            KeyboardVisibilityDelegate.getInstance().showKeyboard(mPage);
+            contents.scrollFocusedEditableNodeIntoView();
+            return;
+        }
         sendPageKey(KeyEvent.KEYCODE_ENTER);
         refreshElementBounds();
+    }
+
+    private void suppressPageKeyboard() {
+        TvBrowserSession.Context context = mSession.capture();
+        if (mKeyboardSuppression != null
+                && mSession.isCurrentDocument(mKeyboardSuppression)) return;
+        releaseKeyboardSuppression();
+        WebContents contents = context.contents;
+        if (contents == null || contents.isDestroyed()) return;
+        ImeAdapter input = ImeAdapter.fromWebContents(contents);
+        if (input == null) return;
+        mKeyboardSuppression = context;
+        input.setKeyboardSuppressed(true);
+    }
+
+    private void releaseKeyboardSuppression() {
+        TvBrowserSession.Context context = mKeyboardSuppression;
+        mKeyboardSuppression = null;
+        WebContents contents = context == null ? null : context.contents;
+        if (contents == null || contents.isDestroyed()) return;
+        ImeAdapter input = ImeAdapter.fromWebContents(contents);
+        if (input != null) input.setKeyboardSuppressed(false);
     }
 
     private void sendPageKey(int key) {
@@ -2696,6 +2745,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
 
     @Override
     public void showPointer(int x, int y, TvRemoteInput.Mode mode, int edgeDirection) {
+        releaseKeyboardSuppression();
         mPageMode = mode;
         setSpatialNavigation(true);
         mCursor.elements = false;
@@ -2808,6 +2858,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     }
 
     private void detachCursor() {
+        releaseKeyboardSuppression();
         cancelFullscreenCursorRestore();
         mCursorView.removeCallbacks(mHideCursor);
         cancelPagePress();

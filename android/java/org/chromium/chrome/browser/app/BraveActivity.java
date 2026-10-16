@@ -98,6 +98,7 @@ import org.chromium.brave_wallet.mojom.SignDataUnion;
 import org.chromium.brave_wallet.mojom.SolanaTxManagerProxy;
 import org.chromium.brave_wallet.mojom.TxService;
 import org.chromium.build.annotations.MonotonicNonNull;
+import org.chromium.cc.input.BrowserControlsState;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.BraveAdFreeCalloutDialogFragment;
 import org.chromium.chrome.browser.BraveConstants;
@@ -194,6 +195,7 @@ import org.chromium.chrome.browser.shields.ContentFilteringFragment;
 import org.chromium.chrome.browser.shields.CreateCustomFiltersFragment;
 import org.chromium.chrome.browser.site_settings.BraveWalletEthereumConnectedSites;
 import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.browser.tab.TabLaunchType;
 import org.chromium.chrome.browser.tab.TabSelectionType;
 import org.chromium.chrome.browser.tabbed_mode.BraveTabbedAppMenuPropertiesDelegate;
@@ -244,6 +246,7 @@ import org.chromium.misc_metrics.mojom.MiscAndroidMetrics;
 import org.chromium.mojo.bindings.ConnectionErrorHandler;
 import org.chromium.mojo.system.MojoException;
 import org.chromium.ui.base.TvFilePickerGuide;
+import org.chromium.ui.util.TokenHolder;
 import org.chromium.ui.widget.Toast;
 import org.chromium.url.GURL;
 
@@ -356,6 +359,7 @@ public abstract class BraveActivity extends ChromeActivity
     // One-shot guard so the app-close shred notification fires at most once per cold start.
     private boolean mAppCloseShredTriggered;
     private @Nullable TvBrowserControls mTvBrowserControls;
+    private int mTvStartupControlsToken = TokenHolder.INVALID_TOKEN;
     // A restored native Home can attach before foreground controls are constructed.
     private final org.chromium.base.ObserverList<Runnable> mTvPhoneObservers =
             new org.chromium.base.ObserverList<>();
@@ -379,6 +383,22 @@ public abstract class BraveActivity extends ChromeActivity
     public boolean isTelevision() {
         return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK)
                 == Configuration.UI_MODE_TYPE_TELEVISION;
+    }
+
+    /** Releases the initial paint guard once the selected TV tab has native visibility rules. */
+    public void finishTvStartupControls() {
+        if (mTvStartupControlsToken == TokenHolder.INVALID_TOKEN
+                || isFinishing()
+                || isDestroyed()) return;
+        Tab tab = getActivityTab();
+        if (tab == null || tab.isDestroyed()) return;
+        int state = TabBrowserControlsConstraintsHelper.getConstraints(tab);
+        if (state == BrowserControlsState.BOTH) return;
+        var manager = getBrowserControlsManager();
+        if (state == BrowserControlsState.HIDDEN) manager.hideAndroidControls(false);
+        else manager.showAndroidControls(false);
+        manager.releaseAndroidControlsHidingToken(mTvStartupControlsToken);
+        mTvStartupControlsToken = TokenHolder.INVALID_TOKEN;
     }
 
     public void showTvPhoneRemote(TvHomePage home) {
@@ -1245,6 +1265,7 @@ public abstract class BraveActivity extends ChromeActivity
     @Override
     public void performPostInflationStartup() {
         super.performPostInflationStartup();
+        if (isTelevision()) getBrowserControlsManager().hideAndroidControls(false);
 
         createNotificationChannel();
     }
@@ -2605,6 +2626,10 @@ public abstract class BraveActivity extends ChromeActivity
 
     @Override
     public void performPreInflationStartup() {
+        if (isTelevision()) {
+            // TV owns compact navigation; retain explicit native showing tokens.
+            CommandLine.getInstance().appendSwitch(ChromeSwitches.DISABLE_MINIMUM_SHOW_DURATION);
+        }
         BraveDbUtil dbUtil = BraveDbUtil.getInstance();
         if (dbUtil.dbOperationRequested()) {
             AlertDialog dialog =
@@ -2627,6 +2652,11 @@ public abstract class BraveActivity extends ChromeActivity
             dbUtil.cleanUpDbOperationRequest();
         }
         super.performPreInflationStartup();
+        if (isTelevision()) {
+            mTvStartupControlsToken =
+                    getBrowserControlsManager()
+                            .hideAndroidControlsAndClearOldToken(mTvStartupControlsToken);
+        }
         mRootUiCoordinator
                 .getIncognitoReauthControllerSupplier()
                 .onAvailable(irc -> mIncognitoReauthController = irc);
