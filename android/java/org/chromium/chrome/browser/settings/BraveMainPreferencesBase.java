@@ -31,7 +31,6 @@ import org.chromium.chrome.browser.autofill.settings.AutofillAndPasswordsFragmen
 import org.chromium.chrome.browser.autofill.settings.options.BraveAutofillOptionsSearchIndex;
 import org.chromium.chrome.browser.autofill.settings.options.BraveAutofillOptionsSearchIndex.SettingsRoutes;
 import org.chromium.chrome.browser.brave_leo.BraveLeoPrefUtils;
-import org.chromium.chrome.browser.brave_news.BraveNewsPolicy;
 import org.chromium.chrome.browser.brave_origin.BraveOriginPlansActivity;
 import org.chromium.chrome.browser.brave_origin.BraveOriginSubscriptionPrefs;
 import org.chromium.chrome.browser.crypto_wallet.BraveWalletPolicy;
@@ -213,7 +212,8 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
         BraveNotificationPermissionRationaleDialog notificationWarningDialog =
                 BraveNotificationPermissionRationaleDialog.newInstance();
         notificationWarningDialog.setCancelable(false);
-        notificationWarningDialog.show(getChildFragmentManager(),
+        notificationWarningDialog.show(
+                getChildFragmentManager(),
                 BraveNotificationWarningDialog.NOTIFICATION_WARNING_DIALOG_TAG);
     }
 
@@ -222,24 +222,27 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
                 BraveNotificationWarningDialog.newInstance(
                         BraveNotificationWarningDialog.FROM_LAUNCHED_BRAVE_SETTINGS);
         notificationWarningDialog.setCancelable(false);
-        notificationWarningDialog.show(getChildFragmentManager(),
+        notificationWarningDialog.show(
+                getChildFragmentManager(),
                 BraveNotificationWarningDialog.NOTIFICATION_WARNING_DIALOG_TAG);
     }
 
     private void notificationClick() {
         Preference notifications = findPreference(PREF_NOTIFICATIONS);
         if (notifications != null) {
-            notifications.setOnPreferenceClickListener(preference -> {
-                mNotificationClicked = true;
+            notifications.setOnPreferenceClickListener(
+                    preference -> {
+                        mNotificationClicked = true;
 
-                Intent intent = new Intent();
-                intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                intent.putExtra(Settings.EXTRA_APP_PACKAGE,
-                        ContextUtils.getApplicationContext().getPackageName());
-                startActivity(intent);
-                // We handle the click so the default action isn't triggered.
-                return true;
-            });
+                        Intent intent = new Intent();
+                        intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                        intent.putExtra(
+                                Settings.EXTRA_APP_PACKAGE,
+                                ContextUtils.getApplicationContext().getPackageName());
+                        startActivity(intent);
+                        // We handle the click so the default action isn't triggered.
+                        return true;
+                    });
         }
     }
 
@@ -303,8 +306,8 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
     }
 
     /**
-     * Re-arrange by resetting each preference's order.
-     * With this, we can insert our own preferences at any position.
+     * Re-arrange by resetting each preference's order. With this, we can insert our own preferences
+     * at any position.
      */
     private void rearrangePreferenceOrders() {
         int firstSectionOrder = 0;
@@ -662,13 +665,6 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
         }
     }
 
-    /** Checks if News is disabled by policy via Brave Origin and removes the preference if so. */
-    private void checkNewsPolicyAndUpdatePreference() {
-        if (BraveNewsPolicy.isDisabledByPolicy(getProfile())) {
-            removePreferenceIfPresent(PREF_BRAVE_NEWS_V2);
-        }
-    }
-
     /** Checks if Brave VPN is disabled by policy and removes the preference if so. */
     private void checkVpnPolicyAndUpdatePreference() {
         if (BraveVpnPolicy.isDisabledByPolicy(getProfile())) {
@@ -747,7 +743,6 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
     /** Removes the policy-controlled feature rows that are disabled by policy. */
     private void applyFeaturePolicies() {
         checkLeoPolicyAndUpdatePreference();
-        checkNewsPolicyAndUpdatePreference();
         checkVpnPolicyAndUpdatePreference();
         checkWalletPolicyAndUpdatePreference();
     }
@@ -871,9 +866,6 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
                     // Remove features disabled by Brave Origin or enterprise policy.
                     if (BraveLeoPrefUtils.isLeoDisabledByPolicy(profile)) {
                         indexData.removeEntry(getUniqueId(PREF_BRAVE_LEO));
-                    }
-                    if (BraveNewsPolicy.isDisabledByPolicy(profile)) {
-                        indexData.removeEntry(getUniqueId(PREF_BRAVE_NEWS_V2));
                     }
                     if (BraveVpnPolicy.isDisabledByPolicy(profile)) {
                         indexData.removeEntry(getUniqueId(PREF_BRAVE_VPN));

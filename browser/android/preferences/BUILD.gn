@@ -14,7 +14,6 @@ source_set("preferences") {
     "//base",
     "//brave/build/android:jni_headers",
     "//brave/components/brave_adaptive_captcha",
-    "//brave/components/brave_news/common",
     "//brave/components/brave_perf_predictor/common",
     "//brave/components/brave_referrals/common",
     "//brave/components/brave_rewards/core",

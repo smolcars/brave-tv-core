@@ -39,7 +39,6 @@ import org.chromium.chrome.browser.app.appmenu.AppMenuIconRowFooter;
 import org.chromium.chrome.browser.app.appmenu.AppMenuItemUtils;
 import org.chromium.chrome.browser.bookmarks.BookmarkModel;
 import org.chromium.chrome.browser.brave_leo.BraveLeoPrefUtils;
-import org.chromium.chrome.browser.brave_news.BraveNewsPolicy;
 import org.chromium.chrome.browser.crypto_wallet.BraveWalletPolicy;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.homepage.HomepageManager;
@@ -191,16 +190,6 @@ public class BraveTabbedAppMenuPropertiesDelegate extends TabbedAppMenuPropertie
                                 R.id.brave_news_id,
                                 CustomizeBraveMenu.BRAVE_CUSTOMIZE_ITEM_ID,
                                 R.id.exit_id)),
-                new PolicyControlledMenuItem(
-                        R.id.brave_news_id,
-                        this::buildBraveNewsItem,
-                        () -> true,
-                        () -> {
-                            Tab tab = mActivityTabProvider.get();
-                            return tab != null
-                                    && BraveNewsPolicy.isDisabledByPolicy(tab.getProfile());
-                        },
-                        Arrays.asList(CustomizeBraveMenu.BRAVE_CUSTOMIZE_ITEM_ID, R.id.exit_id)),
                 // VPN feature checks call native code, so assume supported in JUnit tests
                 new PolicyControlledMenuItem(
                         R.id.request_brave_vpn_id,
@@ -1233,18 +1222,6 @@ public class BraveTabbedAppMenuPropertiesDelegate extends TabbedAppMenuPropertie
                         R.id.add_to_playlist_id,
                         R.string.playlist_add_to_playlist,
                         shouldShowIconBeforeItem() ? R.drawable.ic_product_playlist_add : 0,
-                        isMenuIconAtStart()));
-    }
-
-    private MVCListAdapter.ListItem buildBraveNewsItem() {
-        return new MVCListAdapter.ListItem(
-                AppMenuHandler.AppMenuItemType.STANDARD,
-                AppMenuItemUtils.buildModelForStandardMenuItem(
-                        mContext,
-                        mAppMenuItemTheme,
-                        R.id.brave_news_id,
-                        R.string.brave_news_title,
-                        shouldShowIconBeforeItem() ? R.drawable.ic_product_brave_news : 0,
                         isMenuIconAtStart()));
     }
 

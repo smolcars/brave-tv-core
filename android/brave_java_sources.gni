@@ -17,6 +17,7 @@ import("//brave/browser/hub/internal/android/java/java_sources.gni")
 import("//brave/browser/incognito/android/java_sources.gni")
 import("//brave/browser/share/android/java_sources.gni")
 import("//brave/browser/ui/messages/android/java_sources.gni")
+import("//brave/components/brave_news/common/buildflags/buildflags.gni")
 import(
     "//brave/components/cached_flags/brave_components_cached_flags_java_sources.gni")
 import("//brave/components/embedder_support/android/java_sources.gni")
@@ -85,15 +86,6 @@ brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/brave_leo/BraveLeoSettingsLauncherHelper.java",
   "../../brave/android/java/org/chromium/chrome/browser/brave_leo/BraveLeoUtils.java",
   "../../brave/android/java/org/chromium/chrome/browser/brave_leo/BraveLeoVoiceRecognitionHandler.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsBottomSheetDialogFragment.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsConnectionErrorHandler.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsControllerFactory.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsPolicy.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsUtils.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/CardBuilderFeedCard.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/LinearLayoutManagerWrapper.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/models/FeedItemCard.java",
-  "../../brave/android/java/org/chromium/chrome/browser/brave_news/models/FeedItemsCard.java",
   "../../brave/android/java/org/chromium/chrome/browser/brave_origin/BraveOriginDeepLinkHandler.java",
   "../../brave/android/java/org/chromium/chrome/browser/brave_origin/BraveOriginPlansActivity.java",
   "../../brave/android/java/org/chromium/chrome/browser/brave_origin/BraveOriginSettingsLauncherHelper.java",
@@ -346,14 +338,6 @@ brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/settings/BraveLicensePreference.java",
   "../../brave/android/java/org/chromium/chrome/browser/settings/BraveLicensePreferences.java",
   "../../brave/android/java/org/chromium/chrome/browser/settings/BraveMainPreferencesBase.java",
-  "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesDataListener.java",
-  "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesDetails.java",
-  "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesListener.java",
-  "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesSearchType.java",
-  "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesType.java",
-  "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesTypeAdapter.java",
-  "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesV2.java",
-  "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsSettingsDividerItemDecoration.java",
   "../../brave/android/java/org/chromium/chrome/browser/settings/BraveOriginDescriptionPreference.java",
   "../../brave/android/java/org/chromium/chrome/browser/settings/BraveOriginPreferences.java",
   "../../brave/android/java/org/chromium/chrome/browser/settings/BraveOriginResetPreference.java",
@@ -451,19 +435,17 @@ brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserControls.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvBrowserSession.java",
-  "../../brave/android/java/org/chromium/chrome/browser/tv/TvPageLoadIndicator.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvDownloadsPanel.java",
-  "../../brave/android/java/org/chromium/chrome/browser/tv/TvHomePage.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvFilterPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvHistoryPanel.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvHomePage.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvMediaPanel.java",
-  "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteInput.java",
-  "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteBrowser.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvPageLoadIndicator.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvPhoneRemote.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteBrowser.java",
+  "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteInput.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteServer.java",
   "../../brave/android/java/org/chromium/chrome/browser/tv/TvRemoteSession.java",
-  "../../brave/android/java/org/chromium/content/browser/input/TvTextInput.java",
-
   "../../brave/android/java/org/chromium/chrome/browser/ui/BraveAdaptiveToolbarUiCoordinator.java",
   "../../brave/android/java/org/chromium/chrome/browser/ui/system/BraveStatusBarColorController.java",
   "../../brave/android/java/org/chromium/chrome/browser/undo_tab_close_snackbar/BraveUndoBarControllerBase.java",
@@ -530,6 +512,7 @@ brave_java_sources = [
   "../../brave/android/java/org/chromium/chrome/browser/widget/quickactionsearchandbookmark/promo/SearchWidgetPromoPanel.java",
   "../../brave/android/java/org/chromium/chrome/browser/widget/quickactionsearchandbookmark/utils/BraveSearchWidgetUtils.java",
   "../../brave/android/java/org/chromium/chrome/browser/youtube_script_injector/BraveYouTubeScriptInjectorNativeHelper.java",
+  "../../brave/android/java/org/chromium/content/browser/input/TvTextInput.java",
 ]
 
 brave_java_sources += brave_ads_java_sources
@@ -592,3 +575,25 @@ brave_java_base_module_deps = [
 ]
 
 brave_java_base_module_deps += brave_java_base_module_billing_deps
+
+if (enable_brave_news) {
+  brave_java_sources += [
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsBottomSheetDialogFragment.java",
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsConnectionErrorHandler.java",
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsControllerFactory.java",
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsPolicy.java",
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/BraveNewsUtils.java",
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/CardBuilderFeedCard.java",
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/LinearLayoutManagerWrapper.java",
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/models/FeedItemCard.java",
+    "../../brave/android/java/org/chromium/chrome/browser/brave_news/models/FeedItemsCard.java",
+    "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesDataListener.java",
+    "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesDetails.java",
+    "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesListener.java",
+    "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesSearchType.java",
+    "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesType.java",
+    "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesTypeAdapter.java",
+    "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsPreferencesV2.java",
+    "../../brave/android/java/org/chromium/chrome/browser/settings/BraveNewsSettingsDividerItemDecoration.java",
+  ]
+}

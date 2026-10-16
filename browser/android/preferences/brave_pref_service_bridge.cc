@@ -9,7 +9,6 @@
 
 #include "base/android/jni_string.h"
 #include "brave/build/android/jni_headers/BravePrefServiceBridge_jni.h"
-#include "brave/components/brave_news/common/pref_names.h"
 #include "brave/components/brave_perf_predictor/common/pref_names.h"
 #include "brave/components/brave_rewards/core/pref_names.h"
 #include "brave/components/brave_shields/core/browser/brave_shields_utils.h"
@@ -205,26 +204,6 @@ void JNI_BravePrefServiceBridge_SetWebrtcPolicy(JNIEnv* env, jint policy) {
   GetOriginalProfile()->GetPrefs()->SetString(
       prefs::kWebRTCIPHandlingPolicy,
       GetWebRTCIPHandlingPreference((WebRTCIPHandlingPolicy)policy));
-}
-
-void JNI_BravePrefServiceBridge_SetNewsOptIn(JNIEnv* env, jboolean value) {
-  GetOriginalProfile()->GetPrefs()->SetBoolean(
-      brave_news::prefs::kBraveNewsOptedIn, value);
-}
-
-jboolean JNI_BravePrefServiceBridge_GetNewsOptIn(JNIEnv* env) {
-  return GetOriginalProfile()->GetPrefs()->GetBoolean(
-      brave_news::prefs::kBraveNewsOptedIn);
-}
-
-void JNI_BravePrefServiceBridge_SetShowNews(JNIEnv* env, jboolean value) {
-  GetOriginalProfile()->GetPrefs()->SetBoolean(
-      brave_news::prefs::kNewTabPageShowToday, value);
-}
-
-jboolean JNI_BravePrefServiceBridge_GetShowNews(JNIEnv* env) {
-  return GetOriginalProfile()->GetPrefs()->GetBoolean(
-      brave_news::prefs::kNewTabPageShowToday);
 }
 
 }  // namespace android

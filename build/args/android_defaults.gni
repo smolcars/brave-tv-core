@@ -22,3 +22,6 @@ enable_brave_stats_updater = false
 
 # The home attribution link must show real notices in development builds too.
 generate_about_credits = true
+
+# Optional products excluded from the TV browser.
+enable_brave_news = false
