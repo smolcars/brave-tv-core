@@ -59,7 +59,6 @@ public final class TvBrowserControlsVisibilityDelegate
         super.updateVisibilityConstraints();
         if (mAppVisibility == null
                 || !hasObservers()
-                || super.get() != BrowserControlsState.HIDDEN
                 || mTab.isDestroyed()
                 || !mTab.isNativePage()) return;
         var window = mTab.getWindowAndroid();
@@ -72,9 +71,9 @@ public final class TvBrowserControlsVisibilityDelegate
         var manager = browser.getBrowserControlsManager();
         if (manager == null
                 || TabBrowserControlsConstraintsHelper.getConstraints(mTab)
-                        != BrowserControlsState.HIDDEN) return;
-        // Native pages have no renderer-driven offset callback. Apply the native manager's
-        // HIDDEN positions after our app-show observer releases its visibility constraint.
+                        != super.get()) return;
+        // Native pages have no renderer offsets. Apply the published constraint after the
+        // app observer updates this tab, including explicit native showing requests.
         manager.showAndroidControls(false);
     }
 
