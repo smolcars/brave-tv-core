@@ -13,6 +13,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import android.content.pm.PackageInfo;
 import android.graphics.Bitmap;
@@ -100,6 +105,7 @@ import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content.browser.input.ImeAdapterImpl;
 import org.chromium.content.browser.input.TvTextInput;
 import org.chromium.content_public.browser.ImeAdapter;
+import org.chromium.content_public.browser.InputMethodManagerWrapper;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.content_public.browser.test.util.DOMUtils;
@@ -1546,6 +1552,24 @@ public class TvHomePageTest {
 
     @Test
     @MediumTest
+    public void nativeTransientShowingDoesNotExposeTvHomeToolbar() {
+        assertTelevisionViewport();
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    mActivity
+                            .getBrowserControlsManager()
+                            .getBrowserVisibilityDelegate()
+                            .showControlsTransient();
+                    assertEquals(
+                            BrowserControlsState.HIDDEN,
+                            TabBrowserControlsConstraintsHelper.getConstraints(
+                                    mActivity.getActivityTab()));
+                    assertEquals(0, mActivity.getBrowserControlsManager().getContentOffset());
+                });
+    }
+
+    @Test
+    @MediumTest
     public void nativeAppShowingRequestOverridesCompactTvControls() {
         assertTelevisionViewport();
         int token =
@@ -1795,6 +1819,49 @@ public class TvHomePageTest {
         injectDpad(KeyEvent.KEYCODE_DPAD_DOWN);
         waitForElement(tab, "last");
         waitForScript(tab, "scrollY+innerHeight>=document.documentElement.scrollHeight-2");
+    }
+
+    @Test
+    @MediumTest
+    public void elementsRequireOkBeforeShowingKeyboard() throws Exception {
+        Tab tab =
+                loadElementFixture(
+                        "<style>button,input{position:absolute;top:60px;width:180px;height:70px}"
+                                + "#a{left:30px}#field{left:260px}#b{left:490px}</style>"
+                                + "<button id=a autofocus>A</button><input id=field>"
+                                + "<button id=b>B</button><script>window.submits=0;"
+                                + "addEventListener('submit',e=>{e.preventDefault();submits++})</script>");
+        ImeAdapter adapter =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> ImeAdapter.fromWebContents(tab.getWebContents()));
+        InputMethodManagerWrapper original =
+                ThreadUtils.runOnUiThreadBlocking(adapter::getInputMethodManagerWrapper);
+        InputMethodManagerWrapper observed = spy(original);
+        ThreadUtils.runOnUiThreadBlocking(() -> adapter.setInputMethodManagerWrapper(observed));
+        try {
+            injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+            waitForElement(tab, "field");
+            Thread.sleep(350);
+            verify(observed, never()).showSoftInput(any(), anyInt(), any());
+            injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+            waitForElement(tab, "b");
+            injectDpad(KeyEvent.KEYCODE_DPAD_LEFT);
+            waitForElement(tab, "field");
+            Thread.sleep(350);
+            verify(observed, never()).showSoftInput(any(), anyInt(), any());
+            injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        var connection =
+                                tab.getContentView().onCreateInputConnection(new EditorInfo());
+                        assertNotNull(connection);
+                        assertTrue(connection.commitText("Explicit edit", 1));
+                    });
+            waitForScript(tab, "field.value==='Explicit edit'&&submits===0");
+        } finally {
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> adapter.setInputMethodManagerWrapper(original));
+        }
     }
 
     @Test
