@@ -9,7 +9,11 @@
 #include "brave/components/ai_chat/core/common/features.h"
 #include "brave/components/brave_ads/buildflags/buildflags.h"
 #include "brave/components/brave_origin/features.h"
+#include "brave/components/brave_rewards/core/buildflags/buildflags.h"
+
+#if BUILDFLAG(ENABLE_BRAVE_REWARDS)
 #include "brave/components/brave_rewards/core/features.h"
+#endif  // BUILDFLAG(ENABLE_BRAVE_REWARDS)
 #include "brave/components/brave_search_conversion/features.h"
 #include "brave/components/brave_shields/core/common/features.h"
 #include "brave/components/brave_vpn/common/buildflags/buildflags.h"
@@ -80,6 +84,14 @@
 #define EMAIL_ALIASES_FLAG
 #endif
 
+#if BUILDFLAG(ENABLE_BRAVE_REWARDS)
+// CHROMIUM_SRC_INTERNAL_USE
+#define BRAVE_REWARDS_FLAG &brave_rewards::features::kBraveRewards,
+#else
+// CHROMIUM_SRC_INTERNAL_USE
+#define BRAVE_REWARDS_FLAG
+#endif  // BUILDFLAG(ENABLE_BRAVE_REWARDS)
+
 // clang-format off
 #define kForceWebContentsDarkMode kForceWebContentsDarkMode,                   \
     BRAVE_AI_CHAT_FLAGS                                                        \
@@ -87,7 +99,7 @@
     BRAVE_WEB_DISCOVERY_FLAG                                                   \
     BRAVE_VPN_FLAG                                                             \
     EMAIL_ALIASES_FLAG                                                         \
-    &brave_rewards::features::kBraveRewards,                                   \
+    BRAVE_REWARDS_FLAG                                   \
     &brave_search_conversion::features::kOmniboxBanner,                        \
     &playlist::features::kPlaylist,                                            \
     &download::features::kParallelDownloading,                                 \
@@ -121,3 +133,5 @@
 #undef BRAVE_WEB_DISCOVERY_FLAG
 #undef BRAVE_VPN_FLAG
 #undef EMAIL_ALIASES_FLAG
+
+#undef BRAVE_REWARDS_FLAG

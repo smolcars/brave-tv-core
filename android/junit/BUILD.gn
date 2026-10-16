@@ -3,6 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import("//brave/components/brave_ads/buildflags/buildflags.gni")
 import("//brave/components/brave_wallet/common/buildflags/buildflags.gni")
 import("//build/config/android/config.gni")
 import("//third_party/jni_zero/jni_zero.gni")
@@ -182,9 +183,14 @@ if (is_android) {
     resources_package = "org.chromium.chrome.browser.ntp"
     sources = [
       "src/org/chromium/chrome/browser/ntp/BraveNewTabPageUtilUnitTest.java",
-      "src/org/chromium/chrome/browser/ntp/BraveNewTabTakeoverInfobarTest.java",
-      "src/org/chromium/chrome/browser/ntp/NewTabTakeoverSafeAreaReporterTest.java",
     ]
+
+    if (enable_brave_ads) {
+      sources += [
+        "src/org/chromium/chrome/browser/ntp/BraveNewTabTakeoverInfobarTest.java",
+        "src/org/chromium/chrome/browser/ntp/NewTabTakeoverSafeAreaReporterTest.java",
+      ]
+    }
 
     deps = [
       "//brave/browser/android/preferences:pref_names_java",

@@ -4,7 +4,9 @@
 # You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import("//brave/build/config.gni")
+import("//brave/components/brave_ads/buildflags/buildflags.gni")
 import("//brave/components/brave_news/common/buildflags/buildflags.gni")
+import("//brave/components/brave_rewards/core/buildflags/buildflags.gni")
 import("//brave/components/brave_wallet/common/buildflags/buildflags.gni")
 import("//build/config/android/rules.gni")
 import("//third_party/jni_zero/jni_zero.gni")
@@ -139,6 +141,8 @@ java_strings_grd("android_brave_strings_grd") {
   defines = [
     "enable_brave_news=$enable_brave_news",
     "enable_brave_wallet=$enable_brave_wallet",
+    "enable_brave_rewards=$enable_brave_rewards",
+    "enable_brave_ads=$enable_brave_ads",
   ]
   outputs = [
     "values/android_brave_strings.xml",

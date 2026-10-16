@@ -35,10 +35,6 @@ import org.chromium.chrome.browser.brave_origin.BraveOriginPlansActivity;
 import org.chromium.chrome.browser.brave_origin.BraveOriginSubscriptionPrefs;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.homepage.settings.BraveHomepageSettings;
-import org.chromium.chrome.browser.notifications.BraveNotificationWarningDialog;
-import org.chromium.chrome.browser.notifications.BravePermissionUtils;
-import org.chromium.chrome.browser.notifications.permissions.BraveNotificationPermissionRationaleDialog;
-import org.chromium.chrome.browser.onboarding.OnboardingPrefManager;
 import org.chromium.chrome.browser.partnercustomizations.CloseBraveManager;
 import org.chromium.chrome.browser.policy.PolicyServiceFactory;
 import org.chromium.chrome.browser.privacy.settings.BravePrivacySettings;
@@ -167,20 +163,6 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
         // Hide the policy-controlled features until Brave Origin policies have been applied,
         // then evaluate their real policy state.
         updateFeaturePolicyPreferences();
-
-        if (mNotificationClicked
-                && BraveNotificationWarningDialog.shouldShowNotificationWarningDialog(getActivity())
-                && !OnboardingPrefManager.getInstance()
-                        .isNotificationPermissionEnablingDialogShownFromSetting()) {
-            mNotificationClicked = false;
-            if (BravePermissionUtils.hasNotificationPermission(getActivity())) {
-                showNotificationWarningDialog();
-            } else {
-                showNotificationRationale();
-            }
-            OnboardingPrefManager.getInstance()
-                    .setNotificationPermissionEnablingDialogShownFromSetting(true);
-        }
     }
 
     @Override
@@ -201,25 +183,6 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
             mAccountController.destroy();
             mAccountController = null;
         }
-    }
-
-    private void showNotificationRationale() {
-        BraveNotificationPermissionRationaleDialog notificationWarningDialog =
-                BraveNotificationPermissionRationaleDialog.newInstance();
-        notificationWarningDialog.setCancelable(false);
-        notificationWarningDialog.show(
-                getChildFragmentManager(),
-                BraveNotificationWarningDialog.NOTIFICATION_WARNING_DIALOG_TAG);
-    }
-
-    private void showNotificationWarningDialog() {
-        BraveNotificationWarningDialog notificationWarningDialog =
-                BraveNotificationWarningDialog.newInstance(
-                        BraveNotificationWarningDialog.FROM_LAUNCHED_BRAVE_SETTINGS);
-        notificationWarningDialog.setCancelable(false);
-        notificationWarningDialog.show(
-                getChildFragmentManager(),
-                BraveNotificationWarningDialog.NOTIFICATION_WARNING_DIALOG_TAG);
     }
 
     private void notificationClick() {

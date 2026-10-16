@@ -10,7 +10,6 @@
 #include "base/android/jni_string.h"
 #include "brave/build/android/jni_headers/BravePrefServiceBridge_jni.h"
 #include "brave/components/brave_perf_predictor/common/pref_names.h"
-#include "brave/components/brave_rewards/core/pref_names.h"
 #include "brave/components/brave_shields/core/browser/brave_shields_utils.h"
 #include "brave/components/brave_sync/brave_sync_prefs.h"
 #include "brave/components/constants/pref_names.h"
@@ -175,10 +174,6 @@ void JNI_BravePrefServiceBridge_SetOldHttpsUpgradesCount(
       count + profile->GetPrefs()->GetUint64(kHttpsUpgradesStat));
 }
 
-void JNI_BravePrefServiceBridge_ResetPromotionLastFetchStamp(JNIEnv* env) {
-  GetOriginalProfile()->GetPrefs()->SetUint64(
-      brave_rewards::prefs::kPromotionLastFetchStamp, 0);
-}
 
 jboolean JNI_BravePrefServiceBridge_GetBooleanForContentSetting(JNIEnv* env,
                                                                 jint type) {

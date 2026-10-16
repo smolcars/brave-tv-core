@@ -22,9 +22,6 @@ import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.BraveFeatureUtil;
 import org.chromium.chrome.browser.BraveRelaunchUtils;
-import org.chromium.chrome.browser.BraveRewardsNativeWorker;
-import org.chromium.chrome.browser.BraveRewardsObserver;
-import org.chromium.chrome.browser.BraveRewardsPolicy;
 import org.chromium.chrome.browser.appearance.settings.AppearanceSettingsFragment;
 import org.chromium.chrome.browser.bookmarks.bar.BookmarkBarUtils;
 import org.chromium.chrome.browser.brave_leo.BraveLeoPrefUtils;
@@ -33,7 +30,6 @@ import org.chromium.chrome.browser.multiwindow.BraveMultiWindowDialogFragment;
 import org.chromium.chrome.browser.multiwindow.BraveMultiWindowUtils;
 import org.chromium.chrome.browser.multiwindow.MultiInstanceManager.PersistedInstanceType;
 import org.chromium.chrome.browser.multiwindow.MultiWindowUtils;
-import org.chromium.chrome.browser.ntp.NtpUtil;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
 import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.settings.search.ChromeBaseSearchIndexProvider;
@@ -56,7 +52,7 @@ import org.chromium.ui.base.DeviceFormFactor;
 import java.util.Map;
 
 public class AppearancePreferences extends AppearanceSettingsFragment
-        implements Preference.OnPreferenceChangeListener, BraveRewardsObserver {
+        implements Preference.OnPreferenceChangeListener {
     /* package */ static final String PREF_NAVIGATION_SECTION = "navigation_section";
     /* package */ static final String PREF_GENERAL_SECTION = "general_section";
     public static final String PREF_SHOW_BRAVE_REWARDS_ICON = "show_brave_rewards_icon";
@@ -70,8 +66,6 @@ public class AppearancePreferences extends AppearanceSettingsFragment
     /* package */ static final String PREF_SHOW_UNDO_WHEN_TABS_CLOSED =
             "show_undo_when_tabs_closed";
     /* package */ static final String PREF_BRAVE_CUSTOMIZE_MENU = "brave_customize_menu";
-
-    private BraveRewardsNativeWorker mBraveRewardsNativeWorker;
 
     @Override
     protected @NonNull PreferenceGroupAdapter onCreateAdapter(
@@ -96,11 +90,6 @@ public class AppearancePreferences extends AppearanceSettingsFragment
         // replaces it.
         if (isTablet || BottomToolbarConfiguration.isAndroidBottomBarEnabled()) {
             removePreferenceIfPresent(BravePreferenceKeys.BRAVE_BOTTOM_TOOLBAR_ENABLED_KEY);
-        }
-
-        mBraveRewardsNativeWorker = BraveRewardsNativeWorker.getInstance();
-        if (mBraveRewardsNativeWorker == null || !mBraveRewardsNativeWorker.isSupported()) {
-            removePreferenceIfPresent(PREF_SHOW_BRAVE_REWARDS_ICON);
         }
 
         if (!new BraveMultiWindowUtils().shouldShowEnableWindow(getActivity())) {
@@ -153,26 +142,13 @@ public class AppearancePreferences extends AppearanceSettingsFragment
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        ChromeSwitchPreference showBraveRewardsIconPref =
-                (ChromeSwitchPreference) findPreference(PREF_SHOW_BRAVE_REWARDS_ICON);
-        if (showBraveRewardsIconPref != null) {
-            showBraveRewardsIconPref.setChecked(NtpUtil.shouldShowRewardsIcon());
-            showBraveRewardsIconPref.setOnPreferenceChangeListener(this);
-        }
-
-        ChromeSwitchPreference adsSwitchPref =
-                (ChromeSwitchPreference) findPreference(PREF_ADS_SWITCH);
-        if (adsSwitchPref != null) {
-            adsSwitchPref.setChecked(getPrefAdsInBackgroundEnabled());
-            adsSwitchPref.setOnPreferenceChangeListener(this);
-        }
-
         Preference nightModeEnabled = findPreference(PREF_BRAVE_NIGHT_MODE_ENABLED);
         nightModeEnabled.setOnPreferenceChangeListener(this);
         if (nightModeEnabled instanceof ChromeSwitchPreference) {
             ((ChromeSwitchPreference) nightModeEnabled)
-                    .setChecked(ChromeFeatureList.isEnabled(
-                            BraveFeatureList.FORCE_WEB_CONTENTS_DARK_MODE));
+                    .setChecked(
+                            ChromeFeatureList.isEnabled(
+                                    BraveFeatureList.FORCE_WEB_CONTENTS_DARK_MODE));
         }
 
         Preference enableBottomToolbar =
@@ -229,13 +205,10 @@ public class AppearancePreferences extends AppearanceSettingsFragment
 
     @Override
     public void onStart() {
-        if (mBraveRewardsNativeWorker != null) {
-            mBraveRewardsNativeWorker.addObserver(this);
-        }
+
         super.onStart();
 
         // Check if Brave Rewards is disabled by policy and hide the icon preference if so
-        checkRewardsPolicyAndUpdatePreference();
 
         // Check if Leo is disabled by policy for toolbar shortcut settings
         checkLeoPolicyForToolbarShortcut();
@@ -285,14 +258,6 @@ public class AppearancePreferences extends AppearanceSettingsFragment
     }
 
     @Override
-    public void onStop() {
-        if (mBraveRewardsNativeWorker != null) {
-            mBraveRewardsNativeWorker.removeObserver(this);
-        }
-        super.onStop();
-    }
-
-    @Override
     public boolean onPreferenceChange(Preference preference, Object newValue) {
         String key = preference.getKey();
         boolean shouldRelaunch = false;
@@ -305,12 +270,6 @@ public class AppearancePreferences extends AppearanceSettingsFragment
                     .writeBoolean(
                             BravePreferenceKeys.BRAVE_BOTTOM_TOOLBAR_ENABLED_KEY, !originalStatus);
             shouldRelaunch = true;
-        } else if (PREF_SHOW_BRAVE_REWARDS_ICON.equals(key)) {
-            ChromeSharedPreferences.getInstance()
-                    .writeBoolean(PREF_SHOW_BRAVE_REWARDS_ICON, !(boolean) newValue);
-            shouldRelaunch = true;
-        } else if (PREF_ADS_SWITCH.equals(key)) {
-            setPrefAdsInBackgroundEnabled((boolean) newValue);
         } else if (PREF_BRAVE_NIGHT_MODE_ENABLED.equals(key)) {
             BraveFeatureUtil.enableFeature(
                     BraveFeatureList.ENABLE_FORCE_DARK, (boolean) newValue, true);
@@ -365,15 +324,8 @@ public class AppearancePreferences extends AppearanceSettingsFragment
     }
 
     /** Returns the user preference for whether the brave ads in background is enabled. */
-    public static boolean getPrefAdsInBackgroundEnabled() {
-        return ChromeSharedPreferences.getInstance().readBoolean(PREF_ADS_SWITCH, false);
-    }
 
     /** Sets the user preference for whether the brave ads in background is enabled. */
-    public void setPrefAdsInBackgroundEnabled(boolean enabled) {
-        ChromeSharedPreferences.getInstance().writeBoolean(PREF_ADS_SWITCH, enabled);
-    }
-
     private static boolean isSharingHubEnabled() {
         return !ChromeSharedPreferences.getInstance()
                 .readBoolean(BravePreferenceKeys.BRAVE_DISABLE_SHARING_HUB, false);
@@ -444,13 +396,6 @@ public class AppearancePreferences extends AppearanceSettingsFragment
      * ensures that when Brave Rewards is disabled, users cannot toggle rewards-related settings in
      * the appearance settings.
      */
-    private void checkRewardsPolicyAndUpdatePreference() {
-        if (BraveRewardsPolicy.isDisabledByPolicy(getProfile())) {
-            // Policy disables Brave Rewards - remove rewards-related preferences
-            removePreferenceIfPresent(PREF_SHOW_BRAVE_REWARDS_ICON);
-            removePreferenceIfPresent(PREF_ADS_SWITCH);
-        }
-    }
 
     /**
      * Checks if Leo AI is disabled by policy and updates the static flag in
@@ -511,11 +456,6 @@ public class AppearancePreferences extends AppearanceSettingsFragment
                     if (!BookmarkBarUtils.isDeviceBookmarkBarCompatible(context)) {
                         indexData.removeEntryForKey(
                                 frag, AppearanceSettingsFragment.PREF_BOOKMARK_BAR);
-                    }
-
-                    if (BraveRewardsPolicy.isDisabledByPolicy(profile)) {
-                        indexData.removeEntryForKey(frag, PREF_SHOW_BRAVE_REWARDS_ICON);
-                        indexData.removeEntryForKey(frag, PREF_ADS_SWITCH);
                     }
 
                     if (!shouldShowSharingHubPreference()) {

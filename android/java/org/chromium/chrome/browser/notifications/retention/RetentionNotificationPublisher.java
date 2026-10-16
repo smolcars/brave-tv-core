@@ -16,7 +16,6 @@ import android.content.res.Configuration;
 import org.chromium.base.ApplicationStatus;
 import org.chromium.base.ThreadUtils;
 import org.chromium.base.task.AsyncTask;
-import org.chromium.chrome.browser.BraveRewardsNativeWorker;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.brave_origin.BraveOriginSubscriptionPrefs;
 import org.chromium.chrome.browser.onboarding.OnboardingPrefManager;
@@ -55,21 +54,22 @@ public class RetentionNotificationPublisher extends BroadcastReceiver {
                                     && braveActivity.getActivityTab().getUrl().getSpec() != null
                                     && !UrlUtilities.isNtpUrl(
                                             braveActivity.getActivityTab().getUrl().getSpec())) {
-                                braveActivity.getTabCreator(false).launchUrl(
-                                        UrlConstants.NTP_URL, TabLaunchType.FROM_CHROME_UI);
+                                braveActivity
+                                        .getTabCreator(false)
+                                        .launchUrl(
+                                                UrlConstants.NTP_URL, TabLaunchType.FROM_CHROME_UI);
                             }
                             break;
                         case RetentionNotificationUtil.DAY_10:
                         case RetentionNotificationUtil.DAY_30:
                         case RetentionNotificationUtil.DAY_35:
-                            braveActivity.openRewardsPanel();
                             break;
                         case RetentionNotificationUtil.DORMANT_USERS_DAY_14:
                         case RetentionNotificationUtil.DORMANT_USERS_DAY_25:
                         case RetentionNotificationUtil.DORMANT_USERS_DAY_40:
                             if (System.currentTimeMillis()
                                     > OnboardingPrefManager.getInstance()
-                                              .getDormantUsersNotificationTime(notificationType)) {
+                                            .getDormantUsersNotificationTime(notificationType)) {
                                 braveActivity.showDormantUsersEngagementDialog(notificationType);
                             } else {
                                 RetentionNotificationUtil.scheduleNotificationWithTime(
@@ -95,22 +95,6 @@ public class RetentionNotificationPublisher extends BroadcastReceiver {
                     case RetentionNotificationUtil.DAY_10:
                     case RetentionNotificationUtil.DAY_30:
                     case RetentionNotificationUtil.DAY_35:
-                        // Can't check for rewards code in background
-                        try {
-                            BraveRewardsNativeWorker rewardsNativeWorker =
-                                    BraveRewardsNativeWorker.getInstance();
-                            if (braveActivity != null
-                                    && rewardsNativeWorker != null
-                                    && !rewardsNativeWorker.isRewardsEnabled()
-                                    && rewardsNativeWorker.isSupported()) {
-                                createNotification(context, intent);
-                            }
-                        } catch (IllegalStateException exc) {
-                            // We can receive 'Browser hasn't finished initialization yet!' if
-                            // Profile.getLastUsedRegularProfile is called too early. Just ignore
-                            // it,
-                            // it's better comparing to crashing
-                        }
                         break;
                     case RetentionNotificationUtil.EVERY_SUNDAY:
                         if (OnboardingPrefManager.getInstance().isBraveStatsNotificationEnabled()
@@ -189,16 +173,18 @@ public class RetentionNotificationPublisher extends BroadcastReceiver {
     }
 
     public static void backgroundNotificationAction(Context context, Intent intent) {
-        String notificationType = intent.getStringExtra(RetentionNotificationUtil.NOTIFICATION_TYPE);
-        if (ApplicationStatus.hasVisibleActivities() || context == null
+        String notificationType =
+                intent.getStringExtra(RetentionNotificationUtil.NOTIFICATION_TYPE);
+        if (ApplicationStatus.hasVisibleActivities()
+                || context == null
                 || context.getPackageManager() == null) {
             return;
         }
         Intent launchIntent =
-            context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
+                context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
         if (launchIntent != null) {
             launchIntent.setFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                    Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
             launchIntent.putExtra(RetentionNotificationUtil.NOTIFICATION_TYPE, notificationType);
             context.startActivity(launchIntent);
         }

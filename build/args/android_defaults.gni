@@ -26,3 +26,5 @@ generate_about_credits = true
 # Optional products excluded from the TV browser.
 enable_brave_news = false
 enable_brave_wallet = false
+enable_brave_rewards = false
+enable_brave_ads = false

@@ -30,7 +30,6 @@ import org.chromium.chrome.browser.BraveFeatureUtil;
 import org.chromium.chrome.browser.BraveLaunchIntentDispatcher;
 import org.chromium.chrome.browser.BraveLocalState;
 import org.chromium.chrome.browser.BraveRelaunchUtils;
-import org.chromium.chrome.browser.BraveRewardsPolicy;
 import org.chromium.chrome.browser.brave_origin.BraveOriginSubscriptionPrefs;
 import org.chromium.chrome.browser.browsing_data.BraveClearBrowsingDataFragment;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
@@ -45,7 +44,6 @@ import org.chromium.chrome.browser.safe_browsing.settings.NoGooglePlayServicesDi
 import org.chromium.chrome.browser.safety_hub.SafetyHubExpandablePreference;
 import org.chromium.chrome.browser.settings.BraveDialogPreference;
 import org.chromium.chrome.browser.settings.BravePreferenceDialogFragment;
-import org.chromium.chrome.browser.settings.BraveTextButtonPreference;
 import org.chromium.chrome.browser.settings.BraveWebrtcPolicyPreference;
 import org.chromium.chrome.browser.settings.search.ChromeBaseSearchIndexProvider;
 import org.chromium.chrome.browser.shields.FilterListServiceFactory;
@@ -221,10 +219,6 @@ public class BravePrivacySettings extends PrivacySettings {
     private ChromeBasePreference mAutoShredPref;
     private @Nullable ChromeSwitchPreference mAllowElementsBlockingOnPrivateTabsPref;
     private ChromeSwitchPreference mCloseTabsOnExitPref;
-    private @Nullable ChromeSwitchPreference mSponsoredAdsEnabled;
-    private @Nullable BraveTextButtonPreference mSponsoredAdsLearnMore;
-    private ChromeSwitchPreference mSurveyPanelist;
-    private BraveTextButtonPreference mSurveyPanelistLearnMore;
     private ChromeSwitchPreference mBlockSwitchToAppNoticesPref;
     private PreferenceCategory mSocialBlockingCategory;
     private ChromeSwitchPreference mSocialBlockingGoogle;
@@ -391,44 +385,6 @@ public class BravePrivacySettings extends PrivacySettings {
 
         mClearBrowsingDataOnExit = (ChromeSwitchPreference) findPreference(PREF_CLEAR_ON_EXIT);
         mClearBrowsingDataOnExit.setOnPreferenceChangeListener(this);
-
-        // Hide Sponsored Ads setting if Brave Rewards is disabled by policy
-        if (BraveRewardsPolicy.isDisabledByPolicy(getProfile())) {
-            removePreferenceIfPresent(PREF_SPONSORED_ADS_ENABLED);
-            removePreferenceIfPresent(PREF_SPONSORED_ADS_LEARN_MORE);
-            mSponsoredAdsEnabled = null;
-            mSponsoredAdsLearnMore = null;
-        } else {
-            mSponsoredAdsEnabled =
-                    (ChromeSwitchPreference) findPreference(PREF_SPONSORED_ADS_ENABLED);
-            mSponsoredAdsEnabled.setOnPreferenceChangeListener(this);
-            mSponsoredAdsLearnMore =
-                    (BraveTextButtonPreference) findPreference(PREF_SPONSORED_ADS_LEARN_MORE);
-            mSponsoredAdsLearnMore.setTitle(R.string.sponsored_ads_learn_more);
-            mSponsoredAdsLearnMore.setOnPreferenceClickListener(
-                    preference -> {
-                        TabUtils.openUrlInCustomTab(
-                                requireContext(), SPONSORED_ADS_LEARN_MORE_LINK);
-                        return true;
-                    });
-        }
-
-        boolean surveyPanelistEnabled =
-                ChromeFeatureList.isEnabled(
-                                BraveFeatureList.BRAVE_NTP_BRANDED_WALLPAPER_SURVEY_PANELIST)
-                        && !BraveOriginSubscriptionPrefs.getIsCredentialSummaryActiveCached();
-        mSurveyPanelist = (ChromeSwitchPreference) findPreference(PREF_SURVEY_PANELIST);
-        mSurveyPanelist.setOnPreferenceChangeListener(this);
-        mSurveyPanelist.setVisible(surveyPanelistEnabled);
-        mSurveyPanelistLearnMore =
-                (BraveTextButtonPreference) findPreference(PREF_SURVEY_PANELIST_LEARN_MORE);
-        mSurveyPanelistLearnMore.setVisible(surveyPanelistEnabled);
-        mSurveyPanelistLearnMore.setTitle(R.string.survey_panelist_learn_more);
-        mSurveyPanelistLearnMore.setOnPreferenceClickListener(
-                preference -> {
-                    TabUtils.openUrlInCustomTab(requireContext(), SURVEY_PANELIST_LEARN_MORE_LINK);
-                    return true;
-                });
 
         mSocialBlockingCategory =
                 (PreferenceCategory) findPreference(PREF_BRAVE_SOCIAL_BLOCKING_SECTION);
@@ -664,13 +620,6 @@ public class BravePrivacySettings extends PrivacySettings {
         } else if (PREF_CLOSE_TABS_ON_EXIT.equals(key)) {
             preferencesManager.writeBoolean(
                     BravePreferenceKeys.BRAVE_CLOSE_TABS_ON_EXIT, (boolean) newValue);
-        } else if (PREF_SPONSORED_ADS_ENABLED.equals(key)) {
-            UserPrefs.get(getProfile()).setBoolean(BravePref.SPONSORED_ENABLED, (boolean) newValue);
-        } else if (PREF_SURVEY_PANELIST.equals(key)) {
-            UserPrefs.get(getProfile())
-                    .setBoolean(
-                            BravePref.NEW_TAB_PAGE_SPONSORED_IMAGES_SURVEY_PANELIST,
-                            (boolean) newValue);
         } else if (PREF_SOCIAL_BLOCKING_GOOGLE.equals(key)) {
             UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
                     .setBoolean(BravePref.GOOGLE_LOGIN_CONTROL_TYPE, (boolean) newValue);
@@ -863,15 +812,6 @@ public class BravePrivacySettings extends PrivacySettings {
                         .getString(R.string.settings_can_make_payment_toggle_label));
         mCanMakePayment.setSummary("");
 
-        if (mSponsoredAdsEnabled != null) {
-            mSponsoredAdsEnabled.setChecked(
-                    UserPrefs.get(getProfile()).getBoolean(BravePref.SPONSORED_ENABLED));
-        }
-
-        mSurveyPanelist.setChecked(
-                UserPrefs.get(getProfile())
-                        .getBoolean(BravePref.NEW_TAB_PAGE_SPONSORED_IMAGES_SURVEY_PANELIST));
-
         mWebrtcPolicy.setSummary(
                 webrtcPolicyToString(BravePrefServiceBridge.getInstance().getWebrtcPolicy()));
 
@@ -1045,9 +985,6 @@ public class BravePrivacySettings extends PrivacySettings {
                     indexData.removeEntryForKey(frag, PREF_SEND_P3A);
                     indexData.removeEntryForKey(frag, PREF_SEND_CRASH_REPORTS);
                     indexData.removeEntryForKey(frag, PREF_BRAVE_STATS_USAGE_PING);
-                    if (BraveRewardsPolicy.isDisabledByPolicy(profile)) {
-                        indexData.removeEntryForKey(frag, PREF_SPONSORED_ADS_ENABLED);
-                    }
 
                     // Dynamic summaries for dialog prefs
                     String trackersPref = BraveShieldsContentSettings.getTrackersPref();

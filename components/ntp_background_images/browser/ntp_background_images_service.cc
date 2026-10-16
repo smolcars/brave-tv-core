@@ -5,6 +5,8 @@
 
 #include "brave/components/ntp_background_images/browser/ntp_background_images_service.h"
 
+#include "brave/components/brave_ads/buildflags/buildflags.h"
+
 #include <algorithm>
 #include <memory>
 
@@ -139,6 +141,7 @@ NTPBackgroundImagesService::~NTPBackgroundImagesService() = default;
 void NTPBackgroundImagesService::Init() {
   pref_change_registrar_.Init(pref_service_);
 
+#if BUILDFLAG(ENABLE_BRAVE_ADS)
   // Flag override for testing or demo purposes
   base::FilePath override_sponsored_images_component_path(
       base::CommandLine::ForCurrentProcess()->GetSwitchValuePath(
@@ -157,6 +160,9 @@ void NTPBackgroundImagesService::Init() {
             &NTPBackgroundImagesService::OnVariationsCountryPrefChanged,
             weak_factory_.GetWeakPtr()));
   }
+#else
+  RegisterBackgroundImagesComponent();
+#endif  // BUILDFLAG(ENABLE_BRAVE_ADS)
 }
 
 void NTPBackgroundImagesService::StartTearDown() {
@@ -236,6 +242,7 @@ std::string NTPBackgroundImagesService::GetCountryCode() const {
 }
 
 void NTPBackgroundImagesService::RegisterSponsoredImagesComponent() {
+#if BUILDFLAG(ENABLE_BRAVE_ADS)
   const std::string variations_country_code = GetCountryCode();
   std::optional<SponsoredImagesComponentInfo> sponsored_images_component =
       GetSponsoredImagesComponent(variations_country_code);
@@ -296,6 +303,7 @@ void NTPBackgroundImagesService::RegisterSponsoredImagesComponent() {
   last_updated_at_ = base::Time::Now();
 
   ScheduleNextSponsoredImagesComponentUpdate();
+#endif  // BUILDFLAG(ENABLE_BRAVE_ADS)
 }
 
 void NTPBackgroundImagesService::OnVariationsCountryPrefChanged() {

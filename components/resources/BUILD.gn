@@ -80,6 +80,7 @@ brave_grit("static_resources") {
   defines = [
     "enable_ai_chat=$enable_ai_chat",
     "enable_brave_news=$enable_brave_news",
+    "enable_brave_ads=$enable_brave_ads",
     "enable_brave_vpn=$enable_brave_vpn",
     "enable_brave_wallet=$enable_brave_wallet",
     "enable_email_aliases=$enable_email_aliases",
@@ -134,7 +135,7 @@ repack("resources") {
     ]
   }
 
-  if (is_android) {
+  if (is_android && enable_brave_ads) {
     deps += [ "//brave/components/new_tab_takeover:new_tab_takeover_generated_resources" ]
     sources += [ "$root_gen_dir/brave/components/new_tab_takeover/new_tab_takeover_generated.pak" ]
   }

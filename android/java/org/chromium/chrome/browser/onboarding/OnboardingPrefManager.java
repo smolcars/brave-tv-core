@@ -8,20 +8,15 @@ import android.content.SharedPreferences;
 
 import org.chromium.base.ContextUtils;
 import org.chromium.base.Log;
-import org.chromium.chrome.browser.BraveAdsNativeHelper;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.app.BraveActivity.BraveActivityNotFoundException;
-import org.chromium.chrome.browser.notifications.BraveOnboardingNotification;
 import org.chromium.chrome.browser.notifications.retention.RetentionNotificationUtil;
-import org.chromium.chrome.browser.profiles.ProfileManager;
 import org.chromium.misc_metrics.mojom.MiscAndroidMetrics;
 
 import java.util.Calendar;
 import java.util.Date;
 
-/**
- * Provides information regarding onboarding.
- */
+/** Provides information regarding onboarding. */
 public class OnboardingPrefManager {
     private static final String TAG = "OnboardingPrefMgr";
 
@@ -57,9 +52,7 @@ public class OnboardingPrefManager {
         mSharedPreferences = ContextUtils.getAppSharedPreferences();
     }
 
-    /**
-     * Returns the singleton instance of OnboardingPrefManager, creating it if needed.
-     */
+    /** Returns the singleton instance of OnboardingPrefManager, creating it if needed. */
     public static OnboardingPrefManager getInstance() {
         if (sInstance == null) {
             sInstance = new OnboardingPrefManager();
@@ -67,16 +60,12 @@ public class OnboardingPrefManager {
         return sInstance;
     }
 
-    /**
-     * Returns the user preference for whether the onboarding is shown.
-     */
+    /** Returns the user preference for whether the onboarding is shown. */
     public boolean isOnboardingShown() {
         return mSharedPreferences.getBoolean(PREF_ONBOARDING, false);
     }
 
-    /**
-     * Sets the user preference for whether the onboarding is shown.
-     */
+    /** Sets the user preference for whether the onboarding is shown. */
     public void setOnboardingShown(boolean isShown) {
         SharedPreferences.Editor sharedPreferencesEditor = mSharedPreferences.edit();
         sharedPreferencesEditor.putBoolean(PREF_ONBOARDING, isShown);
@@ -136,24 +125,12 @@ public class OnboardingPrefManager {
         sharedPreferencesEditor.apply();
     }
 
-    public boolean isAdsAvailable() {
-        return BraveAdsNativeHelper.nativeIsSupportedRegion(
-                ProfileManager.getLastUsedRegularProfile());
-    }
-
     public boolean isOnboardingNotificationShown() {
         return sIsOnboardingNotificationShown;
     }
 
     public void setOnboardingNotificationShown(boolean isShown) {
         sIsOnboardingNotificationShown = isShown;
-    }
-
-    public void onboardingNotification() {
-        if (!isOnboardingNotificationShown()) {
-            BraveOnboardingNotification.showOnboardingNotification();
-            setOnboardingNotificationShown(true);
-        }
     }
 
     public boolean isFromNotification() {

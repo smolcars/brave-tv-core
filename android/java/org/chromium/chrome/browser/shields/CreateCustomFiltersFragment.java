@@ -9,7 +9,6 @@ import static org.chromium.build.NullUtil.assumeNonNull;
 
 import android.os.Bundle;
 import android.text.SpannableString;
-import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -28,12 +27,12 @@ import org.chromium.brave_shields.mojom.FilterListAndroidHandler;
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.R;
-import org.chromium.chrome.browser.BraveRewardsHelper;
 import org.chromium.chrome.browser.customtabs.CustomTabActivity;
 import org.chromium.chrome.browser.settings.BottomInsetViewProvider;
 import org.chromium.chrome.browser.settings.BravePreferenceFragment;
 import org.chromium.chrome.browser.theme.BraveDynamicColors;
 import org.chromium.ui.text.ChromeClickableSpan;
+import org.chromium.ui.text.SpanApplier;
 import org.chromium.ui.widget.Toast;
 
 @NullMarked
@@ -78,12 +77,9 @@ public class CreateCustomFiltersFragment extends BravePreferenceFragment
         mEtCustomFilters = assumeNonNull(getView()).findViewById(R.id.enter_custom_filters);
         TextView tvSummary = getView().findViewById(R.id.summary);
         String summaryText =
-                String.format(
-                        getResources().getString(R.string.create_custom_filter_summary),
-                        getResources().getString(R.string.adblock_filter_syntax));
-        Spanned summaryTextSpanned = BraveRewardsHelper.spannedFromHtmlString(summaryText);
-        SpannableString summaryTextSpannableString =
-                new SpannableString(summaryTextSpanned.toString());
+                getString(
+                        R.string.create_custom_filter_summary,
+                        "<link>" + getString(R.string.adblock_filter_syntax) + "</link>");
 
         if (getActivity() != null) {
             ChromeClickableSpan summaryTextClickableSpan =
@@ -96,12 +92,11 @@ public class CreateCustomFiltersFragment extends BravePreferenceFragment
                                         getActivity(), BRAVE_ADBLOCK_FILTER_SYNTAX_PAGE);
                             });
 
-            BraveRewardsHelper.setSpan(
-                    getActivity(),
-                    summaryText,
-                    summaryTextSpannableString,
-                    R.string.adblock_filter_syntax,
-                    summaryTextClickableSpan);
+            SpannableString summaryTextSpannableString =
+                    SpanApplier.applySpans(
+                            summaryText,
+                            new SpanApplier.SpanInfo(
+                                    "<link>", "</link>", summaryTextClickableSpan));
             tvSummary.setMovementMethod(LinkMovementMethod.getInstance());
             tvSummary.setText(summaryTextSpannableString);
         }

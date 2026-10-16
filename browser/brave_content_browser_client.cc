@@ -314,7 +314,9 @@ using extensions::ChromeContentBrowserClientExtensionsPart;
 
 #if BUILDFLAG(IS_ANDROID)
 #include "base/files/memory_mapped_file.h"
+#if BUILDFLAG(ENABLE_BRAVE_ADS)
 #include "brave/browser/ui/webui/new_tab_takeover/android/new_tab_takeover_ui.h"
+#endif  // BUILDFLAG(ENABLE_BRAVE_ADS)
 #include "chrome/common/chrome_descriptors_android.h"
 #include "content/public/browser/posix_file_descriptor_info.h"
 #include "ui/base/resource/resource_bundle_android.h"
@@ -837,8 +839,10 @@ void BraveContentBrowserClient::RegisterTrustedWebUIInterfaceBrokers(
 #endif
 
 #else   // !BUILDFLAG(IS_ANDROID)
+#if BUILDFLAG(ENABLE_BRAVE_ADS)
   registry.ForWebUI<NewTabTakeoverUI>()
       .Add<new_tab_takeover::mojom::NewTabTakeover>();
+#endif  // BUILDFLAG(ENABLE_BRAVE_ADS)
 
   if (brave_account::features::IsBraveAccountEnabled()) {
     registry.ForWebUI<BraveAccountUIAndroid>()

@@ -84,7 +84,9 @@
       <!-- WebUI Local AI resources -->
       <include name="IDR_ON_DEVICE_SPEECH_RECOGNITION_WORKER_HTML" file="../local_ai/resources/speech_worker/speech_worker.html" type="BINDATA" />
 
-      <part file="../brave_ads/browser/resources/ads_internals_resources.grdp" />
+      <if expr="enable_brave_ads">
+        <part file="../brave_ads/browser/resources/ads_internals_resources.grdp" />
+      </if>
       <part file="../brave_perf_predictor/resources/brave_perf_predictor_resources.grdp" />
       <part file="../misc_metrics/resources/misc_metrics_resources.grdp" />
       <part file="../playlist/content/browser/resources/playlist_resources.grdp" />

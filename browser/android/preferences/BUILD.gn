@@ -13,10 +13,8 @@ source_set("preferences") {
   deps = [
     "//base",
     "//brave/build/android:jni_headers",
-    "//brave/components/brave_adaptive_captcha",
     "//brave/components/brave_perf_predictor/common",
     "//brave/components/brave_referrals/common",
-    "//brave/components/brave_rewards/core",
     "//brave/components/brave_shields/core/browser",
     "//brave/components/brave_sync:prefs",
     "//brave/components/constants",

@@ -13,18 +13,15 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.view.ViewTreeObserver;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -74,8 +71,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
     private WindowAndroid mWindowAndroid;
 
     private @Nullable ImageView mBgImageView;
-    private @Nullable SponsoredRichMediaWebView mSponsoredRichMediaWebView;
-    private @Nullable FrameLayout mBackgroundSponsoredRichMediaView;
 
     // Own members
     private @Nullable Profile mProfile;
@@ -94,8 +89,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
     private @Nullable Bitmap mSponsoredLogo;
     private @Nullable Wallpaper mWallpaper;
 
-    private @Nullable BraveNewTabTakeoverInfobar mNewTabTakeoverInfobar;
-
     private @Nullable RecyclerView mRecyclerView;
 
     private @Nullable NTPImage mNtpImageGlobal;
@@ -104,8 +97,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
     private boolean mIsTopSitesEnabled;
     private boolean mIsBraveStatsEnabled;
     private ViewTreeObserver.@Nullable OnGlobalLayoutListener mBgImageViewOnGlobalLayoutListener;
-
-    private @Nullable NewTabTakeoverSafeAreaReporter mSafeAreaReporter;
 
     public BraveNewTabPageLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -225,7 +216,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
             mNtpAdapter.setTopSitesEnabled(mIsTopSitesEnabled);
             mNtpAdapter.setBraveStatsEnabled(mIsBraveStatsEnabled);
         }
-        maybeCreateSafeAreaReporter();
     }
 
     private void keepPosition() {
@@ -320,8 +310,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
             }
         }
 
-        maybeResetSponsoredRichMediaBackground();
-
         // Removes preference listener.
         ContextUtils.getAppSharedPreferences()
                 .unregisterOnSharedPreferenceChangeListener(mPreferenceListener);
@@ -397,101 +385,12 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
     public void setTabProvider(Supplier<@Nullable Tab> unused_tabProvider) {}
 
     private void maybeShowNTPImage() {
-        // Return early if the NTP image is not available yet; this method is called again once it
-        // is ready.
-        if (mNtpImageGlobal == null) {
-            return;
-        }
-
-        Display display = mActivity.getWindowManager().getDefaultDisplay();
-        Point size = new Point();
-        display.getSize(size);
-
-        if (mNtpAdapter != null) {
-            mNtpAdapter.setNtpImage(mNtpImageGlobal);
-        }
-
-        boolean wasWallpaperShown = true;
-        if (mNtpImageGlobal instanceof Wallpaper && ((Wallpaper) mNtpImageGlobal).isRichMedia()) {
-            setupSponsoredBackgroundContent((Wallpaper) mNtpImageGlobal);
-        } else {
-            maybeResetSponsoredRichMediaBackground();
-
-            if (UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                            .getBoolean(BravePref.NEW_TAB_PAGE_SHOW_BACKGROUND_IMAGE)
-                    && mSponsoredTab != null
-                    && NTPImageUtil.shouldEnableNTPFeature()) {
-                setBackgroundImage(mNtpImageGlobal);
-            } else {
-                wasWallpaperShown = false;
-            }
-        }
-
-        assertNonNull(mProfile);
-        if (wasWallpaperShown
-                && mNtpImageGlobal instanceof Wallpaper
-                && getTab() != null
-                && mNewTabTakeoverInfobar == null) {
-            mNewTabTakeoverInfobar = new BraveNewTabTakeoverInfobar(mProfile);
-            mNewTabTakeoverInfobar.maybeDisplayAndIncrementCounter(mActivity, getTab());
-        }
-    }
-
-    private void setupSponsoredBackgroundContent(Wallpaper wallpaper) {
-        if (mSponsoredRichMediaWebView == null) {
-            mSponsoredRichMediaWebView =
-                    new SponsoredRichMediaWebView(mActivity, mWindowAndroid, mProfile);
-
-            mBackgroundSponsoredRichMediaView = findViewById(R.id.bg_sponsored_rich_media_view);
-            mBackgroundSponsoredRichMediaView.setVisibility(View.VISIBLE);
-            mBackgroundSponsoredRichMediaView.addView(mSponsoredRichMediaWebView.getView());
-        }
-
-        mSponsoredRichMediaWebView.maybeLoadSponsoredRichMedia(
-                wallpaper.getWallpaperId(), wallpaper.getCreativeInstanceId());
-
-        maybeCreateSafeAreaReporter();
-    }
-
-    private void maybeResetSponsoredRichMediaBackground() {
-        if (mBackgroundSponsoredRichMediaView == null || mSponsoredRichMediaWebView == null) {
-            return;
-        }
-
-        destroySafeAreaReporter();
-
-        mBackgroundSponsoredRichMediaView.setVisibility(View.GONE);
-        mBackgroundSponsoredRichMediaView.removeAllViews();
-        mSponsoredRichMediaWebView.destroy();
-        mSponsoredRichMediaWebView = null;
-    }
-
-    private void maybeCreateSafeAreaReporter() {
-        if (mRecyclerView == null
-                || mNtpAdapter == null
-                || mSponsoredRichMediaWebView == null
-                || mBackgroundSponsoredRichMediaView == null) {
-            return;
-        }
-
-        if (mSafeAreaReporter != null) {
-            mSafeAreaReporter.scheduleMeasurement();
-            return;
-        }
-
-        mSafeAreaReporter =
-                new NewTabTakeoverSafeAreaReporter(
-                        this,
-                        mRecyclerView,
-                        mNtpAdapter,
-                        mBackgroundSponsoredRichMediaView,
-                        mSponsoredRichMediaWebView);
-    }
-
-    private void destroySafeAreaReporter() {
-        if (mSafeAreaReporter != null) {
-            mSafeAreaReporter.destroy();
-            mSafeAreaReporter = null;
+        if (mNtpImageGlobal == null) return;
+        if (mNtpAdapter != null) mNtpAdapter.setNtpImage(mNtpImageGlobal);
+        if (UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
+                        .getBoolean(BravePref.NEW_TAB_PAGE_SHOW_BACKGROUND_IMAGE)
+                && NTPImageUtil.shouldEnableNTPFeature()) {
+            setBackgroundImage(mNtpImageGlobal);
         }
     }
 
@@ -541,7 +440,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
     private void getAndShowNTPImage() {
         assertNonNull(mSponsoredTab);
         mSponsoredTab.getNTPImage(
-                /* allowSponsoredImage= */ true,
+                /* allowSponsoredImage= */ false,
                 ntpImage -> {
                     if (mActivity == null || mActivity.isFinishing() || mActivity.isDestroyed()) {
                         return;
@@ -554,7 +453,7 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
     private void initilizeSponsoredTab() {
         if (TabAttributes.from(getTab()).get(String.valueOf(getTab().getId())) == null) {
             SponsoredTab sponsoredTab =
-                    new SponsoredTab(mNTPBackgroundImagesBridge, /* allowSponsoredImage= */ true);
+                    new SponsoredTab(mNTPBackgroundImagesBridge, /* allowSponsoredImage= */ false);
             TabAttributes.from(getTab()).set(String.valueOf(getTab().getId()), sponsoredTab);
         }
         mSponsoredTab = TabAttributes.from(getTab()).get(String.valueOf(getTab().getId()));

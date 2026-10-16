@@ -32,8 +32,6 @@ import org.chromium.brave_vpn.mojom.BraveVpnConstants;
 import org.chromium.build.annotations.NullMarked;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.ActivityTabProvider;
-import org.chromium.chrome.browser.BraveRewardsNativeWorker;
-import org.chromium.chrome.browser.BraveRewardsPolicy;
 import org.chromium.chrome.browser.RecentlyClosedEntriesManager;
 import org.chromium.chrome.browser.app.appmenu.AppMenuIconRowFooter;
 import org.chromium.chrome.browser.app.appmenu.AppMenuItemUtils;
@@ -158,27 +156,6 @@ public class BraveTabbedAppMenuPropertiesDelegate extends TabbedAppMenuPropertie
                                 R.id.page_zoom_id,
                                 R.id.find_in_page_id,
                                 R.id.default_browser_promo_menu_id)),
-                new PolicyControlledMenuItem(
-                        R.id.brave_rewards_id,
-                        this::buildBraveRewardsItem,
-                        () -> {
-                            // Native methods are not available in unit tests (Robolectric)
-                            if (mJunitIsTesting) {
-                                return false;
-                            }
-                            BraveRewardsNativeWorker worker =
-                                    BraveRewardsNativeWorker.getInstance();
-                            return worker != null && worker.isSupported();
-                        },
-                        () -> {
-                            Tab tab = mActivityTabProvider.get();
-                            return tab != null
-                                    && BraveRewardsPolicy.isDisabledByPolicy(tab.getProfile());
-                        },
-                        Arrays.asList(
-                                R.id.brave_news_id,
-                                CustomizeBraveMenu.BRAVE_CUSTOMIZE_ITEM_ID,
-                                R.id.exit_id)),
                 // VPN feature checks call native code, so assume supported in JUnit tests
                 new PolicyControlledMenuItem(
                         R.id.request_brave_vpn_id,
@@ -1158,18 +1135,6 @@ public class BraveTabbedAppMenuPropertiesDelegate extends TabbedAppMenuPropertie
                         R.id.exit_id,
                         R.string.menu_exit,
                         shouldShowIconBeforeItem() ? R.drawable.ic_outside : 0,
-                        isMenuIconAtStart()));
-    }
-
-    private MVCListAdapter.ListItem buildBraveRewardsItem() {
-        return new MVCListAdapter.ListItem(
-                AppMenuHandler.AppMenuItemType.STANDARD,
-                AppMenuItemUtils.buildModelForStandardMenuItem(
-                        mContext,
-                        mAppMenuItemTheme,
-                        R.id.brave_rewards_id,
-                        R.string.menu_brave_rewards,
-                        shouldShowIconBeforeItem() ? R.drawable.ic_product_bat_outline : 0,
                         isMenuIconAtStart()));
     }
 

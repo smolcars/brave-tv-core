@@ -12,7 +12,6 @@ import org.chromium.base.supplier.MonotonicObservableSupplier;
 import org.chromium.base.supplier.ObservableSuppliers;
 import org.chromium.base.supplier.SettableMonotonicObservableSupplier;
 import org.chromium.chrome.R;
-import org.chromium.chrome.browser.BraveRewardsHelper;
 import org.chromium.components.browser_ui.settings.SettingsUtils;
 import org.chromium.components.browser_ui.settings.search.BaseSearchIndexProvider;
 
@@ -20,9 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
 
-/**
- * Fragment to display Brave license information.
- */
+/** Fragment to display Brave license information. */
 public class BraveLicensePreferences extends BravePreferenceFragment {
     private static final String TAG = "BraveLicense";
 
@@ -51,7 +48,9 @@ public class BraveLicensePreferences extends BravePreferenceFragment {
             Scanner scanner = new Scanner(in).useDelimiter("\\A");
             String summary = scanner.hasNext() ? scanner.next() : "";
             in.close();
-            licenseText.setSummary(BraveRewardsHelper.spannedFromHtmlString(summary));
+            licenseText.setSummary(
+                    androidx.core.text.HtmlCompat.fromHtml(
+                            summary, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY));
         } catch (IOException e) {
             Log.e(TAG, "Could not load license text: " + e);
         }

@@ -92,7 +92,6 @@ import org.chromium.chrome.browser.BraveConstants;
 import org.chromium.chrome.browser.BraveHelper;
 import org.chromium.chrome.browser.BraveIntentHandler;
 import org.chromium.chrome.browser.BraveRelaunchUtils;
-import org.chromium.chrome.browser.BraveRewardsHelper;
 import org.chromium.chrome.browser.BraveSyncWorker;
 import org.chromium.chrome.browser.ChromeTabbedActivity;
 import org.chromium.chrome.browser.DormantUsersEngagementDialogFragment;
@@ -120,7 +119,6 @@ import org.chromium.chrome.browser.browsing_data.BrowsingDataType;
 import org.chromium.chrome.browser.browsing_data.TimePeriod;
 import org.chromium.chrome.browser.compositor.layouts.LayoutManagerImpl;
 import org.chromium.chrome.browser.customtabs.CustomTabActivity;
-import org.chromium.chrome.browser.customtabs.FullScreenCustomTabActivity;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
 import org.chromium.chrome.browser.fullscreen.BrowserControlsManager;
@@ -134,7 +132,6 @@ import org.chromium.chrome.browser.multiwindow.BraveMultiWindowUtils;
 import org.chromium.chrome.browser.multiwindow.MultiInstanceManager;
 import org.chromium.chrome.browser.multiwindow.MultiInstanceManager.PersistedInstanceType;
 import org.chromium.chrome.browser.multiwindow.MultiWindowUtils;
-import org.chromium.chrome.browser.notifications.BraveOnboardingNotification;
 import org.chromium.chrome.browser.notifications.permissions.NotificationPermissionController;
 import org.chromium.chrome.browser.notifications.retention.RetentionNotificationUtil;
 import org.chromium.chrome.browser.ntp.BraveFreshNtpHelper;
@@ -143,11 +140,9 @@ import org.chromium.chrome.browser.onboarding.OnboardingPrefManager;
 import org.chromium.chrome.browser.onboarding.v2.HighlightDialogFragment;
 import org.chromium.chrome.browser.playlist.PlaylistHostActivity;
 import org.chromium.chrome.browser.playlist.settings.BravePlaylistPreferences;
-import org.chromium.chrome.browser.preferences.BravePref;
 import org.chromium.chrome.browser.preferences.BravePrefServiceBridge;
 import org.chromium.chrome.browser.preferences.ChromePreferenceKeys;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
-import org.chromium.chrome.browser.preferences.PrefServiceUtil;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.prefetch.settings.PreloadPagesSettingsBridge;
 import org.chromium.chrome.browser.prefetch.settings.PreloadPagesState;
@@ -157,14 +152,12 @@ import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.profiles.ProfileManager;
 import org.chromium.chrome.browser.rate.BraveRateDialogFragment;
 import org.chromium.chrome.browser.rate.RateUtils;
-import org.chromium.chrome.browser.rewards.adaptive_captcha.AdaptiveCaptchaHelper;
 import org.chromium.chrome.browser.safe_browsing.SafeBrowsingBridge;
 import org.chromium.chrome.browser.safe_browsing.SafeBrowsingState;
 import org.chromium.chrome.browser.search_engines.TemplateUrlServiceFactory;
 import org.chromium.chrome.browser.set_default_browser.BraveSetDefaultBrowserUtils;
 import org.chromium.chrome.browser.settings.BraveSearchEngineUtils;
 import org.chromium.chrome.browser.settings.SettingsNavigationFactory;
-import org.chromium.chrome.browser.settings.developer.BraveQAPreferences;
 import org.chromium.chrome.browser.shields.ContentFilteringFragment;
 import org.chromium.chrome.browser.shields.CreateCustomFiltersFragment;
 import org.chromium.chrome.browser.tab.Tab;
@@ -188,7 +181,6 @@ import org.chromium.chrome.browser.ui.messages.snackbar.Snackbar;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManager.SnackbarController;
 import org.chromium.chrome.browser.ui.messages.snackbar.SnackbarManagerProvider;
-import org.chromium.chrome.browser.util.BraveDbUtil;
 import org.chromium.chrome.browser.util.KeyboardVisibilityHelper;
 import org.chromium.chrome.browser.util.LiveDataUtil;
 import org.chromium.chrome.browser.util.PackageUtils;
@@ -209,10 +201,7 @@ import org.chromium.components.browser_ui.util.motion.MotionEventInfo;
 import org.chromium.components.embedder_support.util.UrlConstants;
 import org.chromium.components.embedder_support.util.UrlUtilities;
 import org.chromium.components.omnibox.AutocompleteRequestType;
-import org.chromium.components.prefs.PrefChangeRegistrar;
-import org.chromium.components.prefs.PrefChangeRegistrar.PrefObserver;
 import org.chromium.components.safe_browsing.BraveSafeBrowsingApiHandler;
-import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
 import org.chromium.misc_metrics.mojom.MiscAndroidMetrics;
@@ -235,7 +224,6 @@ import java.util.Set;
 public abstract class BraveActivity extends ChromeActivity
         implements BrowsingDataBridge.OnClearBrowsingDataListener,
                 BraveVpnObserver,
-                PrefObserver,
                 BraveSafeBrowsingApiHandler.BraveSafeBrowsingApiHandlerDelegate,
                 QuickSearchEnginesCallback,
                 KeyboardVisibilityHelper.KeyboardVisibilityListener,
@@ -496,18 +484,12 @@ public abstract class BraveActivity extends ChromeActivity
 
         if (mNativeInitialized) {
             BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
-            if (layout != null) {
-                layout.maybeShowTermsOfServiceUpdateRequiredBadge();
-            }
+            if (layout != null) {}
 
             // If a full screen custom tab was closed and bottom controls are enabled,
             // show the bottom toolbar controls again
-            if (FullScreenCustomTabActivity.sIsFullScreenCustomTabActivityClosed
-                    && BottomToolbarConfiguration.isBraveBottomControlsEnabled()) {
-                layout.onBottomControlsVisibilityChanged(true);
-            }
+
             // Reset the flag tracking whether a full screen custom tab was closed
-            FullScreenCustomTabActivity.sIsFullScreenCustomTabActivityClosed = false;
         }
 
         if (mAppUpdateManager == null) {
@@ -580,8 +562,6 @@ public abstract class BraveActivity extends ChromeActivity
             return false;
         } else if (id == R.id.exit_id) {
             exitBrave();
-        } else if (id == R.id.brave_rewards_id) {
-            showRewardsPage();
         } else if (id == R.id.brave_playlist_id) {
             openPlaylist(true);
         } else if (id == R.id.add_to_playlist_id) {
@@ -1034,22 +1014,6 @@ public abstract class BraveActivity extends ChromeActivity
     }
 
     @Override
-    public void onPreferenceChange() {
-        String captchaID =
-                UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                        .getString(BravePref.SCHEDULED_CAPTCHA_ID);
-        String paymentID =
-                UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                        .getString(BravePref.SCHEDULED_CAPTCHA_PAYMENT_ID);
-        if (BraveQAPreferences.shouldVlogRewards()) {
-            Log.e(
-                    AdaptiveCaptchaHelper.TAG,
-                    "captchaID : " + captchaID + " Payment ID : " + paymentID);
-        }
-        maybeSolveAdaptiveCaptcha();
-    }
-
-    @Override
     public void turnSafeBrowsingOff() {
         SafeBrowsingBridge safeBrowsingBridge = new SafeBrowsingBridge(getCurrentProfile());
         safeBrowsingBridge.setSafeBrowsingState(SafeBrowsingState.NO_SAFE_BROWSING);
@@ -1074,18 +1038,6 @@ public abstract class BraveActivity extends ChromeActivity
         return this;
     }
 
-    public void maybeSolveAdaptiveCaptcha() {
-        String captchaID =
-                UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                        .getString(BravePref.SCHEDULED_CAPTCHA_ID);
-        String paymentID =
-                UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                        .getString(BravePref.SCHEDULED_CAPTCHA_PAYMENT_ID);
-        if (!TextUtils.isEmpty(captchaID) && !TextUtils.isEmpty(paymentID)) {
-            AdaptiveCaptchaHelper.startAttestation(captchaID, paymentID);
-        }
-    }
-
     @Override
     public void finishNativeInitialization() {
         super.finishNativeInitialization();
@@ -1094,7 +1046,6 @@ public abstract class BraveActivity extends ChromeActivity
         boolean isFirstInstall = PackageUtils.isFirstInstall(this);
         BraveHelper.maybeMigrateSettings();
         if (isTelevision()) {
-            BraveOnboardingNotification.cancelOnboardingNotification();
             PreloadPagesSettingsBridge.setState(
                     getCurrentProfile(), PreloadPagesState.NO_PRELOADING);
             checkFingerPrintingOnUpgrade(isFirstInstall);
@@ -1114,28 +1065,6 @@ public abstract class BraveActivity extends ChromeActivity
 
         BraveVpnNativeWorker.getInstance().reloadPurchasedState();
 
-        PrefChangeRegistrar mPrefChangeRegistrar = PrefServiceUtil.createFor(getCurrentProfile());
-        mPrefChangeRegistrar.addObserver(BravePref.SCHEDULED_CAPTCHA_ID, this);
-
-        if (UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                        .getInteger(BravePref.SCHEDULED_CAPTCHA_FAILED_ATTEMPTS)
-                >= MAX_FAILED_CAPTCHA_ATTEMPTS) {
-            UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                    .setBoolean(BravePref.SCHEDULED_CAPTCHA_PAUSED, true);
-        }
-
-        if (BraveQAPreferences.shouldVlogRewards()) {
-            Log.e(
-                    AdaptiveCaptchaHelper.TAG,
-                    "Failed attempts : "
-                            + UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                                    .getInteger(BravePref.SCHEDULED_CAPTCHA_FAILED_ATTEMPTS));
-        }
-        if (!UserPrefs.get(ProfileManager.getLastUsedRegularProfile())
-                .getBoolean(BravePref.SCHEDULED_CAPTCHA_PAUSED)) {
-            maybeSolveAdaptiveCaptcha();
-        }
-
         if (ChromeSharedPreferences.getInstance()
                 .readBoolean(BravePreferenceKeys.BRAVE_DOUBLE_RESTART, false)) {
             ChromeSharedPreferences.getInstance()
@@ -1149,11 +1078,6 @@ public abstract class BraveActivity extends ChromeActivity
                 != PreloadPagesState.NO_PRELOADING) {
             PreloadPagesSettingsBridge.setState(
                     getCurrentProfile(), PreloadPagesState.NO_PRELOADING);
-        }
-
-        if (BraveRewardsHelper.hasRewardsEnvChange()) {
-            BravePrefServiceBridge.getInstance().resetPromotionLastFetchStamp();
-            BraveRewardsHelper.setRewardsEnvChange(false);
         }
 
         int appOpenCount =
@@ -1223,20 +1147,8 @@ public abstract class BraveActivity extends ChromeActivity
             RetentionNotificationUtil.scheduleNotification(this, RetentionNotificationUtil.HOUR_3);
             RetentionNotificationUtil.scheduleNotification(this, RetentionNotificationUtil.HOUR_24);
             RetentionNotificationUtil.scheduleNotification(this, RetentionNotificationUtil.DAY_6);
-            RetentionNotificationUtil.scheduleNotification(this, RetentionNotificationUtil.DAY_10);
-            RetentionNotificationUtil.scheduleNotification(this, RetentionNotificationUtil.DAY_30);
-            RetentionNotificationUtil.scheduleNotification(this, RetentionNotificationUtil.DAY_35);
-            OnboardingPrefManager.getInstance().setOneTimeNotificationStarted(true);
-        }
 
-        if (isFirstInstall
-                && ChromeSharedPreferences.getInstance()
-                                .readInt(BravePreferenceKeys.BRAVE_APP_OPEN_COUNT)
-                        == 1) {
-            Calendar calender = Calendar.getInstance();
-            calender.setTime(new Date());
-            calender.add(Calendar.DATE, DAYS_4);
-            BraveRewardsHelper.setNextRewardsOnboardingModalDate(calender.getTimeInMillis());
+            OnboardingPrefManager.getInstance().setOneTimeNotificationStarted(true);
         }
 
         checkFingerPrintingOnUpgrade(isFirstInstall);
@@ -1334,11 +1246,6 @@ public abstract class BraveActivity extends ChromeActivity
                 && ChromeSharedPreferences.getInstance()
                                 .readInt(BravePreferenceKeys.BRAVE_APP_OPEN_COUNT)
                         == 1) {
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTime(new Date());
-            calendar.add(Calendar.DATE, DAYS_7);
-            BraveRewardsHelper.setRewardsOnboardingIconTiming(calendar.getTimeInMillis());
-
             setInAppUpdateTiming();
         }
 
@@ -1683,7 +1590,6 @@ public abstract class BraveActivity extends ChromeActivity
                 case RetentionNotificationUtil.DAY_10:
                 case RetentionNotificationUtil.DAY_30:
                 case RetentionNotificationUtil.DAY_35:
-                    openRewardsPanel();
                     break;
                 case RetentionNotificationUtil.DORMANT_USERS_DAY_14:
                 case RetentionNotificationUtil.DORMANT_USERS_DAY_25:
@@ -1736,11 +1642,6 @@ public abstract class BraveActivity extends ChromeActivity
         }
     }
 
-    public void hideRewardsOnboardingIcon() {
-        BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
-        layout.hideRewardsOnboardingIcon();
-    }
-
     private void createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
@@ -1771,11 +1672,6 @@ public abstract class BraveActivity extends ChromeActivity
     public void dismissShieldsTooltip() {
         BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
         layout.dismissShieldsTooltip();
-    }
-
-    public void openRewardsPanel() {
-        BraveToolbarLayoutImpl layout = getBraveToolbarLayout();
-        layout.openRewardsPanel();
     }
 
     public Profile getCurrentProfile() {
@@ -1933,10 +1829,6 @@ public abstract class BraveActivity extends ChromeActivity
         if (currentTab != null) {
             BraveLeoUtils.openLeoUrlForTab(currentTab.getWebContents());
         }
-    }
-
-    public void showRewardsPage() {
-        getBraveToolbarLayout().showRewardsPage();
     }
 
     /**
@@ -2103,28 +1995,6 @@ public abstract class BraveActivity extends ChromeActivity
         if (isTelevision()) {
             // TV owns compact navigation; retain explicit native showing tokens.
             CommandLine.getInstance().appendSwitch(ChromeSwitches.DISABLE_MINIMUM_SHOW_DURATION);
-        }
-        BraveDbUtil dbUtil = BraveDbUtil.getInstance();
-        if (dbUtil.dbOperationRequested()) {
-            AlertDialog dialog =
-                    new AlertDialog.Builder(this)
-                            .setMessage(
-                                    dbUtil.performDbExportOnStart()
-                                            ? getString(
-                                                    R.string.brave_db_processing_export_alert_info)
-                                            : getString(
-                                                    R.string.brave_db_processing_import_alert_info))
-                            .setCancelable(false)
-                            .create();
-            dialog.setCanceledOnTouchOutside(false);
-            if (dbUtil.performDbExportOnStart()) {
-                dbUtil.setPerformDbExportOnStart(false);
-                dbUtil.exportRewardsDb(dialog);
-            } else if (dbUtil.performDbImportOnStart() && !dbUtil.dbImportFile().isEmpty()) {
-                dbUtil.setPerformDbImportOnStart(false);
-                dbUtil.importRewardsDb(dialog, dbUtil.dbImportFile());
-            }
-            dbUtil.cleanUpDbOperationRequest();
         }
         super.performPreInflationStartup();
         if (isTelevision()) {

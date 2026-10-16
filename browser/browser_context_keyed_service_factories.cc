@@ -7,7 +7,6 @@
 
 #include "base/feature_list.h"
 #include "brave/browser/brave_account/brave_account_service_factory.h"
-#include "brave/browser/brave_adaptive_captcha/brave_adaptive_captcha_service_factory.h"
 #include "brave/browser/brave_origin/brave_origin_service_factory.h"
 #include "brave/browser/brave_search/backup_results_service_factory.h"
 #include "brave/browser/brave_shields/ad_block_pref_service_factory.h"
@@ -55,6 +54,10 @@
 #if BUILDFLAG(ENABLE_BRAVE_ADS)
 #include "brave/browser/brave_ads/ads_service_factory.h"
 #endif  // BUILDFLAG(ENABLE_BRAVE_ADS)
+
+#if BUILDFLAG(ENABLE_BRAVE_REWARDS) || BUILDFLAG(ENABLE_BRAVE_ADS)
+#include "brave/browser/brave_adaptive_captcha/brave_adaptive_captcha_service_factory.h"
+#endif  // BUILDFLAG(ENABLE_BRAVE_REWARDS) || BUILDFLAG(ENABLE_BRAVE_ADS)
 
 #if BUILDFLAG(ENABLE_BRAVE_REWARDS)
 #include "brave/browser/brave_rewards/rewards_service_factory.h"
@@ -138,7 +141,9 @@
 namespace brave {
 
 void EnsureBrowserContextKeyedServiceFactoriesBuilt() {
+#if BUILDFLAG(ENABLE_BRAVE_REWARDS) || BUILDFLAG(ENABLE_BRAVE_ADS)
   brave_adaptive_captcha::BraveAdaptiveCaptchaServiceFactory::GetInstance();
+#endif  // BUILDFLAG(ENABLE_BRAVE_REWARDS) || BUILDFLAG(ENABLE_BRAVE_ADS)
 #if BUILDFLAG(ENABLE_BRAVE_ADS)
   brave_ads::AdsServiceFactory::GetInstance();
 #endif  // BUILDFLAG(ENABLE_BRAVE_ADS)
