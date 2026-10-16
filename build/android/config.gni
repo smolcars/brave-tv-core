@@ -114,7 +114,6 @@ brave_chrome_all_java_deps = [
 ]
 
 brave_chrome_java_srcjar_deps = [
-  "//brave/android:brave_android_java_enums_srcjar",
   "//brave/android:brave_config_java",
   "//brave/android:brave_policy_constants_java_srcjar",
   "//brave/components/brave_account/android:brave_account_constants_srcjar",
@@ -191,4 +190,8 @@ if (enable_brave_ads) {
 if (enable_brave_rewards) {
   brave_chrome_java_deps +=
       [ "//brave/components/brave_rewards/core/mojom:mojom_java" ]
+}
+
+if (enable_brave_wallet) {
+  brave_chrome_java_srcjar_deps += [ "//brave/android:brave_android_java_enums_srcjar" ]
 }
