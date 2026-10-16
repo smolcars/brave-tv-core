@@ -666,6 +666,9 @@ if (is_android) {
   if (enable_brave_ads) {
     brave_chrome_browser_deps += [ "//brave/browser/brave_ads/android" ]
   }
+  if (enable_brave_ads) {
+    brave_chrome_browser_allow_circular_includes_from += [ "//brave/browser/notifications" ]
+  }
 } else {
   brave_chrome_browser_sources += [
     "//brave/browser/p3a/p3a_core_metrics.cc",
