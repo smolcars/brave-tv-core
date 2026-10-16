@@ -33,7 +33,6 @@ import org.chromium.chrome.browser.BraveRelaunchUtils;
 import org.chromium.chrome.browser.BraveRewardsPolicy;
 import org.chromium.chrome.browser.brave_origin.BraveOriginSubscriptionPrefs;
 import org.chromium.chrome.browser.browsing_data.BraveClearBrowsingDataFragment;
-import org.chromium.chrome.browser.crypto_wallet.BraveWalletPolicy;
 import org.chromium.chrome.browser.flags.ChromeFeatureList;
 import org.chromium.chrome.browser.preferences.BravePref;
 import org.chromium.chrome.browser.preferences.BravePrefServiceBridge;
@@ -132,10 +131,7 @@ public class BravePrivacySettings extends PrivacySettings {
     private static final String PREF_SOCIAL_BLOCKING_TWITTER = "social_blocking_twitter";
     private static final String PREF_SOCIAL_BLOCKING_LINKEDIN = "social_blocking_linkedin";
     private static final String PREF_WEBRTC_POLICY = "webrtc_policy";
-    private static final String PREF_UNSTOPPABLE_DOMAINS = "unstoppable_domains";
     private static final String PREF_CONTENT_FILTERING = "content_filtering";
-    private static final String PREF_ENS = "ens";
-    private static final String PREF_SNS = "sns";
     private static final String PREF_REQUEST_OTR = "request_otr";
 
     public static final String PREF_BLOCK_TRACKERS_ADS = "block_trackers_ads";
@@ -186,9 +182,6 @@ public class BravePrivacySettings extends PrivacySettings {
         PREF_INCOGNITO_SCREENSHOT,
         PREF_INCOGNITO_LOCK,
         PREF_CAN_MAKE_PAYMENT,
-        PREF_UNSTOPPABLE_DOMAINS,
-        PREF_ENS,
-        PREF_SNS,
         PREF_REQUEST_OTR,
         PREF_SECURE_DNS,
         PREF_JAVASCRIPT_OPTIMIZER,
@@ -243,7 +236,6 @@ public class BravePrivacySettings extends PrivacySettings {
     private ChromeSwitchPreference mIncognitoScreenshot;
     private ChromeBasePreference mWebrtcPolicy;
     private ChromeSwitchPreference mClearBrowsingDataOnExit;
-    private Preference mUstoppableDomains;
     private ChromeSwitchPreference mFingerprntLanguagePref;
     private ChromeSwitchPreference mBraveShieldsSaveContactInfoPref;
     private @Nullable FilterListAndroidHandler mFilterListAndroidHandler;
@@ -310,9 +302,6 @@ public class BravePrivacySettings extends PrivacySettings {
 
         mAdsTrakersBlockPref = (BraveDialogPreference) findPreference(PREF_BLOCK_TRACKERS_ADS);
         mAdsTrakersBlockPref.setOnPreferenceChangeListener(this);
-
-        mUstoppableDomains = (Preference) findPreference(PREF_UNSTOPPABLE_DOMAINS);
-        mUstoppableDomains.setOnPreferenceChangeListener(this);
 
         mBlockSwitchToAppNoticesPref =
                 (ChromeSwitchPreference) findPreference(PREF_BLOCK_SWITCH_TO_APP_NOTICES);
@@ -402,7 +391,6 @@ public class BravePrivacySettings extends PrivacySettings {
 
         mClearBrowsingDataOnExit = (ChromeSwitchPreference) findPreference(PREF_CLEAR_ON_EXIT);
         mClearBrowsingDataOnExit.setOnPreferenceChangeListener(this);
-
 
         // Hide Sponsored Ads setting if Brave Rewards is disabled by policy
         if (BraveRewardsPolicy.isDisabledByPolicy(getProfile())) {
@@ -495,28 +483,22 @@ public class BravePrivacySettings extends PrivacySettings {
         removePreferenceIfPresent(PREF_PRIVACY_GUIDE);
         removePreferenceIfPresent(PREF_PASSWORD_LEAK_DETECTION);
 
-        // Hide decentralized DNS settings when wallet is disabled by policy
-        if (BraveWalletPolicy.isDisabledByPolicy(getProfile())) {
-            removePreferenceIfPresent(PREF_UNSTOPPABLE_DOMAINS);
-            removePreferenceIfPresent(PREF_ENS);
-            removePreferenceIfPresent(PREF_SNS);
-        }
-
         if (!ChromeFeatureList.isEnabled(BraveFeatureList.BRAVE_ANDROID_SAFE_BROWSING)) {
             removePreferenceIfPresent(PREF_SAFE_BROWSING);
         } else {
             Preference preference = getPreferenceScreen().findPreference(PREF_SAFE_BROWSING);
             if (preference != null) {
-                preference.setOnPreferenceClickListener((pref) -> {
-                    if (!ChromiumPlayServicesAvailability.isGooglePlayServicesAvailable(
-                                getActivity())) {
-                        NoGooglePlayServicesDialog.create(getContext()).show();
-                        // Don't show the menu if Google Play Services are not available
-                        return true;
-                    }
+                preference.setOnPreferenceClickListener(
+                        (pref) -> {
+                            if (!ChromiumPlayServicesAvailability.isGooglePlayServicesAvailable(
+                                    getActivity())) {
+                                NoGooglePlayServicesDialog.create(getContext()).show();
+                                // Don't show the menu if Google Play Services are not available
+                                return true;
+                            }
 
-                    return false;
-                });
+                            return false;
+                        });
             }
         }
 
@@ -552,23 +534,29 @@ public class BravePrivacySettings extends PrivacySettings {
                 case STRICT:
                     BraveShieldsContentSettings.setHttpsUpgradePref(
                             BraveShieldsContentSettings.BLOCK_RESOURCE);
-                    mHttpsUpgradePref.setSummary(getActivity().getResources().getString(
-                            R.string.https_upgrade_option_1));
+                    mHttpsUpgradePref.setSummary(
+                            getActivity()
+                                    .getResources()
+                                    .getString(R.string.https_upgrade_option_1));
                     mHttpsUpgradePref.setCheckedIndex(0);
                     break;
                 case STANDARD:
                     BraveShieldsContentSettings.setHttpsUpgradePref(
                             BraveShieldsContentSettings.BLOCK_THIRDPARTY_RESOURCE);
-                    mHttpsUpgradePref.setSummary(getActivity().getResources().getString(
-                            R.string.https_upgrade_option_2));
+                    mHttpsUpgradePref.setSummary(
+                            getActivity()
+                                    .getResources()
+                                    .getString(R.string.https_upgrade_option_2));
                     mHttpsUpgradePref.setCheckedIndex(1);
                     break;
                 case ALLOW:
                 default:
                     BraveShieldsContentSettings.setHttpsUpgradePref(
                             BraveShieldsContentSettings.ALLOW_RESOURCE);
-                    mHttpsUpgradePref.setSummary(getActivity().getResources().getString(
-                            R.string.https_upgrade_option_3));
+                    mHttpsUpgradePref.setSummary(
+                            getActivity()
+                                    .getResources()
+                                    .getString(R.string.https_upgrade_option_3));
                     mHttpsUpgradePref.setCheckedIndex(2);
                     break;
             }
@@ -590,15 +578,17 @@ public class BravePrivacySettings extends PrivacySettings {
                     case BraveShieldsContentSettings.BLOCK_RESOURCE:
                         BraveShieldsContentSettings.setFingerprintingPref(newStringValue);
                         mFingerprintingProtectionPref.setSummary(
-                                getActivity().getResources().getString(
-                                        R.string.block_fingerprinting_option_1));
+                                getActivity()
+                                        .getResources()
+                                        .getString(R.string.block_fingerprinting_option_1));
                         mFingerprintingProtectionPref.setCheckedIndex(0);
                         break;
                     case BraveShieldsContentSettings.DEFAULT:
                         BraveShieldsContentSettings.setFingerprintingPref(newStringValue);
                         mFingerprintingProtectionPref.setSummary(
-                                getActivity().getResources().getString(
-                                        R.string.block_fingerprinting_option_2));
+                                getActivity()
+                                        .getResources()
+                                        .getString(R.string.block_fingerprinting_option_2));
                         mFingerprintingProtectionPref.setCheckedIndex(1);
                         break;
                     case BraveShieldsContentSettings.ALLOW_RESOURCE:
@@ -606,8 +596,9 @@ public class BravePrivacySettings extends PrivacySettings {
                         BraveShieldsContentSettings.setFingerprintingPref(
                                 BraveShieldsContentSettings.ALLOW_RESOURCE);
                         mFingerprintingProtectionPref.setSummary(
-                                getActivity().getResources().getString(
-                                        R.string.block_fingerprinting_option_3));
+                                getActivity()
+                                        .getResources()
+                                        .getString(R.string.block_fingerprinting_option_3));
                         mFingerprintingProtectionPref.setCheckedIndex(2);
                         break;
                 }
@@ -638,23 +629,29 @@ public class BravePrivacySettings extends PrivacySettings {
                 case STRICT:
                     BraveShieldsContentSettings.setCookiesPref(
                             BraveShieldsContentSettings.BLOCK_RESOURCE);
-                    mBlockCrosssiteCookies.setSummary(getActivity().getResources().getString(
-                            R.string.block_cookies_option_1));
+                    mBlockCrosssiteCookies.setSummary(
+                            getActivity()
+                                    .getResources()
+                                    .getString(R.string.block_cookies_option_1));
                     mBlockCrosssiteCookies.setCheckedIndex(0);
                     break;
                 case STANDARD:
                     BraveShieldsContentSettings.setCookiesPref(
                             BraveShieldsContentSettings.BLOCK_THIRDPARTY_RESOURCE);
-                    mBlockCrosssiteCookies.setSummary(getActivity().getResources().getString(
-                            R.string.block_cookies_option_2));
+                    mBlockCrosssiteCookies.setSummary(
+                            getActivity()
+                                    .getResources()
+                                    .getString(R.string.block_cookies_option_2));
                     mBlockCrosssiteCookies.setCheckedIndex(1);
                     break;
                 case ALLOW:
                 default:
                     BraveShieldsContentSettings.setCookiesPref(
                             BraveShieldsContentSettings.ALLOW_RESOURCE);
-                    mBlockCrosssiteCookies.setSummary(getActivity().getResources().getString(
-                            R.string.block_cookies_option_3));
+                    mBlockCrosssiteCookies.setSummary(
+                            getActivity()
+                                    .getResources()
+                                    .getString(R.string.block_cookies_option_3));
                     mBlockCrosssiteCookies.setCheckedIndex(2);
             }
         } else if (PREF_BLOCK_SCRIPTS.equals(key)) {
@@ -706,21 +703,27 @@ public class BravePrivacySettings extends PrivacySettings {
                 switch (newStringValue) {
                     case BraveShieldsContentSettings.BLOCK_RESOURCE:
                         BraveShieldsContentSettings.setTrackersPref(newStringValue);
-                        mAdsTrakersBlockPref.setSummary(getActivity().getResources().getString(
-                                R.string.block_trackers_ads_option_1));
+                        mAdsTrakersBlockPref.setSummary(
+                                getActivity()
+                                        .getResources()
+                                        .getString(R.string.block_trackers_ads_option_1));
                         mAdsTrakersBlockPref.setCheckedIndex(0);
                         break;
                     case BraveShieldsContentSettings.DEFAULT:
                         BraveShieldsContentSettings.setTrackersPref(newStringValue);
-                        mAdsTrakersBlockPref.setSummary(getActivity().getResources().getString(
-                                R.string.block_trackers_ads_option_2));
+                        mAdsTrakersBlockPref.setSummary(
+                                getActivity()
+                                        .getResources()
+                                        .getString(R.string.block_trackers_ads_option_2));
                         mAdsTrakersBlockPref.setCheckedIndex(1);
                         break;
                     default:
                         BraveShieldsContentSettings.setTrackersPref(
                                 BraveShieldsContentSettings.ALLOW_RESOURCE);
-                        mAdsTrakersBlockPref.setSummary(getActivity().getResources().getString(
-                                R.string.block_trackers_ads_option_3));
+                        mAdsTrakersBlockPref.setSummary(
+                                getActivity()
+                                        .getResources()
+                                        .getString(R.string.block_trackers_ads_option_3));
                         mAdsTrakersBlockPref.setCheckedIndex(2);
                         break;
                 }
@@ -963,17 +966,23 @@ public class BravePrivacySettings extends PrivacySettings {
     private String webrtcPolicyToString(@BraveWebrtcPolicyPreference.WebrtcPolicy int policy) {
         switch (policy) {
             case BraveWebrtcPolicyPreference.WebrtcPolicy.DEFAULT:
-                return getActivity().getResources().getString(
-                        R.string.settings_webrtc_policy_default);
+                return getActivity()
+                        .getResources()
+                        .getString(R.string.settings_webrtc_policy_default);
             case BraveWebrtcPolicyPreference.WebrtcPolicy.DEFAULT_PUBLIC_AND_PRIVATE_INTERFACES:
-                return getActivity().getResources().getString(
-                        R.string.settings_webrtc_policy_default_public_and_private_interfaces);
+                return getActivity()
+                        .getResources()
+                        .getString(
+                                R.string
+                                        .settings_webrtc_policy_default_public_and_private_interfaces);
             case BraveWebrtcPolicyPreference.WebrtcPolicy.DEFAULT_PUBLIC_INTERFACE_ONLY:
-                return getActivity().getResources().getString(
-                        R.string.settings_webrtc_policy_default_public_interface_only);
+                return getActivity()
+                        .getResources()
+                        .getString(R.string.settings_webrtc_policy_default_public_interface_only);
             case BraveWebrtcPolicyPreference.WebrtcPolicy.DISABLE_NON_PROXIED_UDP:
-                return getActivity().getResources().getString(
-                        R.string.settings_webrtc_policy_disable_non_proxied_udp);
+                return getActivity()
+                        .getResources()
+                        .getString(R.string.settings_webrtc_policy_disable_non_proxied_udp);
         }
         assert false : "Setting is out of range!";
         return "";
@@ -1033,12 +1042,6 @@ public class BravePrivacySettings extends PrivacySettings {
                         indexData.removeEntryForKey(frag, PREF_HTTPS_UPGRADE);
                     }
 
-                    // Policy-based removals
-                    if (BraveWalletPolicy.isDisabledByPolicy(profile)) {
-                        indexData.removeEntryForKey(frag, PREF_UNSTOPPABLE_DOMAINS);
-                        indexData.removeEntryForKey(frag, PREF_ENS);
-                        indexData.removeEntryForKey(frag, PREF_SNS);
-                    }
                     indexData.removeEntryForKey(frag, PREF_SEND_P3A);
                     indexData.removeEntryForKey(frag, PREF_SEND_CRASH_REPORTS);
                     indexData.removeEntryForKey(frag, PREF_BRAVE_STATS_USAGE_PING);

@@ -136,7 +136,10 @@ copy("brave") {
 
 java_strings_grd("android_brave_strings_grd") {
   grd_file = "//brave/browser/ui/android/strings/android_brave_strings.grd"
-  defines = [ "enable_brave_news=$enable_brave_news" ]
+  defines = [
+    "enable_brave_news=$enable_brave_news",
+    "enable_brave_wallet=$enable_brave_wallet",
+  ]
   outputs = [
     "values/android_brave_strings.xml",
     "values-af/android_brave_strings.xml",

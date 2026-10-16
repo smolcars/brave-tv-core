@@ -370,7 +370,6 @@ public class BraveTabbedAppMenuPropertiesDelegateUnitTest {
             // (shouldShowPageInfoItem returns false for NTP pages).
             R.id.downloads_menu_id,
             R.id.all_bookmarks_menu_id,
-            R.id.brave_wallet_id,
             R.id.recent_tabs_menu_id,
             R.id.divider_line_id,
             R.id.preferences_id,
@@ -410,7 +409,6 @@ public class BraveTabbedAppMenuPropertiesDelegateUnitTest {
             R.id.open_history_menu_id,
             R.id.downloads_menu_id,
             R.id.all_bookmarks_menu_id,
-            R.id.brave_wallet_id,
             R.id.recent_tabs_menu_id,
             R.id.divider_line_id,
             R.id.preferences_id,
@@ -480,7 +478,6 @@ public class BraveTabbedAppMenuPropertiesDelegateUnitTest {
         expectedItems.add(R.id.open_history_menu_id);
         expectedItems.add(R.id.downloads_menu_id);
         expectedItems.add(R.id.all_bookmarks_menu_id);
-        expectedItems.add(R.id.brave_wallet_id);
         expectedItems.add(R.id.recent_tabs_menu_id);
         expectedItems.add(R.id.divider_line_id);
         expectedItems.add(R.id.find_in_page_id);

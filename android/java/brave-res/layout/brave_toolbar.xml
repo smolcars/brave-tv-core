@@ -28,31 +28,7 @@
             android:contentDescription="@string/accessibility_toolbar_btn_brave_pip" />
     </FrameLayout>
 
-  <FrameLayout android:id="@+id/brave_wallet_button_layout"
-      android:layout_width="45dp"
-      android:orientation="vertical"
-      android:background="@drawable/modern_toolbar_background_grey_middle_segment"
-      android:layout_height="match_parent"
-      android:visibility="gone" >
 
-      <ImageButton android:id="@+id/brave_wallet_button"
-          style="@style/ToolbarButton"
-          android:layout_marginTop="8dp"
-          android:layout_marginBottom="8dp"
-          android:src="@drawable/ic_product_brave_wallet"
-          android:layout_gravity="center"
-          android:contentDescription="@string/accessibility_toolbar_btn_brave_wallet" />
-
-      <View
-          android:id="@+id/wallet_notfication_badge"
-          android:layout_width="10dp"
-          android:layout_height="10dp"
-          android:layout_marginTop="7dp"
-          android:layout_marginEnd="6dp"
-          android:layout_gravity="end"
-          android:visibility="gone"
-          android:background="@drawable/brave_rewards_circle"/>
-  </FrameLayout>
 
   <FrameLayout android:id="@+id/brave_shields_button_layout"
       android:layout_width="45dp"

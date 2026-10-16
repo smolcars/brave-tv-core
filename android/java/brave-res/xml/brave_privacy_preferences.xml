@@ -167,18 +167,6 @@
             android:key="block_switch_to_app_notices"
             android:title="@string/block_switch_to_app_notices"
             android:defaultValue="true" />
-        <Preference
-            android:fragment="org.chromium.chrome.browser.decentralized_dns.settings.UnstoppableDomainsSettingsFragment"
-            android:key="unstoppable_domains"
-            android:title="@string/unstoppable_domains_title" />
-        <Preference
-            android:fragment="org.chromium.chrome.browser.decentralized_dns.settings.ENSSettingsFragment"
-            android:key="ens"
-            android:title="@string/ens_title" />
-        <Preference
-            android:fragment="org.chromium.chrome.browser.decentralized_dns.settings.SnsSettingsFragment"
-            android:key="sns"
-            android:title="@string/sns_title" />
         <org.chromium.components.browser_ui.settings.ChromeSwitchPreference
             android:key="sponsored_ads_enabled"
             android:title="@string/sponsored_ads_enabled_title"

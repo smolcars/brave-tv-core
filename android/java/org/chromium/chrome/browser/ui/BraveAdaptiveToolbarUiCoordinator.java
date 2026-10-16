@@ -24,7 +24,6 @@ import org.chromium.chrome.browser.toolbar.adaptive.BraveBookmarksButtonControll
 import org.chromium.chrome.browser.toolbar.adaptive.BraveDownloadsButtonController;
 import org.chromium.chrome.browser.toolbar.adaptive.BraveHistoryButtonController;
 import org.chromium.chrome.browser.toolbar.adaptive.BraveLeoButtonController;
-import org.chromium.chrome.browser.toolbar.adaptive.BraveWalletButtonController;
 import org.chromium.ui.modaldialog.ModalDialogManager;
 
 /**
@@ -110,16 +109,5 @@ public class BraveAdaptiveToolbarUiCoordinator extends AdaptiveToolbarUiCoordina
                         mModalDialogManagerSupplier.get());
         mAdaptiveToolbarButtonController.addButtonVariant(
                 AdaptiveToolbarButtonVariant.LEO, leoButtonController);
-
-        var walletButtonController =
-                new BraveWalletButtonController(
-                        mContext,
-                        AppCompatResources.getDrawable(
-                                mContext, R.drawable.ic_product_brave_wallet),
-                        mActivityTabProvider,
-                        mProfileSupplier,
-                        mModalDialogManagerSupplier.get());
-        mAdaptiveToolbarButtonController.addButtonVariant(
-                AdaptiveToolbarButtonVariant.WALLET, walletButtonController);
     }
 }
