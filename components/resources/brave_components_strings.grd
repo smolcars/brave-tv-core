@@ -405,57 +405,91 @@
       <message name="IDS_BRAVE_NEW_TAB_REFRESH_BACKGROUND_ON_NEW_TAB" desc="Label for random toggle button">Refresh on every new tab</message>
       <message name="IDS_BRAVE_NEW_TAB_REWARDS_OPEN_PANEL" desc="Label for menu item to open the Rewards panel">Open Rewards panel</message>
 
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_TITLE" translateable="false" desc="Title for Brave News news feed section" formatter_data="webui=BraveNews">
         Brave News
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_BUBBLE_FEED_ITEM_LOADING" desc="The text displayed while a feed is being subscribed or unsubscribed">
         Loading...
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_ACTION_VIEW_TOOLTIP" desc="The tooltip text displayed when hovering over the Brave News action view in the toolbar">
         Manage Subscriptions
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_BUBBLE_FEED_ITEM_SUBSCRIBE" desc="The text on the button for subscribing to a feed">
         Follow
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_BUBBLE_FEED_ITEM_UNSUBSCRIBE" desc="The text on the button for unsubscribing from a feed">
         Unfollow
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_BUBBLE_TITLE" desc="The title for the Brave News bubble">
         Follow this source in 1-click.
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_BUBBLE_SUBTITLE" desc="The subtitle for the Brave News bubble">
         Get all the latest stories in Brave News.
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_BUBBLE_MANAGE_FEEDS" desc="The text on the button for opening the Brave News configuration page">
         Manage Feeds
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_STATUS_FETCHING" desc="Indication that the content is being downloaded...">
         Fetching…
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_ACTION_REFRESH" desc="Button text to refresh the feed content">
         Load new content
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_SCROLL_HINT" desc="Indicator text that Brave News content must be scrolled down to. Do not translate the title Brave News.">
         Scroll for Brave News
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_RESET_ACTION" desc="Button text to reset all Brave News publisher options. Do not translate the title Brave News.">
         Reset Brave News sources
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_RESET_CONFIRM" desc="Confirmation dialog text to reset all Brave News settings. Do not translate the title Brave News.">
         Reset all your Brave News publisher choices to their default?
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_CATEGORY_NAME_ALL" desc="Title for the category which shows all content sources">
         All sources
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_SOURCES_TITLE" desc="Title for the list of source publishers in Brave News settings">
         Sources
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_DISABLE_SOURCE_COMMAND" desc="Command text to disable a specific publisher from showing in the feed">
         Disable content from <ph name="PUBLISHER_NAME">$1<ex>The New York Times</ex></ph>
       </message>
+      </if>
+      <if expr="enable_brave_news">
       <message name="IDS_BRAVE_NEWS_PROMOTED" desc="Label for promoted content">
         Promoted
       </message>
+      </if>
 
       <message name="IDS_BRAVE_NEW_TAB_STATS_TAB" desc="Brave Stats title">Brave Stats</message>
       <message name="IDS_BRAVE_NEW_TAB_CLOCK_TAB" desc="Clock title">Clock</message>
@@ -902,17 +936,27 @@
       </message>
 
       <if expr="not is_ios">
+        <if expr="enable_brave_wallet">
         <part file="decentralized_dns_strings.grdp" />
+      </if>
       </if>
       <part file="domain_block_strings.grdp" />
       <part file="request_otr_strings.grdp" />
       <part file="permissions_strings.grdp" />
       <part file="google_sign_in_permission_strings.grdp" />
-      <part file="ads_strings.grdp" />
-      <part file="rewards_strings.grdp" />
-      <part file="wallet_strings.grdp" />
+      <if expr="enable_brave_ads">
+        <part file="ads_strings.grdp" />
+      </if>
+      <if expr="enable_brave_rewards">
+        <part file="rewards_strings.grdp" />
+      </if>
+      <if expr="enable_brave_wallet">
+        <part file="wallet_strings.grdp" />
+      </if>
       <part file="tor_strings.grdp" />
-      <part file="brave_news_strings.grdp" />
+      <if expr="enable_brave_news">
+        <part file="brave_news_strings.grdp" />
+      </if>
       <part file="commands.grdp" />
       <part file="speedreader_strings.grdp" />
       <part file="ai_chat_prompts.grdp" />

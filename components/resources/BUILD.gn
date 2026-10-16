@@ -228,6 +228,10 @@ brave_grit("strings") {
   }
 
   defines = [
+    "enable_brave_news=$enable_brave_news",
+    "enable_brave_wallet=$enable_brave_wallet",
+    "enable_brave_rewards=$enable_brave_rewards",
+    "enable_brave_ads=$enable_brave_ads",
     "enable_ai_chat=$enable_ai_chat",
     "enable_brave_ai_chat_agent_profile=$enable_brave_ai_chat_agent_profile",
     "enable_ai_chat_tab_management_tool=$enable_ai_chat_tab_management_tool",
