@@ -55,9 +55,7 @@ public class AppearancePreferences extends AppearanceSettingsFragment
         implements Preference.OnPreferenceChangeListener {
     /* package */ static final String PREF_NAVIGATION_SECTION = "navigation_section";
     /* package */ static final String PREF_GENERAL_SECTION = "general_section";
-    public static final String PREF_SHOW_BRAVE_REWARDS_ICON = "show_brave_rewards_icon";
     public static final String PREF_ADDRESS_BAR = "address_bar";
-    /* package */ static final String PREF_ADS_SWITCH = "ads_switch";
     /* package */ static final String PREF_BRAVE_NIGHT_MODE_ENABLED =
             "brave_night_mode_enabled_key";
     /* package */ static final String PREF_BRAVE_DISABLE_SHARING_HUB = "brave_disable_sharing_hub";
@@ -377,8 +375,6 @@ public class AppearancePreferences extends AppearanceSettingsFragment
         setPreferenceOrder(PREF_GENERAL_SECTION, 8);
         setPreferenceOrder(PREF_BRAVE_NIGHT_MODE_ENABLED, 9);
         setPreferenceOrder(PREF_BRAVE_DISABLE_SHARING_HUB, 10);
-        setPreferenceOrder(PREF_SHOW_BRAVE_REWARDS_ICON, 11);
-        setPreferenceOrder(PREF_ADS_SWITCH, 12);
         setPreferenceOrder(AppearanceSettingsFragment.PREF_BOOKMARK_BAR, 13);
         setPreferenceOrder(PREF_BRAVE_ENABLE_TAB_GROUPS, 14);
         setPreferenceOrder(PREF_SHOW_UNDO_WHEN_TABS_CLOSED, 15);
@@ -390,12 +386,6 @@ public class AppearancePreferences extends AppearanceSettingsFragment
             preference.setOrder(order);
         }
     }
-
-    /**
-     * Checks if Brave Rewards is disabled by policy and removes related preferences if so. This
-     * ensures that when Brave Rewards is disabled, users cannot toggle rewards-related settings in
-     * the appearance settings.
-     */
 
     /**
      * Checks if Leo AI is disabled by policy and updates the static flag in

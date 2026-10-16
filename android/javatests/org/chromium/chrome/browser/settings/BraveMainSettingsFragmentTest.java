@@ -118,11 +118,6 @@ public class BraveMainSettingsFragmentTest {
         "about_chrome"
     };
 
-    // This test is intended to check the issue where prefs order was wrong
-    // when app language was switched to some other than default English,
-    // like French. The test infrastructure does not support switching app
-    // interface language. So the test may help to catch order violation
-    // with English.
     @Test
     @SmallTest
     public void testRemovedProductsAbsentAndLeoRetained() {
@@ -132,6 +127,11 @@ public class BraveMainSettingsFragmentTest {
         assertNotNull(mMainSettings.getPreferenceScreen().findPreference("brave_leo"));
     }
 
+    // This test is intended to check the issue where prefs order was wrong
+    // when app language was switched to some other than default English,
+    // like French. The test infrastructure does not support switching app
+    // interface language. So the test may help to catch order violation
+    // with English.
     @Test
     @SmallTest
     @DisableFeatures(BraveFeatureList.BRAVE_ANDROID_TAB_GROUPS_SETTINGS)

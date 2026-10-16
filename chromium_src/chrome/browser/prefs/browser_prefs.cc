@@ -12,7 +12,6 @@
 #include "brave/browser/translate/brave_translate_prefs_migration.h"
 #include "brave/components/ai_chat/core/common/buildflags/buildflags.h"
 #include "brave/components/brave_account/prefs.h"
-#include "brave/components/brave_adaptive_captcha/prefs_util.h"
 #include "brave/components/brave_ads/buildflags/buildflags.h"
 #include "brave/components/brave_news/common/buildflags/buildflags.h"
 #include "brave/components/brave_rewards/core/buildflags/buildflags.h"
@@ -49,6 +48,10 @@
 
 #if BUILDFLAG(ENABLE_BRAVE_ADS)
 #include "brave/components/brave_ads/core/public/prefs/obsolete_pref_util.h"
+#endif
+
+#if BUILDFLAG(ENABLE_BRAVE_ADS) || BUILDFLAG(ENABLE_BRAVE_REWARDS)
+#include "brave/components/brave_adaptive_captcha/prefs_util.h"
 #endif
 
 #if BUILDFLAG(ENABLE_BRAVE_NEWS)
@@ -235,8 +238,10 @@ void MigrateObsoleteBraveProfilePrefsAfterChromium(
   // Added 2024-07
   profile_prefs->ClearPref(kHangoutsEnabled);
 
+#if BUILDFLAG(ENABLE_BRAVE_ADS) || BUILDFLAG(ENABLE_BRAVE_REWARDS)
   // Added 2024-10
   brave_adaptive_captcha::MigrateObsoleteProfilePrefs(profile_prefs);
+#endif
 
 #if BUILDFLAG(IS_ANDROID)
   // Added 27/11/2024: https://github.com/brave/brave-core/pull/26719

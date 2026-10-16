@@ -67,6 +67,7 @@ public class BravePrivacySettingsTest {
     @Rule
     public SettingsActivityTestRule<BravePrivacySettings> mSettingsActivityTestRule =
             new SettingsActivityTestRule<>(BravePrivacySettings.class);
+
     private BravePrivacySettings mFragment;
 
     @Before
@@ -89,10 +90,15 @@ public class BravePrivacySettingsTest {
         checkPreferenceExists(PREF_SAFE_BROWSING);
         checkPreferenceExists(PREF_SECURE_DNS);
         checkPreferenceExists(PREF_INCOGNITO_LOCK);
-        checkPreferenceExists(PREF_SPONSORED_ADS_ENABLED);
-        checkPreferenceExists(PREF_SPONSORED_ADS_LEARN_MORE);
-        checkPreferenceExists(PREF_SURVEY_PANELIST);
-        checkPreferenceExists(PREF_SURVEY_PANELIST_LEARN_MORE);
+        assertEquals(
+                null, mFragment.getPreferenceScreen().findPreference(PREF_SPONSORED_ADS_ENABLED));
+        assertEquals(
+                null,
+                mFragment.getPreferenceScreen().findPreference(PREF_SPONSORED_ADS_LEARN_MORE));
+        assertEquals(null, mFragment.getPreferenceScreen().findPreference(PREF_SURVEY_PANELIST));
+        assertEquals(
+                null,
+                mFragment.getPreferenceScreen().findPreference(PREF_SURVEY_PANELIST_LEARN_MORE));
         checkPreferenceExists(PREF_USE_CUSTOM_TABS);
         checkPreferenceExists(PREF_ALLOW_ELEMENTS_BLOCKING_ON_PRIVATE_TABS);
 

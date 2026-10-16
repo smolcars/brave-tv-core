@@ -7,6 +7,7 @@ package org.chromium.chrome.browser.origin.settings;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.os.Bundle;
@@ -62,12 +63,8 @@ public class BraveOriginPreferencesTest {
     public void testAllSwitchPreferencesDefaultValues() {
         startSettings();
 
-        // Test rewards switch
-        ChromeSwitchPreference rewardsSwitch =
-                (ChromeSwitchPreference)
-                        mBraveOriginPreferences.findPreference(PREF_REWARDS_SWITCH);
-        assertNotNull("PREF_REWARDS_SWITCH should exist", rewardsSwitch);
-        assertFalse("PREF_REWARDS_SWITCH should be off by default", rewardsSwitch.isChecked());
+        assertNull(
+                mBraveOriginPreferences.getPreferenceScreen().findPreference(PREF_REWARDS_SWITCH));
 
         // Test privacy preserving analytics switch
         ChromeSwitchPreference privacyPreservingAnalyticsSwitch =
@@ -96,11 +93,7 @@ public class BraveOriginPreferencesTest {
         assertNotNull("PREF_LEO_AI_SWITCH should exist", leoAiSwitch);
         assertFalse("PREF_LEO_AI_SWITCH should be off by default", leoAiSwitch.isChecked());
 
-        // Test news switch
-        ChromeSwitchPreference newsSwitch =
-                (ChromeSwitchPreference) mBraveOriginPreferences.findPreference(PREF_NEWS_SWITCH);
-        assertNotNull("PREF_NEWS_SWITCH should exist", newsSwitch);
-        assertFalse("PREF_NEWS_SWITCH should be off by default", newsSwitch.isChecked());
+        assertNull(mBraveOriginPreferences.getPreferenceScreen().findPreference(PREF_NEWS_SWITCH));
 
         // Test statistics reporting switch
         ChromeSwitchPreference statisticsReportingSwitch =
@@ -117,11 +110,8 @@ public class BraveOriginPreferencesTest {
         assertNotNull("PREF_VPN_SWITCH should exist", vpnSwitch);
         assertFalse("PREF_VPN_SWITCH should be off by default", vpnSwitch.isChecked());
 
-        // Test wallet switch
-        ChromeSwitchPreference walletSwitch =
-                (ChromeSwitchPreference) mBraveOriginPreferences.findPreference(PREF_WALLET_SWITCH);
-        assertNotNull("PREF_WALLET_SWITCH should exist", walletSwitch);
-        assertFalse("PREF_WALLET_SWITCH should be off by default", walletSwitch.isChecked());
+        assertNull(
+                mBraveOriginPreferences.getPreferenceScreen().findPreference(PREF_WALLET_SWITCH));
 
         // Test web discovery project switch
         ChromeSwitchPreference webDiscoveryProjectSwitch =
