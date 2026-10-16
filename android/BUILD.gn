@@ -722,23 +722,29 @@ android_resources("java_resources") {
     "java/brave-res/xml/unstoppable_domains_preferences.xml",
   ]
   if (enable_brave_news) {
-    sources += [
-      "java/brave-res/color/brave_news_settings_follow_button_text_color.xml",
-      "java/brave-res/drawable/brave_news_settings_list_divider.xml",
-      "java/brave-res/drawable/brave_news_settings_publisher_bg.xml",
-      "java/brave-res/drawable/brave_news_settings_search_bg.xml",
-      "java/brave-res/drawable/brave_news_settings_unfollow_bg.xml",
-      "java/brave-res/drawable/ic_brave_news_no_source.xml",
-      "java/brave-res/drawable/ic_news_settings.xml",
-      "java/brave-res/layout/brave_news_card_menu.xml",
-      "java/brave-res/layout/brave_news_load_new_content.xml",
-      "java/brave-res/layout/brave_news_no_sources.xml",
-      "java/brave-res/layout/brave_news_row.xml",
-      "java/brave-res/layout/brave_news_settings.xml",
-      "java/brave-res/layout/brave_news_settings_details.xml",
-      "java/brave-res/layout/news_loading.xml",
-      "java/brave-res/layout/optin_layout.xml",
-      "java/brave-res/menu/menu_brave_news_settings_search.xml",
+    deps = [ ":news_resources" ]
+  }
+}
+
+if (enable_brave_news) {
+  android_resources("news_resources") {
+    sources = [
+      "java/news-res/color/brave_news_settings_follow_button_text_color.xml",
+      "java/news-res/drawable/brave_news_settings_list_divider.xml",
+      "java/news-res/drawable/brave_news_settings_publisher_bg.xml",
+      "java/news-res/drawable/brave_news_settings_search_bg.xml",
+      "java/news-res/drawable/brave_news_settings_unfollow_bg.xml",
+      "java/news-res/drawable/ic_brave_news_no_source.xml",
+      "java/news-res/drawable/ic_news_settings.xml",
+      "java/news-res/layout/brave_news_card_menu.xml",
+      "java/news-res/layout/brave_news_load_new_content.xml",
+      "java/news-res/layout/brave_news_no_sources.xml",
+      "java/news-res/layout/brave_news_row.xml",
+      "java/news-res/layout/brave_news_settings.xml",
+      "java/news-res/layout/brave_news_settings_details.xml",
+      "java/news-res/layout/news_loading.xml",
+      "java/news-res/layout/optin_layout.xml",
+      "java/news-res/menu/menu_brave_news_settings_search.xml",
     ]
   }
 }
