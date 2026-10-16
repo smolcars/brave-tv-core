@@ -149,9 +149,9 @@ public class TvPresentationTest {
                                         "",
                                         List.of(
                                                 action("Address or search", 1, () -> {}),
-                                                action("Browser controls", 2, () -> {}),
+                                                action("Home", 2, () -> {}),
                                                 action("Tabs", 3, () -> {}),
-                                                action("Bookmarks", 4, () -> {}),
+                                                action("Favorites", 4, () -> {}),
                                                 new TvPresentation.Action(
                                                         "Phone connected",
                                                         true,
@@ -163,14 +163,20 @@ public class TvPresentationTest {
                                 96,
                                 308));
         focused("Address or search");
+        Rect homeBounds = mDevice.findObject(By.desc("Home")).getVisibleBounds();
+        for (String label : List.of("Tabs", "Favorites")) {
+            Rect bounds = mDevice.findObject(By.desc(label)).getVisibleBounds();
+            assertEquals(homeBounds.width(), bounds.width());
+            assertEquals(homeBounds.height(), bounds.height());
+        }
         mDevice.pressDPadUp();
-        focused("Browser controls");
+        focused("Home");
         mDevice.pressDPadRight();
         focused("Tabs");
         mDevice.pressDPadDown();
         focused("Phone connected");
         mDevice.pressDPadLeft();
-        focused("Bookmarks");
+        focused("Favorites");
         mDevice.pressDPadRight();
         focused("Phone connected");
         mDevice.pressDPadCenter();
