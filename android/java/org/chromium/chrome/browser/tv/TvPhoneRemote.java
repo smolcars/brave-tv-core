@@ -303,6 +303,7 @@ final class TvPhoneRemote implements TvRemoteServer.Delegate {
                 TvPresentation.connectionBadge(
                         mActivity,
                         text(R.string.brave_tv_phone_connected),
+                        R.drawable.brave_tv_phone,
                         mControls::showPhoneRemote);
         var params =
                 new FrameLayout.LayoutParams(

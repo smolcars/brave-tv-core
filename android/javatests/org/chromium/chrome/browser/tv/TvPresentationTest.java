@@ -10,6 +10,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -83,7 +84,7 @@ public class TvPresentationTest {
         return new TvPresentation.Action(label, true, run, key);
     }
 
-    private void showNarrow(View content, int paddingDp) {
+    private void showNarrow(View content, int paddingDp, int contentWidthDp) {
         mDialog = new AlertDialog.Builder(mActivity).setView(content).create();
         mDialog.setOnDismissListener(ignored -> TvPresentation.dispose(content));
         AlertDialog dialog = mDialog;
@@ -104,7 +105,7 @@ public class TvPresentationTest {
         // Two readable columns at either baseline or enlarged system text size.
         int width =
                 Math.round(
-                        (308 * resources.getConfiguration().fontScale + paddingDp)
+                        (contentWidthDp * resources.getConfiguration().fontScale + paddingDp)
                                 * metrics.density);
         assertTrue(width < metrics.widthPixels);
         window.setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -136,7 +137,7 @@ public class TvPresentationTest {
     @Test
     @MediumTest
     public void narrowHomeShortcutsKeepFocusAndCallbacks() {
-        AtomicInteger settingsRuns = new AtomicInteger();
+        AtomicInteger phoneRuns = new AtomicInteger();
         AtomicInteger sourceRuns = new AtomicInteger();
         ThreadUtils.runOnUiThreadBlocking(
                 () ->
@@ -151,29 +152,32 @@ public class TvPresentationTest {
                                                 action("Browser controls", 2, () -> {}),
                                                 action("Tabs", 3, () -> {}),
                                                 action("Bookmarks", 4, () -> {}),
-                                                action(
-                                                        "Settings",
+                                                new TvPresentation.Action(
+                                                        "Phone connected",
+                                                        true,
+                                                        phoneRuns::incrementAndGet,
                                                         5,
-                                                        settingsRuns::incrementAndGet)),
+                                                        R.drawable.brave_tv_phone)),
                                         List.of(action("GitHub", 6, sourceRuns::incrementAndGet)),
                                         new TvPresentation.HomeState(false, "", "", "", "", "")),
-                                96));
+                                96,
+                                308));
         focused("Address or search");
         mDevice.pressDPadUp();
         focused("Browser controls");
         mDevice.pressDPadRight();
         focused("Tabs");
         mDevice.pressDPadDown();
-        focused("Settings");
+        focused("Phone connected");
         mDevice.pressDPadLeft();
         focused("Bookmarks");
         mDevice.pressDPadRight();
-        focused("Settings");
+        focused("Phone connected");
         mDevice.pressDPadCenter();
-        CriteriaHelper.pollInstrumentationThread(() -> settingsRuns.get() == 1);
+        CriteriaHelper.pollInstrumentationThread(() -> phoneRuns.get() == 1);
         mDevice.pressDPadDown();
         focused("Address or search");
-        assertEquals(1, settingsRuns.get());
+        assertEquals(1, phoneRuns.get());
         mDevice.pressDPadDown();
         focused("GitHub");
         visibleWithEdgeSpace("GitHub");
@@ -198,7 +202,7 @@ public class TvPresentationTest {
                     View focused = mActivity.getCurrentFocus();
                     mBadge =
                             TvPresentation.connectionBadge(
-                                    mActivity, label, opens::incrementAndGet);
+                                    mActivity, label, R.drawable.brave_tv_phone, opens::incrementAndGet);
                     ((FrameLayout) mActivity.findViewById(android.R.id.content))
                             .addView(
                                     mBadge,
@@ -207,9 +211,14 @@ public class TvPresentationTest {
                                             ViewGroup.LayoutParams.WRAP_CONTENT));
                     assertEquals(focused, mActivity.getCurrentFocus());
                 });
-        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.text(label)));
+        CriteriaHelper.pollInstrumentationThread(() -> mDevice.hasObject(By.desc(label)));
+        Rect bounds = mDevice.findObject(By.desc(label)).getVisibleBounds();
+        int badgeSize = Math.round(48 * mActivity.getResources().getDisplayMetrics().density);
+        assertEquals(badgeSize, bounds.width());
+        assertEquals(badgeSize, bounds.height());
+        assertFalse(mDevice.hasObject(By.text(label)));
         ThreadUtils.runOnUiThreadBlocking(() -> assertEquals(page, mActivity.getCurrentFocus()));
-        mDevice.findObject(By.text(label)).click();
+        mDevice.findObject(By.desc(label)).click();
         CriteriaHelper.pollInstrumentationThread(() -> opens.get() == 1);
         ThreadUtils.runOnUiThreadBlocking(
                 () -> {
@@ -218,7 +227,7 @@ public class TvPresentationTest {
                     mBadge = null;
                     assertEquals(page, mActivity.getCurrentFocus());
                 });
-        CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(By.text(label)));
+        CriteriaHelper.pollInstrumentationThread(() -> !mDevice.hasObject(By.desc(label)));
         assertEquals(1, opens.get());
     }
 
@@ -247,7 +256,7 @@ public class TvPresentationTest {
                                         "Initial native status",
                                         controls(),
                                         4));
-        ThreadUtils.runOnUiThreadBlocking(() -> showNarrow(content, 48));
+        ThreadUtils.runOnUiThreadBlocking(() -> showNarrow(content, 48, 380));
         focused("Address or search");
         ThreadUtils.runOnUiThreadBlocking(
                 () ->
@@ -269,6 +278,51 @@ public class TvPresentationTest {
         mDevice.pressBack();
         CriteriaHelper.pollUiThread(() -> !mDialog.isShowing());
         assertFalse(ThreadUtils.runOnUiThreadBlocking(mDialog::isShowing));
+    }
+
+    @Test
+    @MediumTest
+    public void menuIconsAndLongLabelsKeepUniformTargets() {
+        AtomicInteger bookmarksRuns = new AtomicInteger();
+        List<TvPresentation.Action> actions =
+                List.of(
+                        new TvPresentation.Action(
+                                "Search", true, () -> {}, 1, R.drawable.brave_tv_search),
+                        new TvPresentation.Action(
+                                "Jump between elements",
+                                true,
+                                () -> {},
+                                2,
+                                R.drawable.brave_tv_tabs),
+                        new TvPresentation.Action(
+                                "Tabs", true, () -> {}, 3, R.drawable.brave_tv_tabs),
+                        new TvPresentation.Action(
+                                "Bookmarks",
+                                true,
+                                bookmarksRuns::incrementAndGet,
+                                4,
+                                R.drawable.brave_tv_bookmark));
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        showNarrow(
+                                TvPresentation.controls(
+                                        mActivity, "Browser controls", "", "", actions, 1),
+                                48,
+                                380));
+        Rect first = focused("Search").getVisibleBounds();
+        for (TvPresentation.Action action : actions) {
+            UiObject2 button = mDevice.findObject(By.desc(action.getLabel()));
+            assertNotNull(button);
+            Rect bounds = button.getVisibleBounds();
+            assertEquals(first.width(), bounds.width());
+            assertEquals(first.height(), bounds.height());
+        }
+        mDevice.pressDPadRight();
+        focused("Jump between elements");
+        mDevice.pressDPadDown();
+        focused("Bookmarks");
+        mDevice.pressDPadCenter();
+        CriteriaHelper.pollInstrumentationThread(() -> bookmarksRuns.get() == 1);
     }
 
     @Test

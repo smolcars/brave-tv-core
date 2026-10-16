@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -123,6 +124,7 @@ object TvPresentation {
         var enabled by mutableStateOf(enabled)
         var icon by mutableStateOf(icon)
         var displayLabel by mutableStateOf<String?>(null)
+        var active by mutableStateOf(false)
         var announceChanges = false
         internal var focused = false
         internal var focusRequest by mutableStateOf(0)
@@ -285,9 +287,13 @@ object TvPresentation {
                                     actions.drop(1).take(4).forEach { action ->
                                         key(action) {
                                             ActionButton(action, Modifier.heightIn(min = 48.dp).then(
+                                                if (action !== actions.getOrNull(4)) Modifier.widthIn(
+                                                    min = 96.dp * LocalDensity.current.fontScale.coerceAtLeast(1f))
+                                                else Modifier).then(
                                                 if (action === actions.getOrNull(1)) Modifier.focusRequester(header)
                                                 else Modifier), quiet = true, compact = true,
                                                 hideIcon = action !== actions.getOrNull(4),
+                                                iconOnly = action === actions.getOrNull(4),
                                                 current = action === actions.getOrNull(1))
                                         }
                                     }
@@ -455,8 +461,9 @@ object TvPresentation {
                                     style = MaterialTheme.typography.titleSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.semantics { heading() })
-                                ActionRows(actions, 3, 10.dp, equalHeight = true) { action, modifier ->
-                                    ActionButton(action, modifier.then(
+                                ActionRows(actions, 2, 10.dp, minimum = 180.dp, equalHeight = true) { action, modifier ->
+                                    ActionButton(action, modifier.heightIn(
+                                        min = 72.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)).then(
                                         if (action === selected) Modifier.focusRequester(initial)
                                         else Modifier), menu = true)
                                 }
@@ -549,22 +556,25 @@ object TvPresentation {
      * Does not request keyboard focus. Pointer/accessibility activation runs open on the UI
      * thread; D-pad Disconnect remains in native browser controls. */
     @JvmStatic
-    fun connectionBadge(context: Context, label: String, open: Runnable): View = view(context).apply {
+    fun connectionBadge(context: Context, label: String, icon: Int, open: Runnable): View = view(context).apply {
         isFocusable = false
         setOnClickListener { open.run() }
         setContent {
             Theme {
-                Text(
-                    label,
-                    Modifier.background(surface, RoundedCornerShape(12.dp))
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                Box(
+                    Modifier.size(48.dp)
+                        .background(surface, RoundedCornerShape(12.dp))
                         .semantics {
+                            contentDescription = label
                             liveRegion = LiveRegionMode.Polite
                             role = Role.Button
                             onClick { open.run(); true }
                         },
-                    color = accent, fontSize = 16.sp,
-                )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(painterResource(icon), contentDescription = null,
+                        modifier = Modifier.size(24.dp), colorFilter = ColorFilter.tint(accent))
+                }
             }
         }
     }
@@ -651,6 +661,11 @@ object TvPresentation {
         var size by remember { mutableStateOf(IntSize.Zero) }
         val requested = remember { FocusRequester() }
         val visible = remember { BringIntoViewRequester() }
+        val shape = RoundedCornerShape(if (search) 32.dp else if (compact) 12.dp
+            else if (MaterialTheme.colorScheme.primary == accent) 12.dp else 14.dp)
+        val focusBorder = Border(BorderStroke(2.dp,
+            if (search) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface),
+            shape = shape)
         val focusSpace = with(LocalDensity.current) { 24.dp.toPx() }
         LaunchedEffect(hasFocus, size) {
             if (hasFocus && size != IntSize.Zero) {
@@ -668,7 +683,8 @@ object TvPresentation {
         Button(
             onClick = { action.run.run() },
             enabled = action.enabled,
-            modifier = modifier.bringIntoViewRequester(visible).onSizeChanged { size = it }
+            modifier = modifier.then(if (iconOnly) Modifier.size(48.dp)
+                else Modifier.heightIn(min = 48.dp)).bringIntoViewRequester(visible).onSizeChanged { size = it }
                 .focusRequester(requested).onFocusChanged {
                 hasFocus = it.isFocused
                 action.focused = it.isFocused
@@ -685,23 +701,33 @@ object TvPresentation {
                     action.enabled
                 }
             },
-            shape = ButtonDefaults.shape(shape = RoundedCornerShape(if (search || compact) 32.dp
-                else if (MaterialTheme.colorScheme.primary == accent) 12.dp else 14.dp)),
-            border = ButtonDefaults.border(focusedBorder = Border(BorderStroke(2.dp,
-                if (search) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface))),
-            scale = ButtonDefaults.scale(focusedScale = 1.02f),
+            shape = ButtonDefaults.shape(shape = shape, focusedShape = shape, pressedShape = shape,
+                disabledShape = shape, focusedDisabledShape = shape),
+            border = ButtonDefaults.border(focusedBorder = focusBorder,
+                focusedDisabledBorder = focusBorder),
+            scale = ButtonDefaults.scale(focusedScale = 1f, pressedScale = 1f,
+                focusedDisabledScale = 1f),
+            contentPadding = if (iconOnly) PaddingValues(0.dp)
+                else PaddingValues(horizontal = 16.dp, vertical = 10.dp),
             colors = ButtonDefaults.colors(
                 containerColor = if (search) text else if (quiet && !current) Color.Transparent
                     else MaterialTheme.colorScheme.surface,
                 contentColor = if (search) MaterialTheme.colorScheme.background else text,
                 focusedContainerColor = if (search) text else MaterialTheme.colorScheme.primary,
                 focusedContentColor = MaterialTheme.colorScheme.onPrimary,
+                disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
+                disabledContentColor = text.copy(alpha = 0.5f),
             ),
         ) {
             if (action.icon != 0 && !hideIcon && !card) {
-                Image(painterResource(action.icon), contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    colorFilter = ColorFilter.tint(LocalContentColor.current))
+                Box {
+                    Image(painterResource(action.icon), contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        colorFilter = ColorFilter.tint(LocalContentColor.current))
+                    if (iconOnly && action.active) Box(Modifier.size(6.dp).align(Alignment.TopEnd)
+                        .background(if (hasFocus) LocalContentColor.current
+                            else MaterialTheme.colorScheme.primary, RoundedCornerShape(3.dp)))
+                }
                 if (!iconOnly) Spacer(Modifier.width(10.dp))
             }
             if (card) {
@@ -730,9 +756,9 @@ object TvPresentation {
                 style = if (compact) MaterialTheme.typography.labelLarge
                     else if (search) MaterialTheme.typography.titleLarge
                     else MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                maxLines = if (menu) 3 else 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(vertical = if (search) 4.dp else if (compact) 0.dp else 8.dp)
-                    .then(if (search) Modifier.weight(1f) else Modifier))
+                maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(vertical = if (search) 4.dp else 0.dp)
+                    .then(if (search || menu) Modifier.weight(1f) else Modifier))
         }
     }
 }

@@ -414,8 +414,11 @@ public final class TvHomePage extends BasicNativePage {
     }
 
     private void refreshPhone() {
-        if (isCurrentHome() && !mTab.isIncognito())
+        if (isCurrentHome() && !mTab.isIncognito()) {
             mPhoneAction.setLabel(mActivity.getString(mActivity.tvPhoneStatusLabel()));
+            mPhoneAction.setActive(
+                    mActivity.tvPhoneStatusLabel() == R.string.brave_tv_phone_connected);
+        }
     }
 
     public boolean focusPhone() {
