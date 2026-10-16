@@ -132,12 +132,8 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
                 PlaylistServiceObserverImplDelegate {
     private static final String TAG = "BraveToolbar";
 
-    private static final String PREF_WAS_TOOLBAR_BAT_LOGO_BUTTON_PRESSED =
-            "was_toolbar_bat_logo_button_pressed";
-
     private static final int URL_FOCUS_TOOLBAR_BUTTONS_TRANSLATION_X_DP = 10;
 
-    private static final int DAYS_7 = 7;
     public static boolean mShouldShowPlaylistMenu;
 
     private PlaylistServiceObserverImpl mPlaylistServiceObserver;
@@ -168,8 +164,6 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
     private boolean mBraveButtonsInLocationBar;
 
     @Nullable private final Runnable mToolbarSnapshotCaptureRunnable;
-
-    private boolean mIsNotificationPosted;
 
     private PopupWindowTooltip mShieldsPopupWindowTooltip;
 

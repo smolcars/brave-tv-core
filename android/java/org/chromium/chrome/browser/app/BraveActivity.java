@@ -251,9 +251,6 @@ public abstract class BraveActivity extends ChromeActivity
             "https://github.com/brave/brave-browser/wiki/Web-compatibility-reports";
     private static final String TAG = "BraveActivity";
 
-    private static final int DAYS_4 = 4;
-    private static final int DAYS_7 = 7;
-
     private static final int MONTH_1 = 1;
 
     public static final int MAX_FAILED_CAPTCHA_ATTEMPTS = 10;

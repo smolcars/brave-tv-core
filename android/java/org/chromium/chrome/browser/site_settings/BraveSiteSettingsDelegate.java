@@ -11,7 +11,6 @@ import android.graphics.drawable.Drawable;
 
 import org.chromium.base.Callback;
 import org.chromium.build.annotations.NullMarked;
-import org.chromium.build.annotations.Nullable;
 import org.chromium.chrome.browser.browsing_data.BraveClearBrowsingDataFragment;
 import org.chromium.chrome.browser.browsing_data.ClearBrowsingDataFragment;
 import org.chromium.chrome.browser.profiles.Profile;
@@ -23,9 +22,6 @@ import org.chromium.url.GURL;
 @NullMarked
 public class BraveSiteSettingsDelegate extends ChromeSiteSettingsDelegate
         implements BraveWalletSiteSettingsDelegate {
-    // Will be deleted in bytecode, value from the parent class will be used instead.
-    @Nullable private Profile mProfile;
-
     public BraveSiteSettingsDelegate(Context context, Profile profile) {
         super(context, profile);
     }

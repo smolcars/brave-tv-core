@@ -5,7 +5,6 @@
 
 package org.chromium.chrome.browser.settings;
 
-import android.content.Context;
 import android.os.Bundle;
 
 import androidx.preference.Preference;
@@ -26,11 +25,9 @@ import org.chromium.chrome.browser.ntp.BraveFreshNtpHelper;
 import org.chromium.chrome.browser.ntp.NtpUtil;
 import org.chromium.chrome.browser.preferences.BravePref;
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
-import org.chromium.chrome.browser.profiles.Profile;
 import org.chromium.chrome.browser.settings.search.ChromeBaseSearchIndexProvider;
 import org.chromium.components.browser_ui.settings.ChromeSwitchPreference;
 import org.chromium.components.browser_ui.settings.SettingsUtils;
-import org.chromium.components.browser_ui.settings.search.SettingsIndexData;
 import org.chromium.components.user_prefs.UserPrefs;
 import org.chromium.misc_metrics.mojom.MiscAndroidMetrics;
 import org.chromium.misc_metrics.mojom.OpeningScreenSwitchType;
@@ -192,20 +189,5 @@ public class BackgroundImagesPreferences extends BravePreferenceFragment
     public static final ChromeBaseSearchIndexProvider SEARCH_INDEX_DATA_PROVIDER =
             new ChromeBaseSearchIndexProvider(
                     BackgroundImagesPreferences.class.getName(),
-                    R.xml.background_images_preferences) {
-
-                @Override
-                public void updateDynamicPreferences(
-                        Context context, SettingsIndexData indexData, Profile profile) {
-                    String frag = BackgroundImagesPreferences.class.getName();
-                    // Sponsored images and their "learn more" link are hidden when Brave Rewards
-                    // is disabled by policy, mirroring onActivityCreated().
-
-                    // The opening-screen section (PREF_OPENING_SCREEN_CATEGORY) is shown only when
-                    // the Fresh NTP feature is enabled with a non-"A" variant, but it needs no
-                    // handling here: the PreferenceCategory itself is never indexed, and its single
-                    // child (PREF_OPENING_SCREEN) is a custom radio-group widget with no
-                    // android:title, so it is not matchable by search regardless of feature state.
-                }
-            };
+                    R.xml.background_images_preferences);
 }

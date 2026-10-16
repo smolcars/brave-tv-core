@@ -67,7 +67,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
     private @Nullable ViewGroup mMvTilesContainerLayout;
 
     // Own members.
-    private WindowAndroid mWindowAndroid;
 
     private @Nullable ImageView mBgImageView;
 
@@ -305,7 +304,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
         mProfile = profile;
 
         mNTPBackgroundImagesBridge = NTPBackgroundImagesBridge.getInstance(mProfile);
-        mWindowAndroid = windowAndroid;
 
         assert mMvTilesContainerLayout != null : "Something has changed in the upstream!";
 

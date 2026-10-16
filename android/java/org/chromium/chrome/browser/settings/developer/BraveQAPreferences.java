@@ -37,23 +37,10 @@ import org.chromium.components.browser_ui.settings.search.BaseSearchIndexProvide
 /** Settings fragment containing preferences for QA team. */
 public class BraveQAPreferences extends BravePreferenceFragment
         implements OnPreferenceChangeListener {
-    private static final String PREF_USE_REWARDS_STAGING_SERVER = "use_rewards_staging_server";
-    private static final String PREF_QA_MAXIMIZE_INITIAL_ADS_NUMBER =
-            "qa_maximize_initial_ads_number";
     private static final String PREF_QA_DEBUG_NTP = "qa_debug_ntp";
-    private static final String PREF_QA_VLOG_REWARDS = "qa_vlog_rewards";
     private static final String PREF_QA_COMMAND_LINE = "qa_command_line";
 
-    private static final String QA_ADS_PER_HOUR = "qa_ads_per_hour";
-    private static final String QA_IMPORT_REWARDS_DB = "qa_import_rewards_db";
-    private static final String QA_EXPORT_REWARDS_DB = "qa_export_rewards_db";
     private static final String QA_CONSUME_ORIGIN_PURCHASE = "qa_consume_origin_purchase";
-
-    private static final int CHOOSE_FILE_FOR_IMPORT_REQUEST_CODE =
-            STORAGE_PERMISSION_IMPORT_REQUEST_CODE + 1;
-
-    private static final int MAX_ADS = 10;
-    private static final int DEFAULT_ADS_PER_HOUR = 2;
 
     private ChromeSwitchPreference mLinkSubscriptionOnStaging;
     private ChromeSwitchPreference mBraveDormantFeatureEngagement;
@@ -195,10 +182,6 @@ public class BraveQAPreferences extends BravePreferenceFragment
 
     private static void setOnPreferenceValue(String preferenceName, boolean newValue) {
         ChromeSharedPreferences.getInstance().writeBoolean(preferenceName, newValue);
-    }
-
-    private static boolean getPreferenceValue(String preferenceName) {
-        return ChromeSharedPreferences.getInstance().readBoolean(preferenceName, false);
     }
 
     private static void setPreferenceString(String preferenceName, String newValue) {
