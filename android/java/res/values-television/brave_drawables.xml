@@ -3,7 +3,8 @@
      This Source Code Form is subject to the terms of the Mozilla Public
      License, v. 2.0. If a copy of the MPL was not distributed with this file,
      You can obtain one at https://mozilla.org/MPL/2.0/. -->
-<resources>
-    <drawable name="ic_launcher">@drawable/brave_tv_icon</drawable>
-    <drawable name="ic_launcher_round">@drawable/ic_launcher</drawable>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- TV-qualified overrides of the application icons referenced by the base manifest. -->
+    <drawable name="ic_launcher" tools:ignore="UnusedResources">@drawable/brave_tv_icon</drawable>
+    <drawable name="ic_launcher_round" tools:ignore="UnusedResources">@drawable/ic_launcher</drawable>
 </resources>

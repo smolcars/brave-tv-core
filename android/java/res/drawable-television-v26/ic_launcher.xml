@@ -12,4 +12,7 @@
     <foreground>
         <inset android:drawable="@drawable/brave_tv_logo" android:inset="16.6667%" />
     </foreground>
+    <monochrome>
+        <inset android:drawable="@drawable/brave_tv_logo_monochrome" android:inset="16.6667%" />
+    </monochrome>
 </adaptive-icon>
