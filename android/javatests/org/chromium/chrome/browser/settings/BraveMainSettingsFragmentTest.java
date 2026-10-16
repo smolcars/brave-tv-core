@@ -60,9 +60,7 @@ public class BraveMainSettingsFragmentTest {
     // referenced from BraveMainPreferencesBase so they stay in sync if they change there.
     // These rows are always present, so they are asserted strictly.
     private static final String[] sAlwaysPresentPolicyControlledPrefKeys = {
-        BraveMainPreferencesBase.PREF_BRAVE_NEWS_V2,
-        BraveMainPreferencesBase.PREF_BRAVE_WALLET,
-        BraveMainPreferencesBase.PREF_BRAVE_LEO
+        BraveMainPreferencesBase.PREF_BRAVE_WALLET, BraveMainPreferencesBase.PREF_BRAVE_LEO
     };
 
     // VPN rows are also policy-controlled, but only present when VPN is supported (build/device
@@ -90,7 +88,6 @@ public class BraveMainSettingsFragmentTest {
     private static final String[] sSortedPrefKeys = {
         "features_section",
         "brave_shields_and_privacy",
-        "brave_news_v2",
         "brave_wallet",
         "brave_vpn",
         "brave_leo",

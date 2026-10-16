@@ -92,7 +92,6 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
     private static final String PREF_PRIVACY = "privacy";
     private static final String PREF_SHIELDS_AND_PRIVACY = "brave_shields_and_privacy";
     private static final String PREF_BRAVE_SEARCH_ENGINES = "brave_search_engines";
-    @VisibleForTesting static final String PREF_BRAVE_NEWS_V2 = "brave_news_v2";
     private static final String PREF_BRAVE_PLAYLIST = "brave_playlist";
     private static final String PREF_SYNC = "brave_sync_layout";
     private static final String PREF_PASSWORDS = "passwords";
@@ -346,7 +345,6 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
         setPreferenceOrder(PREF_FEATURES_SECTION, ++featuresSectionOrder);
 
         setPreferenceOrder(PREF_SHIELDS_AND_PRIVACY, ++featuresSectionOrder);
-        setPreferenceOrder(PREF_BRAVE_NEWS_V2, ++featuresSectionOrder);
 
         setPreferenceOrder(PREF_BRAVE_WALLET, ++featuresSectionOrder);
 
@@ -750,7 +748,6 @@ public abstract class BraveMainPreferencesBase extends BravePreferenceFragment
     /** Toggles visibility of every policy-controlled feature surface still on the screen. */
     private void setPolicyControlledPreferencesVisible(boolean visible) {
         setPreferenceVisibleIfPresent(PREF_BRAVE_LEO, visible);
-        setPreferenceVisibleIfPresent(PREF_BRAVE_NEWS_V2, visible);
         setPreferenceVisibleIfPresent(PREF_BRAVE_VPN, visible);
         setPreferenceVisibleIfPresent(PREF_BRAVE_WALLET, visible);
         setPreferenceVisibleIfPresent(PREF_BRAVE_VPN_CALLOUT, visible);

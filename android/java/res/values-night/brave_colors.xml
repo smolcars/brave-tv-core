@@ -58,17 +58,17 @@
     <color name="ad_free_card_bg_color">#1E2029</color>
 
     <!-- Brave news colors -->
-    <color name="card_background">#F23B3E4F</color>
+
     <color name="card_background_solid">#353535</color>
     <!-- <color name="turn_on_button">#737ADE</color> -->
-    <color name="news_text_color">@android:color/white</color>
-    <color name="news_time_color">#9CD2D5CF</color>
-    <color name="news_settings_title_color">#F0F2FF</color>
-    <color name="news_settings_subtitle_color">#C2C4CF</color>
-    <color name="news_settings_icon_bg_color">#0DFFFFFF</color>
-    <color name="news_settings_following_count_color">#D9F0F2FF</color>
-    <color name="news_settings_following_count_bg_color">#1AFFFFFF</color>
-    <color name="news_settings_item_highlight">@color/material_primary_20</color>
+
+
+
+
+
+
+
+
 
     <!-- Sync colors -->
     <color name="brave_sync_bg_color">@android:color/transparent</color>

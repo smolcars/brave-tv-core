@@ -168,12 +168,16 @@ This file contains all "about" strings.  It is set to NOT be translated, in tran
       <message name="IDS_BLOCK_SWITCH_TO_APP_NOTICES"  desc="Text for Block 'Switch to App' Notices">
         Block 'Switch to App' Notices
       </message>
-      <message name="IDS_TELL_US_WHAT_YOU_THINK"  desc="Text for Tell us what you think!">
+      <if expr="enable_brave_news">
+        <message name="IDS_TELL_US_WHAT_YOU_THINK"  desc="Text for Tell us what you think!">
         Tell us what you think!
       </message>
-      <message name="IDS_RATE_BRAVE"  desc="Text for Rate Brave">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_RATE_BRAVE"  desc="Text for Rate Brave">
         Rate Brave
       </message>
+      </if>
       <message name="IDS_BRAVE_RATING_THANKS"  desc="Text for Brave Rating Thanks">
         Thanks!
       </message>
@@ -489,105 +493,171 @@ This file contains all "about" strings.  It is set to NOT be translated, in tran
       <message name="IDS_RESOLVE_METHOD_ENABLED" desc="Text for resolve method Enabled.">
         Enabled
       </message>
-      <message name="IDS_BRAVE_NEWS_OPTIN_TITLE" desc="Text for opt in card title">
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_OPTIN_TITLE" desc="Text for opt in card title">
         Today’s top stories in a private feed, just for you.
       </message>
-      <message name="IDS_BRAVE_NEWS_SETTINGS_OPTIN_TITLE" desc="Text for opt in card title in settings">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_SETTINGS_OPTIN_TITLE" desc="Text for opt in card title in settings">
         Turn on Brave News and never miss a story
       </message>
-      <message name="IDS_BRAVE_NEWS_OPTIN_SUBTITLE" desc="Text for opt in card subtitle">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_OPTIN_SUBTITLE" desc="Text for opt in card subtitle">
         Brave News is ad-supported with private and anonymized ads matched on your device.
       </message>
-      <message name="IDS_BRAVE_NEWS_SETTINGS_OPTIN_SUBTITLE" desc="Text for opt in card subtitle in settings">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_SETTINGS_OPTIN_SUBTITLE" desc="Text for opt in card subtitle in settings">
         Follow your favorite sources in a single feed. Just open a tab in Brave, scroll down, and… voila!
       </message>
-      <message name="IDS_TURN_ON_BRAVE_NEWS" desc="Text for opt in card button in settings">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_TURN_ON_BRAVE_NEWS" desc="Text for opt in card button in settings">
         Turn on Brave News
       </message>
-      <message name="IDS_BRAVE_NEWS_SETTINGS_SEARCH" desc="Text for Brave News settings search">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_SETTINGS_SEARCH" desc="Text for Brave News settings search">
         Search for site, topic, or RSS feed
       </message>
-      <message name="IDS_POPULAR" desc="Text for Brave News settings popular sources">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_POPULAR" desc="Text for Brave News settings popular sources">
         Popular
       </message>
-      <message name="IDS_POPULAR_SUBTITLE" desc="Text for Brave News settings popular sources subtitle">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_POPULAR_SUBTITLE" desc="Text for Brave News settings popular sources subtitle">
         Ranked list of sources
       </message>
-      <message name="IDS_SUGGESTIONS" desc="Text for Brave News settings suggestions">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_SUGGESTIONS" desc="Text for Brave News settings suggestions">
         Suggestions
       </message>
-      <message name="IDS_SUGGESTIONS_SUBTITLE" desc="Text for Brave News settings suggestions subtitle">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_SUGGESTIONS_SUBTITLE" desc="Text for Brave News settings suggestions subtitle">
         Some sources you might like
       </message>
-      <message name="IDS_CHANNELS" desc="Text for Brave News settings channels">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_CHANNELS" desc="Text for Brave News settings channels">
         Channels
       </message>
-      <message name="IDS_CHANNELS_SUBTITLE" desc="Text for Brave News settings channels subtitle">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_CHANNELS_SUBTITLE" desc="Text for Brave News settings channels subtitle">
         Follow topics that interest you
       </message>
-      <message name="IDS_FOLLOWING" desc="Text for Brave News settings following">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_FOLLOWING" desc="Text for Brave News settings following">
         Following
       </message>
-      <message name="IDS_FOLLOWING_SUBTITLE" desc="Text for Brave News settings following subtitle">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_FOLLOWING_SUBTITLE" desc="Text for Brave News settings following subtitle">
         Manage sources for your feed
       </message>
-      <message name="IDS_FOLLOW" desc="Text for Brave News settings button follow">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_FOLLOW" desc="Text for Brave News settings button follow">
         Follow
       </message>
-      <message name="IDS_UNFOLLOW" desc="Text for Brave News settings button unfollow">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_UNFOLLOW" desc="Text for Brave News settings button unfollow">
         Unfollow
       </message>
-      <message name="IDS_GET_FEEDS" desc="Text for Brave News settings button get feeds">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_GET_FEEDS" desc="Text for Brave News settings button get feeds">
         Get Feeds
       </message>
-      <message name="IDS_GETTING_FEEDS" desc="Text for Brave News settings button getting feeds">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_GETTING_FEEDS" desc="Text for Brave News settings button getting feeds">
         Getting Feeds...
       </message>
-      <message name="IDS_SOURCES" desc="Text for Brave News settings sources">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_SOURCES" desc="Text for Brave News settings sources">
         SOURCES
       </message>
-      <message name="IDS_NO_FEED_FOUND" desc="Text for Brave News settings search no found">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_NO_FEED_FOUND" desc="Text for Brave News settings search no found">
         No feeds found at <ph name="SEARCH_URL">%1$s</ph>
       </message>
-      <message name="IDS_BRAVE_NEWS_OPTIN_BUTTON" desc="Text for opt in card subtitle">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_OPTIN_BUTTON" desc="Text for opt in card subtitle">
         Show Brave News
       </message>
-      <message name="IDS_BRAVE_NEWS_SHARE" desc="Text for share option in the long press menu">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_SHARE" desc="Text for share option in the long press menu">
         Share
       </message>
-      <message name="IDS_BRAVE_NEWS_OPTIN_LEARN_MORE" desc="Text for opt in card subtitle">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_OPTIN_LEARN_MORE" desc="Text for opt in card subtitle">
         Learn more about your data
       </message>
-      <message name="IDS_BRAVE_NEWS_OPEN_NEW_TAB" desc="Text for opening the link in a new tab option for the long press on title action for Brave news">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_OPEN_NEW_TAB" desc="Text for opening the link in a new tab option for the long press on title action for Brave news">
         Open in New Tab
       </message>
-      <message name="IDS_BRAVE_NEWS_OPEN_NEW_PRIVATE_TAB" desc="Text for opening the link in a new private tab option for the long press on title action for Brave news">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_OPEN_NEW_PRIVATE_TAB" desc="Text for opening the link in a new private tab option for the long press on title action for Brave news">
         Open in New Private Tab
       </message>
-      <message name="IDS_BRAVE_NEWS_DISABLE_CONTENT" desc="Text for disable content option for the long press on title action">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_DISABLE_CONTENT" desc="Text for disable content option for the long press on title action">
         Disable content from <ph name="PUBLISHER">%1$s</ph>
       </message>
-      <message name="IDS_BRAVE_NEWS_DISABLED_CONTENT" desc="Text for disabled publisher notification">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_DISABLED_CONTENT" desc="Text for disabled publisher notification">
         <ph name="PUBLISHER">%1$s</ph> disabled
       </message>
-      <message name="IDS_BRAVE_NEWS_LOAD_NEW_CONTENT" desc="Text for load new content button for Brave news">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_LOAD_NEW_CONTENT" desc="Text for load new content button for Brave news">
         Load new content
       </message>
-      <message name="IDS_BRAVE_NEWS_MORE_OFFERS_TITLE" desc="Text for more offers for the Brave News Deals card ">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_MORE_OFFERS_TITLE" desc="Text for more offers for the Brave News Deals card ">
         More Brave Offers
       </message>
-      <message name="IDS_NEWS_SHOW" desc="Text for news source">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_NEWS_SHOW" desc="Text for news source">
         Show Brave News
       </message>
-      <message name="IDS_NO_CONTENT_TITLE" desc="Text for no source card title">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_NO_CONTENT_TITLE" desc="Text for no source card title">
         No content
       </message>
-      <message name="IDS_NO_CONTENT_SUBTITLE" desc="Text for no source card subtitle">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_NO_CONTENT_SUBTITLE" desc="Text for no source card subtitle">
         Brave News has no content to show.
       </message>
-      <message name="IDS_CHOOSE_CONTENT_SOURCES" desc="Text for no source card button">
+      </if>
+      <if expr="enable_brave_news">
+        <message name="IDS_CHOOSE_CONTENT_SOURCES" desc="Text for no source card button">
         Choose content sources
       </message>
+      </if>
       <message name="IDS_FINGERPRINTING_PROTECTION_SUMMARY" desc="Summary for fingerprinting protection.">
         Prevents websites from fingerprinting me
       </message>
@@ -931,9 +1001,11 @@ This file contains all "about" strings.  It is set to NOT be translated, in tran
       <message name="IDS_BRAVE_VPN" desc="Title for Brave vpn settings">
         Brave VPN
       </message>
-      <message name="IDS_BRAVE_NEWS_TITLE" desc="Title for Brave news settings">
+      <if expr="enable_brave_news">
+        <message name="IDS_BRAVE_NEWS_TITLE" desc="Title for Brave news settings">
         Brave News
       </message>
+      </if>
       <message name="IDS_CUSTOMIZE_MENU_TITLE" desc="Title for customize menu settings">
         Customize menu
       </message>
