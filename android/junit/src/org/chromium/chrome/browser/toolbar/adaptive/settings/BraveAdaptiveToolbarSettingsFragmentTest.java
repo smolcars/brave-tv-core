@@ -44,6 +44,7 @@ import org.chromium.chrome.browser.toolbar.R;
 import org.chromium.chrome.browser.toolbar.adaptive.AdaptiveToolbarButtonVariant;
 import org.chromium.chrome.browser.toolbar.adaptive.AdaptiveToolbarStatePredictor;
 import org.chromium.chrome.browser.toolbar.adaptive.BraveAdaptiveToolbarPrefs;
+import org.chromium.chrome.browser.toolbar.adaptive.BraveAdaptiveToolbarStatePredictor;
 import org.chromium.components.browser_ui.settings.ChromeSwitchPreference;
 import org.chromium.components.browser_ui.widget.RadioButtonWithDescription;
 import org.chromium.components.prefs.PrefService;
@@ -255,20 +256,31 @@ public class BraveAdaptiveToolbarSettingsFragmentTest {
                             AdaptiveToolbarButtonVariant.LEO,
                             ChromeSharedPreferences.getInstance()
                                     .readInt(ADAPTIVE_TOOLBAR_CUSTOMIZATION_SETTINGS));
+                });
+    }
 
-                    // Test Wallet button
-                    Assert.assertEquals(
-                            R.id.adaptive_option_brave_wallet,
-                            getButton(AdaptiveToolbarButtonVariant.WALLET).getId());
-                    selectButton(AdaptiveToolbarButtonVariant.WALLET);
-                    assertButtonCheckedCorrectly(
-                            "Brave Wallet", AdaptiveToolbarButtonVariant.WALLET);
-                    Assert.assertEquals(
-                            AdaptiveToolbarButtonVariant.WALLET, mRadioPreference.getSelection());
-                    Assert.assertEquals(
-                            AdaptiveToolbarButtonVariant.WALLET,
-                            ChromeSharedPreferences.getInstance()
-                                    .readInt(ADAPTIVE_TOOLBAR_CUSTOMIZATION_SETTINGS));
+    @Test
+    @SmallTest
+    public void testSavedWalletShortcutFallsBackToNewTab() {
+        ChromeSharedPreferences.getInstance()
+                .writeInt(
+                        ADAPTIVE_TOOLBAR_CUSTOMIZATION_SETTINGS,
+                        AdaptiveToolbarButtonVariant.WALLET);
+        FragmentScenario<AdaptiveToolbarSettingsFragment> scenario = buildFragmentScenario();
+        scenario.onFragment(
+                fragment -> {
+                    mRadioPreference =
+                            (RadioButtonGroupAdaptiveToolbarPreference)
+                                    fragment.findPreference(
+                                            AdaptiveToolbarSettingsFragment
+                                                    .PREF_ADAPTIVE_RADIO_GROUP);
+                    Assert.assertFalse(
+                            BraveAdaptiveToolbarStatePredictor.isValidSegment(
+                                    AdaptiveToolbarButtonVariant.WALLET));
+                    Assert.assertSame(
+                            getButton(AdaptiveToolbarButtonVariant.NEW_TAB),
+                            getButton(AdaptiveToolbarButtonVariant.WALLET));
+                    Assert.assertTrue(getButton(AdaptiveToolbarButtonVariant.NEW_TAB).isChecked());
                 });
     }
 
@@ -282,6 +294,8 @@ public class BraveAdaptiveToolbarSettingsFragmentTest {
 
     private boolean isRestUnchecked(@AdaptiveToolbarButtonVariant int selectedType) {
         for (int i = 0; i <= AdaptiveToolbarButtonVariant.MAX_VALUE; i++) {
+            // The retired Wallet value aliases the default button for existing profiles.
+            if (i == AdaptiveToolbarButtonVariant.WALLET) continue;
             RadioButtonWithDescription button = getButton(i);
             if (i != selectedType && button != null && button.isChecked()) {
                 return false;

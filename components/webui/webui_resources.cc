@@ -9,7 +9,10 @@
 
 #include "base/containers/flat_map.h"
 #include "base/no_destructor.h"
+#include "brave/components/brave_news/common/buildflags/buildflags.h"
+#include "brave/components/brave_rewards/core/buildflags/buildflags.h"
 #include "brave/components/brave_vpn/common/buildflags/buildflags.h"
+#include "brave/components/brave_wallet/common/buildflags/buildflags.h"
 #include "brave/components/constants/url_constants.h"
 #include "brave/components/tor/buildflags/buildflags.h"
 #include "build/build_config.h"
@@ -198,11 +201,13 @@ base::span<const webui::LocalizedString> GetWebUILocalizedStrings(
                {"searchPromotionSearchBoxPlaceholderLabel",
                 IDS_BRAVE_NEW_TAB_SEARCH_PROMOTION_SEARCH_BOX_PLACEHOLDER},
 
+#if BUILDFLAG(ENABLE_BRAVE_NEWS)
                // Brave News
                {"braveNewsScrollHint", IDS_BRAVE_NEWS_SCROLL_HINT},
                {"braveNewsStatusFetching", IDS_BRAVE_NEWS_STATUS_FETCHING},
                {"braveNewsActionRefresh", IDS_BRAVE_NEWS_ACTION_REFRESH},
                {"braveNewsPromoted", IDS_BRAVE_NEWS_PROMOTED},
+#endif
 
                {"addWidget", IDS_BRAVE_NEW_TAB_WIDGET_ADD},
                {"hideWidget", IDS_BRAVE_NEW_TAB_WIDGET_HIDE},
@@ -246,6 +251,7 @@ base::span<const webui::LocalizedString> GetWebUILocalizedStrings(
                {"boxTorButton", IDS_BRAVE_PRIVATE_NEW_TAB_BOX_TOR_BUTTON},
 #endif  // !BUILDFLAG(IS_ANDROID)
 
+#if BUILDFLAG(ENABLE_BRAVE_REWARDS)
                // Rewards widget
                {"rewardsAboutRewards", IDS_REWARDS_WIDGET_ABOUT_REWARDS},
                {"rewardsBraveRewards", IDS_REWARDS_WIDGET_BRAVE_REWARDS},
@@ -293,6 +299,7 @@ base::span<const webui::LocalizedString> GetWebUILocalizedStrings(
                {"rewardsVBATNoticeTitle1", IDS_REWARDS_VBAT_NOTICE_TITLE1},
 
                {"loading", IDS_BRAVE_REWARDS_LOADING_LABEL},
+#endif
 
 #if BUILDFLAG(ENABLE_BRAVE_VPN) & !BUILDFLAG(IS_ANDROID)
                // Brave VPN Widget
@@ -322,6 +329,7 @@ base::span<const webui::LocalizedString> GetWebUILocalizedStrings(
                 IDS_BRAVE_TALK_WIDGET_START_BUTTON},
                {"braveTalkWidgetAboutData", IDS_BRAVE_TALK_WIDGET_ABOUT_DATA},
            }},
+#if BUILDFLAG(ENABLE_BRAVE_WALLET)
           {"wallet",
            {{"cryptoWalletsWelcome", IDS_BRAVE_WALLET_WELCOME},
             {"cryptoWalletsDisclosureOne", IDS_BRAVE_WALLET_DISCLOSURE_ONE},
@@ -332,6 +340,8 @@ base::span<const webui::LocalizedString> GetWebUILocalizedStrings(
             {"cryptoWalletsDownloading", IDS_BRAVE_WALLET_DOWNLOADING},
             {"cryptoWalletsDisclosureConfirm",
              IDS_BRAVE_WALLET_DISCLOSURE_CONFIRM}}},
+#endif
+#if BUILDFLAG(ENABLE_BRAVE_REWARDS)
           {"rewards",
            {
                {"adsCurrentEarnings",
@@ -686,6 +696,7 @@ base::span<const webui::LocalizedString> GetWebUILocalizedStrings(
 
                {"loading", IDS_BRAVE_REWARDS_LOADING_LABEL},
            }},
+#endif
           {"adblock",
            {
                {"additionalFiltersTitle", IDS_ADBLOCK_ADDITIONAL_FILTERS_TITLE},
@@ -721,6 +732,7 @@ base::span<const webui::LocalizedString> GetWebUILocalizedStrings(
                {"customListSubscriptionsUnsubscribe",
                 IDS_ADBLOCK_CUSTOM_LIST_SUBSCRIPTIONS_UNSUBSCRIBE},
            }},
+#if BUILDFLAG(ENABLE_BRAVE_REWARDS)
           {"rewards-internals",
            {
                {"adsNotInitialized",
@@ -832,6 +844,7 @@ base::span<const webui::LocalizedString> GetWebUILocalizedStrings(
 
                {"loading", IDS_BRAVE_REWARDS_LOADING_LABEL},
            }},
+#endif
           {
 #if BUILDFLAG(ENABLE_TOR)
               "tor-internals",
