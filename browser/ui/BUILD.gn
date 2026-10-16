@@ -67,7 +67,6 @@ source_set("ui") {
 
   deps = [
     "//brave/brave_domains",
-    "//brave/browser/brave_adaptive_captcha",
     "//brave/browser/brave_origin",
     "//brave/browser/brave_shields",
     "//brave/browser/skus",
@@ -110,6 +109,9 @@ source_set("ui") {
     "//chrome/browser/ui/webui:chrome_web_ui_controller_factory",
     "//media",
   ]
+  if (enable_brave_rewards || enable_brave_ads) {
+    deps += [ "//brave/browser/brave_adaptive_captcha" ]
+  }
 
   if (toolkit_views) {
     deps += [
@@ -957,7 +959,6 @@ source_set("ui") {
     # to pull in dependencies needed for the overwrite codes in chromium_src.
     "//brave/chromium_src/chrome/browser/ui",
     "//brave/common",
-    "//brave/components/brave_adaptive_captcha",
     "//brave/components/brave_adblock_ui:generated_resources",
     "//brave/components/brave_adblock_ui/adblock_internals:generated_resources",
     "//brave/components/brave_perf_predictor/common",
@@ -1051,6 +1052,9 @@ source_set("ui") {
     "//ui/webui",
     "//url",
   ]
+  if (enable_brave_rewards || enable_brave_ads) {
+    deps += [ "//brave/components/brave_adaptive_captcha" ]
+  }
 
   if (enable_psst) {
     deps += [

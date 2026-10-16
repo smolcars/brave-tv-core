@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.chromium.base.BravePreferenceKeys;
 import org.chromium.base.ContextUtils;
-import org.chromium.base.Log;
 import org.chromium.base.task.AsyncTask;
 import org.chromium.build.annotations.EnsuresNonNull;
 import org.chromium.build.annotations.Initializer;
@@ -218,55 +217,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
         }
     }
 
-    private void keepPosition() {
-        try {
-            Tab tab = BraveActivity.getBraveActivity().getActivityTab();
-            if (tab != null) {
-                int itemPosition =
-                        ChromeSharedPreferences.getInstance()
-                                .readInt(
-                                        BravePreferenceKeys.BRAVE_RECYCLERVIEW_POSITION
-                                                + tab.getId(),
-                                        0);
-
-                new Handler(Looper.getMainLooper())
-                        .postDelayed(
-                                () -> {
-                                    assertNonNull(mRecyclerView);
-                                    if (mNtpAdapter != null
-                                            && mNtpAdapter.getItemCount() > itemPosition) {
-                                        RecyclerView.LayoutManager manager =
-                                                mRecyclerView.getLayoutManager();
-                                        if (manager instanceof LinearLayoutManager) {
-                                            int offsetPosition =
-                                                    ChromeSharedPreferences.getInstance()
-                                                            .readInt(
-                                                                    BravePreferenceKeys
-                                                                                    .BRAVE_RECYCLERVIEW_OFFSET_POSITION // presubmit: ignore-long-line
-                                                                            + tab.getId(),
-                                                                    0);
-
-                                            if (itemPosition
-                                                    == mNtpAdapter.getStatsCount()
-                                                            + mNtpAdapter.getTopSitesCount()) {
-                                                offsetPosition -=
-                                                        mNtpAdapter.getTopMarginImageCredit();
-                                            }
-
-                                            LinearLayoutManager linearLayoutManager =
-                                                    (LinearLayoutManager) manager;
-                                            linearLayoutManager.scrollToPositionWithOffset(
-                                                    itemPosition, offsetPosition);
-                                        }
-                                    }
-                                },
-                                10);
-            }
-        } catch (BraveActivity.BraveActivityNotFoundException e) {
-            Log.e(TAG, "keepPosition " + e);
-        }
-    }
-
     private void initPreferenceObserver() {
         mPreferenceListener =
                 (prefs, key) -> {
@@ -341,7 +291,6 @@ public class BraveNewTabPageLayout extends NewTabPageLayout implements OnBraveNt
                             if (mNtpAdapter != null) {
                                 mNtpAdapter.setRecyclerViewHeight(mRecyclerView.getHeight());
                             }
-                            keepPosition();
                         },
                         10);
     }

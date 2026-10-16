@@ -36,6 +36,11 @@ public class RetentionNotificationPublisher extends BroadcastReceiver {
             String action = intent.getAction();
             String notificationType =
                     intent.getStringExtra(RetentionNotificationUtil.NOTIFICATION_TYPE);
+            if (RetentionNotificationUtil.DAY_10.equals(notificationType)
+                    || RetentionNotificationUtil.DAY_30.equals(notificationType)
+                    || RetentionNotificationUtil.DAY_35.equals(notificationType)) {
+                return;
+            }
             BraveActivity braveActivity = BraveActivity.getBraveActivity();
             if (action != null && action.equals(RETENTION_NOTIFICATION_ACTION)) {
                 if (braveActivity != null) {

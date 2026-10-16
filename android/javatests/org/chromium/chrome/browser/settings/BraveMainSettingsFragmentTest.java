@@ -125,6 +125,15 @@ public class BraveMainSettingsFragmentTest {
     // with English.
     @Test
     @SmallTest
+    public void testRemovedProductsAbsentAndLeoRetained() {
+        startSettings();
+        assertNull(mMainSettings.getPreferenceScreen().findPreference("brave_news_v2"));
+        assertNull(mMainSettings.getPreferenceScreen().findPreference("brave_wallet"));
+        assertNotNull(mMainSettings.getPreferenceScreen().findPreference("brave_leo"));
+    }
+
+    @Test
+    @SmallTest
     @DisableFeatures(BraveFeatureList.BRAVE_ANDROID_TAB_GROUPS_SETTINGS)
     public void testMainSettingsPrefsOrder() {
         startSettings();

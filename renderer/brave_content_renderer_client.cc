@@ -11,7 +11,7 @@
 
 #include "base/feature_list.h"
 #include "brave/components/ai_chat/core/common/buildflags/buildflags.h"
-#include "brave/components/brave_news/renderer/rss_link_reader.h"
+#include "brave/components/brave_news/common/buildflags/buildflags.h"
 #include "brave/components/brave_search/common/brave_search_utils.h"
 #include "brave/components/brave_search/renderer/brave_search_render_frame_observer.h"
 #include "brave/components/brave_shields/core/common/features.h"
@@ -37,6 +37,10 @@
 #include "third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h"
 #include "third_party/widevine/cdm/buildflags.h"
 #include "url/gurl.h"
+
+#if BUILDFLAG(ENABLE_BRAVE_NEWS)
+#include "brave/components/brave_news/renderer/rss_link_reader.h"
+#endif  // BUILDFLAG(ENABLE_BRAVE_NEWS)
 
 #if BUILDFLAG(ENABLE_AI_CHAT)
 #include "brave/components/ai_chat/core/common/features.h"
@@ -182,11 +186,13 @@ void BraveContentRendererClient::RenderFrameCreated(
   auto* rfo = new BraveRenderFrameObserver(render_frame);
   auto* registry = rfo->registry();
 
+#if BUILDFLAG(ENABLE_BRAVE_NEWS)
   // Only the main frame is queried by `brave_news::FetchRssLinks`, so binding
   // a receiver on subframes would just be dead weight.
   if (render_frame->IsMainFrame()) {
     new brave_news::RssLinkReader(render_frame, registry);
   }
+#endif  // BUILDFLAG(ENABLE_BRAVE_NEWS)
 
   if (base::FeatureList::IsEnabled(
           brave_shields::features::kBraveAdblockCosmeticFiltering)) {

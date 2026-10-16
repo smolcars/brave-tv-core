@@ -4,6 +4,7 @@
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import("//brave/components/ai_chat/core/common/buildflags/buildflags.gni")
+import("//brave/components/brave_news/common/buildflags/buildflags.gni")
 import("//brave/components/brave_vpn/common/buildflags/buildflags.gni")
 import("//brave/components/brave_wallet/common/buildflags/buildflags.gni")
 import("//brave/components/playlist/core/common/buildflags/buildflags.gni")
@@ -24,7 +25,7 @@ brave_chrome_renderer_sources = [
 brave_chrome_renderer_deps = [
   "//brave/common:mojo_bindings",
   "//brave/components/ai_chat/core/common/buildflags",
-  "//brave/components/brave_news/renderer",
+  "//brave/components/brave_news/common/buildflags",
   "//brave/components/brave_origin:features",
   "//brave/components/brave_search/common",
   "//brave/components/brave_search/renderer",
@@ -97,3 +98,7 @@ brave_chrome_renderer_deps += [ "//third_party/widevine/cdm:headers" ]
 
 # do not add anything else here
 brave_chrome_renderer_public_deps = []
+
+if (enable_brave_news) {
+  brave_chrome_renderer_deps += [ "//brave/components/brave_news/renderer" ]
+}
