@@ -1837,8 +1837,7 @@ public class TvHomePageTest {
                         "<style>button,input{position:absolute;top:60px;width:180px;height:70px}"
                                 + "#a{left:30px}#field{left:260px}#b{left:490px}</style>"
                                 + "<form><button type=button id=a autofocus>A</button><input id=field>"
-                                + "<button type=button id=b>B</button></form><script>window.submits=0;window.arrows=[];"
-                                + "addEventListener('keydown',e=>arrows.push(e.key));"
+                                + "<button type=button id=b>B</button></form><script>window.submits=0;"
                                 + "addEventListener('submit',e=>{e.preventDefault();submits++})</script>");
         ImeAdapter adapter =
                 ThreadUtils.runOnUiThreadBlocking(
@@ -1920,7 +1919,7 @@ public class TvHomePageTest {
                                 + "; "
                                 + JavaScriptUtils.executeJavaScriptAndWaitForResult(
                                         tab.getWebContents(),
-                                        "[document.activeElement.id,field.selectionStart,arrows]"),
+                                        "[document.activeElement.id,field.selectionStart]"),
                         failure);
             }
         } finally {
@@ -1958,6 +1957,8 @@ public class TvHomePageTest {
                                 + nativeOwner.invoke(controls, false)
                                 + " pageFocus="
                                 + tab.getContentView().hasFocus()
+                                + " windowFocus="
+                                + mActivity.hasWindowFocus()
                                 + " focus="
                                 + mActivity.getCurrentFocus()
                                 + " ime="
