@@ -719,46 +719,58 @@ object TvPresentation {
                 disabledContentColor = text.copy(alpha = 0.5f),
             ),
         ) {
-            if (action.icon != 0 && !hideIcon && !card) {
-                Box {
-                    Image(painterResource(action.icon), contentDescription = null,
+            if (menu) {
+                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (action.icon != 0) Image(painterResource(action.icon), contentDescription = null,
                         modifier = Modifier.size(20.dp),
                         colorFilter = ColorFilter.tint(LocalContentColor.current))
-                    if (iconOnly && action.active) Box(Modifier.size(6.dp).align(Alignment.TopEnd)
-                        .background(if (hasFocus) LocalContentColor.current
-                            else MaterialTheme.colorScheme.primary, RoundedCornerShape(3.dp)))
+                    Text(caption, modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                        maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
-                if (!iconOnly) Spacer(Modifier.width(10.dp))
-            }
-            if (card) {
-                val lines = action.label.split("\n", limit = 2)
-                if (recentCard) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
-                        SiteInitial(lines.last(), action.icon)
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            } else {
+                if (action.icon != 0 && !hideIcon && !card) {
+                    Box {
+                        Image(painterResource(action.icon), contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            colorFilter = ColorFilter.tint(LocalContentColor.current))
+                        if (iconOnly && action.active) Box(Modifier.size(6.dp).align(Alignment.TopEnd)
+                            .background(if (hasFocus) LocalContentColor.current
+                                else MaterialTheme.colorScheme.primary, RoundedCornerShape(3.dp)))
+                    }
+                    if (!iconOnly) Spacer(Modifier.width(10.dp))
+                }
+                if (card) {
+                    val lines = action.label.split("\n", limit = 2)
+                    if (recentCard) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            SiteInitial(lines.last(), action.icon)
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(lines.first(), style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                if (lines.size > 1) Text(lines.last(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = LocalContentColor.current.copy(alpha = 0.85f),
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    } else {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            SiteInitial(lines.last(), action.icon)
                             Text(lines.first(), style = MaterialTheme.typography.titleMedium,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (lines.size > 1) Text(lines.last(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = LocalContentColor.current.copy(alpha = 0.85f),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
-                } else {
-                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        SiteInitial(lines.last(), action.icon)
-                        Text(lines.first(), style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-            } else if (!iconOnly) Text(caption,
-                style = if (compact) MaterialTheme.typography.labelLarge
-                    else if (search) MaterialTheme.typography.titleLarge
-                    else MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(vertical = if (search) 4.dp else 0.dp)
-                    .then(if (search || menu) Modifier.weight(1f) else Modifier))
+                } else if (!iconOnly) Text(caption,
+                    style = if (compact) MaterialTheme.typography.labelLarge
+                        else if (search) MaterialTheme.typography.titleLarge
+                        else MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                    maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(vertical = if (search) 4.dp else 0.dp)
+                        .then(if (search) Modifier.weight(1f) else Modifier))
+            }
         }
     }
 }
