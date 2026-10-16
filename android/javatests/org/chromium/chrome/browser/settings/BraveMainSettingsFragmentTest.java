@@ -120,11 +120,13 @@ public class BraveMainSettingsFragmentTest {
 
     @Test
     @SmallTest
-    public void testRemovedProductsAbsentAndLeoRetained() {
+    public void testRemovedProductsAbsentAndLeoAvailabilityPreserved() {
         startSettings();
         assertNull(mMainSettings.getPreferenceScreen().findPreference("brave_news_v2"));
         assertNull(mMainSettings.getPreferenceScreen().findPreference("brave_wallet"));
-        assertNotNull(mMainSettings.getPreferenceScreen().findPreference("brave_leo"));
+        assertEquals(
+                BraveFeatureList.IS_AI_CHAT_SUPPORTED,
+                mMainSettings.getPreferenceScreen().findPreference("brave_leo") != null);
     }
 
     // This test is intended to check the issue where prefs order was wrong
