@@ -79,6 +79,7 @@ brave_grit("static_resources") {
 
   defines = [
     "enable_ai_chat=$enable_ai_chat",
+    "enable_brave_news=$enable_brave_news",
     "enable_brave_vpn=$enable_brave_vpn",
     "enable_brave_wallet=$enable_brave_wallet",
     "enable_email_aliases=$enable_email_aliases",

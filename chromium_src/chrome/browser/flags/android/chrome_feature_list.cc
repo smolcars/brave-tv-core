@@ -8,7 +8,6 @@
 #include "brave/browser/brave_browser_features.h"
 #include "brave/components/ai_chat/core/common/features.h"
 #include "brave/components/brave_ads/buildflags/buildflags.h"
-#include "brave/components/brave_news/common/features.h"
 #include "brave/components/brave_origin/features.h"
 #include "brave/components/brave_rewards/core/features.h"
 #include "brave/components/brave_search_conversion/features.h"
