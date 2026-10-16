@@ -41,7 +41,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 @DoNotBatch(reason = "Must observe the first browser Activity draw.")
 public class TvStartupTest {
     @Rule
-    public ChromeTabbedActivityTestRule mActivityTestRule = new ChromeTabbedActivityTestRule();
+    public ChromeTabbedActivityTestRule mActivityTestRule =
+            new ChromeTabbedActivityTestRule() {
+                @Override
+                public void waitForActivityCompletelyLoaded() {
+                    // The upstream NTP waiter requires the mobile NewTabPage class.
+                    CriteriaHelper.pollUiThread(
+                            () ->
+                                    getActivity().getActivityTab() != null
+                                            && getActivity().getActivityTab().getNativePage()
+                                                    instanceof TvHomePage);
+                }
+            };
 
     @Test
     @MediumTest
