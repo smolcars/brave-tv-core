@@ -27,6 +27,7 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -377,6 +378,14 @@ public abstract class BraveActivity extends ChromeActivity
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (mTvBrowserControls != null && mTvBrowserControls.dispatchKeyEvent(event)) return true;
         return super.dispatchKeyEvent(event);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (mTvBrowserControls != null && event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            mTvBrowserControls.onNativePointerDown();
+        }
+        return super.dispatchTouchEvent(event);
     }
 
     /** Whether this activity uses the TV shell instead of tabbed mobile controls. */
@@ -1265,7 +1274,12 @@ public abstract class BraveActivity extends ChromeActivity
     @Override
     public void performPostInflationStartup() {
         super.performPostInflationStartup();
-        if (isTelevision()) getBrowserControlsManager().hideAndroidControls(false);
+        if (isTelevision()) {
+            getBrowserControlsManager().hideAndroidControls(false);
+            // The manager's hiding-token update is deferred until the next animation frame.
+            View controls = findViewById(R.id.control_container);
+            if (controls != null) controls.setVisibility(View.INVISIBLE);
+        }
 
         createNotificationChannel();
     }

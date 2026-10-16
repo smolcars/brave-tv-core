@@ -1586,6 +1586,13 @@ public class TvHomePageTest {
                             TabBrowserControlsConstraintsHelper.getConstraints(
                                             mActivity.getActivityTab())
                                     == BrowserControlsState.SHOWN);
+            CriteriaHelper.pollUiThread(
+                    () -> {
+                        View toolbar = mActivity.findViewById(R.id.control_container);
+                        return mActivity.getBrowserControlsManager().getContentOffset() > 0
+                                && toolbar.isShown()
+                                && toolbar.getGlobalVisibleRect(new Rect());
+                    });
         } finally {
             ThreadUtils.runOnUiThreadBlocking(
                     () ->
@@ -1864,6 +1871,31 @@ public class TvHomePageTest {
                         assertTrue(connection.commitText("Explicit edit", 1));
                     });
             waitForScript(tab, "field.value==='Explicit edit'&&submits===0");
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        var connection =
+                                tab.getContentView().onCreateInputConnection(new EditorInfo());
+                        assertNotNull(connection);
+                        assertTrue(connection.setSelection(0, 0));
+                    });
+            waitForScript(tab, "field.selectionStart===0&&field.selectionEnd===0");
+            ThreadUtils.runOnUiThreadBlocking(
+                    () -> {
+                        var connection =
+                                tab.getContentView().onCreateInputConnection(new EditorInfo());
+                        assertNotNull(connection);
+                        assertTrue(
+                                connection.sendKeyEvent(
+                                        new KeyEvent(
+                                                KeyEvent.ACTION_DOWN,
+                                                KeyEvent.KEYCODE_DPAD_RIGHT)));
+                        assertTrue(
+                                connection.sendKeyEvent(
+                                        new KeyEvent(
+                                                KeyEvent.ACTION_UP,
+                                                KeyEvent.KEYCODE_DPAD_RIGHT)));
+                    });
+            waitForScript(tab, "document.activeElement===field&&field.selectionStart===1");
         } finally {
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {

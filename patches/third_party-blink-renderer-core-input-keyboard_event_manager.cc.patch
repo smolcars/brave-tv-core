@@ -1,0 +1,21 @@
+diff --git a/third_party/blink/renderer/core/input/keyboard_event_manager.cc b/third_party/blink/renderer/core/input/keyboard_event_manager.cc
+--- a/third_party/blink/renderer/core/input/keyboard_event_manager.cc
++++ b/third_party/blink/renderer/core/input/keyboard_event_manager.cc
+@@ -440,6 +440,17 @@
+       }
+     }
+ 
++    // Element navigation owns arrows until the embedder explicitly enters editing.
++    if (!is_process_key && IsSpatialNavigationEnabled(frame_) &&
++        !frame_->GetDocument()->InDesignMode() && !event->ctrlKey() &&
++        !event->altKey() && !event->metaKey() && !event->shiftKey() &&
++        (key == keywords::kArrowDown || key == keywords::kArrowUp ||
++         key == keywords::kArrowLeft || key == keywords::kArrowRight)) {
++      DefaultNavigationKeyEventHandler(event, possible_focused_node);
++      event->SetDefaultHandled();
++      return;
++    }
++
+     frame_->GetEditor().HandleKeyboardEvent(event);
+     if (event->DefaultHandled())
+       return;

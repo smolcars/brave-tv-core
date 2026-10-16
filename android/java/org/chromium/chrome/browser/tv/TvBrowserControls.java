@@ -510,6 +510,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (!event.hasNoModifiers()
                 || (device != null
                         && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
+                        && !event.isFromSource(InputDevice.SOURCE_DPAD))) {
+            releaseKeyboardSuppression();
+            setSpatialNavigation(true);
+        }
+        if (!event.hasNoModifiers()
+                || (device != null
+                        && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
                         && !event.isFromSource(InputDevice.SOURCE_DPAD))
                 || keyboardVisible()) {
             cancelPagePress();
@@ -636,6 +643,15 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             restoreUsableHome(false);
             mActivity.getWindow().getDecorView().post(this::enterPageNavigation);
         }
+    }
+
+    /** Native touch/mouse activation keeps the platform's ordinary editing behavior. */
+    public void onNativePointerDown() {
+        if (!isAlive()) return;
+        cancelPagePress();
+        mPressedContext = null;
+        releaseKeyboardSuppression();
+        setSpatialNavigation(true);
     }
 
     public void onPause() {
@@ -1302,6 +1318,7 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (contents != null && input != null && input.focusedNodeEditable()) {
             if (mPage == null || mPage != currentPage() || !mPage.hasFocus()) return;
             releaseKeyboardSuppression();
+            setSpatialNavigation(true);
             KeyboardVisibilityDelegate.getInstance().showKeyboard(mPage);
             contents.scrollFocusedEditableNodeIntoView();
             return;
