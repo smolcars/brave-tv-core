@@ -1837,7 +1837,8 @@ public class TvHomePageTest {
                         "<style>button,input{position:absolute;top:60px;width:180px;height:70px}"
                                 + "#a{left:30px}#field{left:260px}#b{left:490px}</style>"
                                 + "<form><button type=button id=a autofocus>A</button><input id=field>"
-                                + "<button type=button id=b>B</button></form><script>window.submits=0;"
+                                + "<button type=button id=b>B</button></form><script>window.submits=0;window.arrows=[];"
+                                + "addEventListener('keydown',e=>arrows.push(e.key));"
                                 + "addEventListener('submit',e=>{e.preventDefault();submits++})</script>");
         ImeAdapter adapter =
                 ThreadUtils.runOnUiThreadBlocking(
@@ -1910,7 +1911,18 @@ public class TvHomePageTest {
                                 && !insets.isVisible(WindowInsetsCompat.Type.ime());
                     });
             injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
-            waitForElement(tab, "b");
+            try {
+                waitForElement(tab, "b");
+            } catch (RuntimeException | AssertionError failure) {
+                throw new AssertionError(
+                        "Editing return: "
+                                + describeElementInput(tab)
+                                + "; "
+                                + JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                                        tab.getWebContents(),
+                                        "[document.activeElement.id,field.selectionStart,arrows]"),
+                        failure);
+            }
         } finally {
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
@@ -1918,6 +1930,43 @@ public class TvHomePageTest {
                         KeyboardVisibilityDelegate.setInstanceForTesting(originalKeyboard);
                     });
         }
+    }
+
+    private String describeElementInput(Tab tab) {
+        return ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    try {
+                        var owner = BraveActivity.class.getDeclaredField("mTvBrowserControls");
+                        owner.setAccessible(true);
+                        TvBrowserControls controls = (TvBrowserControls) owner.get(mActivity);
+                        var spatial = TvBrowserControls.class.getDeclaredField("mSpatialDisabled");
+                        spatial.setAccessible(true);
+                        var input = TvBrowserControls.class.getDeclaredField("mInput");
+                        input.setAccessible(true);
+                        var nativeOwner =
+                                TvBrowserControls.class.getDeclaredMethod(
+                                        "nativeUiOwnsInput", boolean.class);
+                        nativeOwner.setAccessible(true);
+                        var insets =
+                                ViewCompat.getRootWindowInsets(
+                                        mActivity.getWindow().getDecorView());
+                        return "mode="
+                                + ((TvRemoteInput) input.get(controls)).getMode()
+                                + " disabled="
+                                + spatial.get(controls)
+                                + " nativeOwner="
+                                + nativeOwner.invoke(controls, false)
+                                + " pageFocus="
+                                + tab.getContentView().hasFocus()
+                                + " focus="
+                                + mActivity.getCurrentFocus()
+                                + " ime="
+                                + (insets != null
+                                        && insets.isVisible(WindowInsetsCompat.Type.ime()));
+                    } catch (ReflectiveOperationException exception) {
+                        return exception.toString();
+                    }
+                });
     }
 
     @Test
