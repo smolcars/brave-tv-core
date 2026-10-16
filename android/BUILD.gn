@@ -85,6 +85,8 @@ android_library("qrreader_java") {
 android_resources("java_resources") {
   sources = [
     "java/brave-res/anim/fast_fade_in.xml",
+    "java/brave-res/anim/slide_in_bottom.xml",
+    "java/brave-res/anim/slide_out_bottom.xml",
     "java/brave-res/color/advanced_options_toggle_color.xml",
     "java/brave-res/color/brave_rating_checkbox_tint.xml",
     "java/brave-res/color/brave_switch_stroke_color.xml",
@@ -566,9 +568,7 @@ if (enable_brave_news) {
 if (enable_brave_wallet) {
   android_resources("wallet_resources") {
     sources = [
-      "java/wallet-res/anim/slide_in_bottom.xml",
       "java/wallet-res/anim/slide_in_top.xml",
-      "java/wallet-res/anim/slide_out_bottom.xml",
       "java/wallet-res/anim/slide_out_top.xml",
       "java/wallet-res/color/crypto_wallet_onboarding_button_text_color.xml",
       "java/wallet-res/color/wallet_checkbox_background_color_selector.xml",
