@@ -182,6 +182,13 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     private long mFocusQuery;
     private TvRemoteInput.Mode mPageMode = TvRemoteInput.Mode.ELEMENTS;
     private final Runnable mSelectHold = this::handleSelectHold;
+    private final KeyboardVisibilityDelegate.KeyboardVisibilityListener mKeyboardListener =
+            shown -> {
+                if (!shown || !isAlive()) return;
+                releaseKeyboardSuppression();
+                setSpatialNavigation(true);
+                cancelPagePress();
+            };
 
     private void handleSelectHold() {
         if (isAlive()
@@ -253,6 +260,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         mSession = new TvBrowserSession(activity, this::browserStateChanged);
         mLoadIndicator = new TvPageLoadIndicator(activity, this::canShowPageLoading);
         mScrimVisible.addSyncObserver(mFilePickerScrimObserver);
+        mActivity.getWindowAndroid()
+                .getKeyboardDelegate()
+                .addKeyboardVisibilityListener(mKeyboardListener);
         mActivity.getWindow().getDecorView().post(() -> restoreUsableHome(false));
     }
 
@@ -510,15 +520,10 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
         if (!event.hasNoModifiers()
                 || (device != null
                         && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
-                        && !event.isFromSource(InputDevice.SOURCE_DPAD))) {
-            releaseKeyboardSuppression();
-            setSpatialNavigation(true);
-        }
-        if (!event.hasNoModifiers()
-                || (device != null
-                        && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC
                         && !event.isFromSource(InputDevice.SOURCE_DPAD))
                 || keyboardVisible()) {
+            releaseKeyboardSuppression();
+            setSpatialNavigation(true);
             cancelPagePress();
             return false;
         }
@@ -1217,8 +1222,12 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
             setSpatialNavigation(true);
             return;
         }
-        if (keyboardVisible()
-                || nativeUiOwnsInput(false)
+        if (keyboardVisible()) {
+            releaseKeyboardSuppression();
+            setSpatialNavigation(true);
+            return;
+        }
+        if (nativeUiOwnsInput(false)
                 || (mDialog != null && mDialog.isShowing())
                 || (mActivity.getActivityTab().isIncognito() && mPrivateTabsLocked.getAsBoolean()))
             return;
@@ -2888,6 +2897,9 @@ public final class TvBrowserControls implements TvRemoteInput.Target {
     public void destroy() {
         mPhoneRemote.stop();
         mDestroyed = true;
+        mActivity.getWindowAndroid()
+                .getKeyboardDelegate()
+                .removeKeyboardVisibilityListener(mKeyboardListener);
         mLoadIndicator.destroy();
         mModalReturnPage = null;
         mModalReturnContext = null;
