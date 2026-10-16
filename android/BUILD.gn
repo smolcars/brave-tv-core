@@ -105,6 +105,7 @@ android_resources("java_resources") {
     "java/brave-res/drawable/brave_tv_twitch.xml",
     "java/brave-res/drawable/brave_tv_tabs.xml",
     "java/brave-res/drawable/brave_tv_home.xml",
+    "java/brave-res/drawable/brave_tv_github.xml",
     "java/brave-res/drawable/brave_tv_search.xml",
     "java/brave-res/raw/tv_remote.html",
     "java/brave-res/raw/tv_remote_css.css",

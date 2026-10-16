@@ -409,6 +409,7 @@ public final class TvHomePage extends BasicNativePage {
         if (label == R.string.brave_tv_phone) return R.drawable.brave_tv_phone;
         if (label == R.string.brave_tv_settings) return R.drawable.brave_tv_settings;
         if (label == R.string.brave_tv_controls) return R.drawable.brave_tv_menu;
+        if (label == R.string.brave_tv_github) return R.drawable.brave_tv_github;
         return 0;
     }
 

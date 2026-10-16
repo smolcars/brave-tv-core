@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -241,6 +243,7 @@ object TvPresentation {
 
     /** UI thread only. Context must own lifecycle/saved state (BraveActivity).
      * First action must be enabled; caller disposes when the native page dies. */
+    @OptIn(ExperimentalLayoutApi::class)
     @JvmStatic
     fun home(
         context: Context,
@@ -318,21 +321,28 @@ object TvPresentation {
                         }
                         if (attribution.isNotEmpty() || links.isNotEmpty() || state.photoCredit.isNotEmpty()) {
                             Row(Modifier.fillMaxWidth().padding(start = 40.dp, end = 40.dp,
-                                    top = 8.dp, bottom = 16.dp),
+                                    top = 4.dp, bottom = 12.dp),
                                 horizontalArrangement = Arrangement.spacedBy(20.dp),
                                 verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     if (state.showSections && subtitle.isNotEmpty()) Text(subtitle,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.labelMedium)
-                                    if (attribution.isNotEmpty()) Text(attribution,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.labelMedium)
-                                    if (state.photoCredit.isNotEmpty()) Text(state.photoCredit,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.labelSmall)
+                                        style = MaterialTheme.typography.bodySmall)
+                                    FlowRow(Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        if (attribution.isNotEmpty()) Text(attribution,
+                                            modifier = Modifier.padding(end = 20.dp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp))
+                                        if (state.photoCredit.isNotEmpty()) Text(state.photoCredit,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp))
+                                    }
                                 }
-                                links.forEach { action -> ActionButton(action, quiet = true, compact = true) }
+                                links.forEach { action ->
+                                    ActionButton(action, Modifier.width(56.dp).height(48.dp),
+                                        quiet = true, compact = true, iconOnly = true)
+                                }
                             }
                         }
                     }
