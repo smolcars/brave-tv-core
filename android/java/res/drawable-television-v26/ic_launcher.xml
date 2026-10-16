@@ -10,6 +10,6 @@
         </shape>
     </background>
     <foreground>
-        <inset android:drawable="@drawable/brave_tv_logo" android:inset="18dp" />
+        <inset android:drawable="@drawable/brave_tv_logo" android:inset="16.6667%" />
     </foreground>
 </adaptive-icon>

@@ -10,7 +10,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.drawable.AdaptiveIconDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -76,6 +81,42 @@ public class TvPresentationTest {
                         TvPresentation.dispose(mBadge);
                         if (mBadge.getParent() instanceof ViewGroup parent)
                             parent.removeView(mBadge);
+                    }
+                });
+    }
+
+    @Test
+    @MediumTest
+    public void rheniumLauncherMarkScalesWithSystemIconBounds() {
+        ThreadUtils.runOnUiThreadBlocking(
+                () -> {
+                    assertEquals("Rhenium", mActivity.getString(R.string.brave_tv_launcher));
+                    assertEquals("Rhenium", mActivity.getString(R.string.brave_tv_home_brand));
+                    Drawable icon = mActivity.getDrawable(R.drawable.ic_launcher);
+                    assertTrue(icon instanceof AdaptiveIconDrawable);
+                    float previousRatio = 0;
+                    for (int sizeDp : new int[] {32, 80}) {
+                        int size = Math.round(sizeDp * mActivity.getResources().getDisplayMetrics().density);
+                        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+                        icon.setBounds(0, 0, size, size);
+                        icon.draw(new Canvas(bitmap));
+                        Rect ink = new Rect(size, size, 0, 0);
+                        for (int y = 0; y < size; y++) {
+                            for (int x = 0; x < size; x++) {
+                                // Exclude the forest background and core from the colored mark.
+                                if (Color.green(bitmap.getPixel(x, y)) > 90) {
+                                    ink.left = Math.min(ink.left, x);
+                                    ink.top = Math.min(ink.top, y);
+                                    ink.right = Math.max(ink.right, x + 1);
+                                    ink.bottom = Math.max(ink.bottom, y + 1);
+                                }
+                            }
+                        }
+                        bitmap.recycle();
+                        float ratio = ink.width() / (float) size;
+                        assertTrue("Launcher mark width: " + ratio, ratio > 0.7f && ratio < 0.9f);
+                        if (previousRatio != 0) assertEquals(previousRatio, ratio, 0.06f);
+                        previousRatio = ratio;
                     }
                 });
     }
