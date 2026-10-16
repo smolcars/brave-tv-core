@@ -149,7 +149,8 @@ public final class TvHomePage extends BasicNativePage {
                         activity.getString(R.string.brave_tv_loading_bookmarks),
                         R.drawable.brave_tv_ambient,
                         activity.getString(R.string.brave_tv_home_brand),
-                        activity.getString(R.string.brave_tv_home_photo));
+                        activity.getString(R.string.brave_tv_home_photo),
+                        R.drawable.brave_tv_logo);
         List<TvPresentation.Action> links =
                 List.of(
                         action(

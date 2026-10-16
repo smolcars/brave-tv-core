@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2026 brave-tv contributors.
+     This Source Code Form is subject to the terms of the Mozilla Public
+     License, v. 2.0. If a copy of the MPL was not distributed with this file,
+     You can obtain one at https://mozilla.org/MPL/2.0/. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <group android:pivotX="128" android:pivotY="128" android:rotation="0">
+        <path android:fillColor="#DCEBDC"
+            android:pathData="M 39.803 72.888 A 104 104 0 0 1 216.197 72.888 L 168.616 149.596 A 46 46 0 0 0 129.605 82.028 Z" />
+    </group>
+    <group android:pivotX="128" android:pivotY="128" android:rotation="120">
+        <path android:fillColor="#3D7B6B"
+            android:pathData="M 39.803 72.888 A 104 104 0 0 1 216.197 72.888 L 168.616 149.596 A 46 46 0 0 0 129.605 82.028 Z" />
+    </group>
+    <group android:pivotX="128" android:pivotY="128" android:rotation="240">
+        <path android:fillColor="#80B5A0"
+            android:pathData="M 39.803 72.888 A 104 104 0 0 1 216.197 72.888 L 168.616 149.596 A 46 46 0 0 0 129.605 82.028 Z" />
+    </group>
+    <path android:fillColor="#19362E"
+        android:pathData="M128,93A35,35 0,1 1,128,163A35,35 0,1 1,128,93Z" />
+</vector>

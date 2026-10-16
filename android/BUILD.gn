@@ -246,6 +246,7 @@ android_resources("java_resources") {
     "java/brave-res/drawable/brave_sync_top_rounded_light.xml",
     "java/brave-res/drawable/brave_tv_banner.xml",
     "java/brave-res/drawable/brave_tv_icon.xml",
+    "java/brave-res/drawable/brave_tv_logo.xml",
     "java/brave-res/drawable/button_full.xml",
     "java/brave-res/drawable/button_transparent.xml",
     "java/brave-res/drawable/card_bg.xml",

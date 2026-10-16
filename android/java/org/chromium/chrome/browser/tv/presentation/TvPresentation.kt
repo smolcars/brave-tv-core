@@ -199,6 +199,7 @@ object TvPresentation {
         val wallpaper: Int = 0,
         val brand: String = "",
         val photoCredit: String = "",
+        val brandIcon: Int = 0,
     ) {
         internal var focusRequest by mutableStateOf(0)
         internal var favorites by mutableStateOf<List<Action>>(emptyList())
@@ -278,9 +279,15 @@ object TvPresentation {
                         ) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                                if (state.brand.isNotEmpty()) Text(state.brand,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold)
+                                if (state.brand.isNotEmpty()) Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (state.brandIcon != 0) Image(
+                                        painterResource(state.brandIcon), contentDescription = null,
+                                        modifier = Modifier.size(32.dp))
+                                    Text(state.brand, style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold)
+                                }
                                 FlowRow(Modifier.weight(1f),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)) {

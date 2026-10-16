@@ -3932,7 +3932,7 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_PERMISSIONS_GEOLOCATION_APPROXIMATE" desc="Radio button label for approximate location in the permission prompt.">
       Approximate
     </message>
-    <message name="IDS_BRAVE_TV_HOME_BRAND" desc="Brand in the native TV Home navigation.">Brave TV</message>
+    <message name="IDS_BRAVE_TV_HOME_BRAND" translateable="false" desc="Brand in the native TV Home navigation.">Rhenium</message>
     <message name="IDS_BRAVE_TV_HOME_PHOTO" desc="Credit for the single bundled landscape photograph.">Photo: Luca Bravo / Unsplash</message>
     <message name="IDS_BRAVE_TV_HOME_CREDITS" desc="Compact Home footer credit to the independent TV browser's upstream projects.">Built on Brave and Chromium · Thanks to their open-source contributors</message>
     <message name="IDS_BRAVE_TV_GITHUB" desc="Home footer button opening the public TV browser project on GitHub.">GitHub</message>
@@ -4088,10 +4088,10 @@ If you don't accept this request, VPN will not reconnect and your internet conne
     <message name="IDS_BRAVE_TV_PRIVATE_HOME_DESCRIPTION" desc="Explains the local-data limit of a private browsing session.">Pages in this session are not saved to browsing history. Websites and your network provider can still see your activity.</message>
     <message name="IDS_BRAVE_TV_ATTRIBUTION" desc="Upstream credit on the independent TV browser home page.">An independent, open-source fork of Brave, built on Chromium. Thanks to Brave, Chromium, and their open-source contributors.</message>
     <message name="IDS_BRAVE_TV_SOURCE" desc="TV home button opening the public project and source repository.">Project and source on GitHub</message>
-    <message name="IDS_BRAVE_TV_ABOUT" desc="TV Settings button and panel title for information about the independent browser fork.">About TV Browser</message>
+    <message name="IDS_BRAVE_TV_ABOUT" desc="TV Settings button and panel title for information about the independent browser fork.">About Rhenium</message>
     <message name="IDS_BRAVE_TV_ABOUT_VERSION" desc="TV About panel description showing the installed Android package version.">Version <ph name="VERSION">%1$s<ex>1.97.0</ex></ph></message>
     <message name="IDS_BRAVE_TV_LICENSES" desc="TV home button opening third-party licenses and credits.">Open-source licenses</message>
-    <message name="IDS_BRAVE_TV_LAUNCHER" desc="Name of the development TV launcher entry.">TV Browser (prototype)</message>
+    <message name="IDS_BRAVE_TV_LAUNCHER" translateable="false" desc="Name of the independent TV browser launcher entry.">Rhenium</message>
     <message name="IDS_BRAVE_TV_ADDRESS" desc="TV control to edit the address bar.">Search or enter a website</message>
     <message name="IDS_BRAVE_TV_ADDRESS_DESCRIPTION" desc="TV address editor description before the selected search provider is available.">Enter a web address or search with your selected provider.</message>
     <message name="IDS_BRAVE_TV_ADDRESS_PROVIDER" desc="TV address editor description naming the selected native search provider.">Search with <ph name="PROVIDER">%s<ex>DuckDuckGo</ex></ph>, or enter a web address.</message>

@@ -3,7 +3,7 @@
     android:targetActivity="org.chromium.chrome.browser.document.ChromeLauncherActivity"
     android:exported="true"
     android:label="@string/brave_tv_launcher"
-    android:icon="@drawable/brave_tv_icon"
+    android:icon="@drawable/ic_launcher"
     android:banner="@drawable/brave_tv_banner">
     <intent-filter>
         <action android:name="android.intent.action.MAIN" />
