@@ -16,13 +16,16 @@ import org.chromium.ui.base.DeviceFormFactor;
 @NullMarked
 public class BraveAdaptiveToolbarPrefs {
     public static @AdaptiveToolbarButtonVariant int getCustomizationSetting() {
-        return ChromeSharedPreferences.getInstance()
-                .readInt(
-                        ADAPTIVE_TOOLBAR_CUSTOMIZATION_SETTINGS,
-                        DeviceFormFactor.isNonMultiDisplayContextOnTablet(
-                                        ContextUtils.getApplicationContext())
-                                ? AdaptiveToolbarButtonVariant.SHARE
-                                : AdaptiveToolbarButtonVariant.NEW_TAB);
+        int defaultVariant =
+                DeviceFormFactor.isNonMultiDisplayContextOnTablet(
+                                ContextUtils.getApplicationContext())
+                        ? AdaptiveToolbarButtonVariant.SHARE
+                        : AdaptiveToolbarButtonVariant.NEW_TAB;
+        int savedVariant =
+                ChromeSharedPreferences.getInstance()
+                        .readInt(ADAPTIVE_TOOLBAR_CUSTOMIZATION_SETTINGS, defaultVariant);
+        // Old profiles can still select the removed Wallet shortcut.
+        return savedVariant == AdaptiveToolbarButtonVariant.WALLET ? defaultVariant : savedVariant;
     }
 
     /**

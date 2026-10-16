@@ -274,6 +274,9 @@ public class BraveAdaptiveToolbarSettingsFragmentTest {
                                     fragment.findPreference(
                                             AdaptiveToolbarSettingsFragment
                                                     .PREF_ADAPTIVE_RADIO_GROUP);
+                    Assert.assertEquals(
+                            AdaptiveToolbarButtonVariant.NEW_TAB,
+                            BraveAdaptiveToolbarPrefs.getCustomizationSetting());
                     Assert.assertFalse(
                             BraveAdaptiveToolbarStatePredictor.isValidSegment(
                                     AdaptiveToolbarButtonVariant.WALLET));
