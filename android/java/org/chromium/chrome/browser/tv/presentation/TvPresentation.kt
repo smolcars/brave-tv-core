@@ -279,14 +279,17 @@ object TvPresentation {
                                 if (state.brand.isNotEmpty()) Text(state.brand,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold)
-                                Column(Modifier.weight(1f)) {
-                                    ActionRows(actions.drop(1).take(4), 4, 8.dp, minimum = 108.dp,
-                                        weight = { if (it === actions.getOrNull(4)) 1.5f else 1f }) { action, modifier ->
-                                        ActionButton(action, modifier.then(
-                                            if (action === actions.getOrNull(1)) Modifier.focusRequester(header)
-                                            else Modifier), quiet = true, compact = true,
-                                            hideIcon = action !== actions.getOrNull(4),
-                                            current = action === actions.getOrNull(1))
+                                FlowRow(Modifier.weight(1f),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    actions.drop(1).take(4).forEach { action ->
+                                        key(action) {
+                                            ActionButton(action, Modifier.heightIn(min = 48.dp).then(
+                                                if (action === actions.getOrNull(1)) Modifier.focusRequester(header)
+                                                else Modifier), quiet = true, compact = true,
+                                                hideIcon = action !== actions.getOrNull(4),
+                                                current = action === actions.getOrNull(1))
+                                        }
                                     }
                                 }
                                 actions.drop(5).forEach { action ->
@@ -728,7 +731,7 @@ object TvPresentation {
                     else if (search) MaterialTheme.typography.titleLarge
                     else MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
                 maxLines = if (menu) 3 else 2, overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(vertical = if (search) 4.dp else 8.dp)
+                modifier = Modifier.padding(vertical = if (search) 4.dp else if (compact) 0.dp else 8.dp)
                     .then(if (search) Modifier.weight(1f) else Modifier))
         }
     }
