@@ -27,6 +27,7 @@ import org.chromium.base.test.util.DoNotBatch;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
 import org.chromium.chrome.browser.flags.ChromeSwitches;
+import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
 import org.chromium.chrome.test.ChromeJUnit4ClassRunner;
 import org.chromium.chrome.test.ChromeTabbedActivityTestRule;
 
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Observes startup draws, including frames before native Home is ready. */
 @RunWith(ChromeJUnit4ClassRunner.class)
@@ -59,6 +61,7 @@ public class TvStartupTest {
     public void homeLaunchNeverPaintsMobileToolbar() throws Exception {
         AtomicInteger draws = new AtomicInteger();
         AtomicBoolean exposed = new AtomicBoolean();
+        AtomicReference<String> firstExposure = new AtomicReference<>();
         List<Runnable> cleanup = new ArrayList<>();
         ApplicationStatus.ActivityStateListener listener =
                 (activity, state) -> {
@@ -71,7 +74,36 @@ public class TvStartupTest {
                                 View toolbar = activity.findViewById(R.id.control_container);
                                 if (toolbar != null
                                         && toolbar.isShown()
-                                        && toolbar.getGlobalVisibleRect(new Rect())) exposed.set(true);
+                                        && toolbar.getGlobalVisibleRect(new Rect())) {
+                                    exposed.set(true);
+                                    if (firstExposure.get() == null) {
+                                        Rect bounds = new Rect();
+                                        toolbar.getGlobalVisibleRect(bounds);
+                                        BraveActivity browser = (BraveActivity) activity;
+                                        var tab = browser.getActivityTab();
+                                        var manager = browser.getBrowserControlsManager();
+                                        firstExposure.set(
+                                                "draw="
+                                                        + draws.get()
+                                                        + " bounds="
+                                                        + bounds
+                                                        + " alpha="
+                                                        + toolbar.getAlpha()
+                                                        + " hiddenToken="
+                                                        + manager.hasHidingTokens()
+                                                        + " offset="
+                                                        + manager.getContentOffset()
+                                                        + " constraints="
+                                                        + (tab == null
+                                                                ? -1
+                                                                : TabBrowserControlsConstraintsHelper
+                                                                        .getConstraints(tab))
+                                                        + " page="
+                                                        + (tab == null
+                                                                ? "no tab"
+                                                                : tab.getNativePage()));
+                                    }
+                                }
                             };
                     decor.getViewTreeObserver().addOnDrawListener(draw);
                     cleanup.add(() -> decor.getViewTreeObserver().removeOnDrawListener(draw));
@@ -88,7 +120,9 @@ public class TvStartupTest {
                                     && activity.hasWindowFocus());
             Thread.sleep(3500);
             assertTrue("Startup draw observer did not run", draws.get() > 0);
-            assertFalse("Mobile toolbar was visible in a startup frame", exposed.get());
+            assertFalse(
+                    "Mobile toolbar was visible in a startup frame: " + firstExposure.get(),
+                    exposed.get());
         } finally {
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {

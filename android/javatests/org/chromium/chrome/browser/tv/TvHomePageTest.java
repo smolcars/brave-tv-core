@@ -1911,6 +1911,16 @@ public class TvHomePageTest {
                 waitForElement(tab, "a");
                 verify(observed, never()).showSoftInput(any(), anyInt(), any());
                 waitForScript(tab, "edits===0");
+            } catch (RuntimeException | AssertionError failure) {
+                throw new AssertionError(
+                        "Field traversal "
+                                + field
+                                + ": "
+                                + JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                                        tab.getWebContents(),
+                                        "[document.activeElement.id,document.activeElement.tagName,"
+                                                + "edits,document.activeElement.selectionStart,document.activeElement.selectionEnd]"),
+                        failure);
             } finally {
                 ThreadUtils.runOnUiThreadBlocking(
                         () -> adapter.setInputMethodManagerWrapper(original));
