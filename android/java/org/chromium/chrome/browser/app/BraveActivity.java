@@ -932,7 +932,6 @@ public abstract class BraveActivity extends ChromeActivity
     @Override
     public void onResume() {
         super.onResume();
-        mIsProcessingPendingDappsTxRequest = false;
 
         PostTask.postTask(
                 TaskTraits.BEST_EFFORT_MAY_BLOCK,

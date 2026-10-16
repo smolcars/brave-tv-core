@@ -43,7 +43,7 @@ if (!is_android) {
     ]
   }
 }
-if (is_android) {
+if (is_android && enable_brave_ads) {
   brave_ui_allow_circular_includes_from +=
       [ "//brave/browser/ui/webui/new_tab_takeover/android:new_tab_takeover" ]
 }

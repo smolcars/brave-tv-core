@@ -417,7 +417,6 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
                         updateBraveShieldsButtonState(tab);
                         // case when window.open is triggered from dapps site and new tab is in
                         // focus
-                        if (type != TabSelectionType.FROM_USER) {}
 
                         findMediaFiles();
                     }
@@ -437,7 +436,6 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
                         mUnifiedPanelHandler.clearBraveShieldsCount(tab.getId());
                         dismissShieldsTooltip();
                         hidePlaylistButton();
-                        mPublisherId = "";
                     }
 
                     @Override
@@ -1154,10 +1152,6 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
         updateModernLocationBarColorImpl(textBoxColor);
     }
 
-    /**
-     * BraveRewardsNativeWorker.PublisherObserver: Update a 'verified publisher' checkmark on url
-     * bar BAT icon only if no notifications are posted.
-     */
     public void onBottomControlsVisibilityChanged(boolean isVisible) {
         mIsBottomControlsVisible = isVisible;
         // The tab switcher and menu buttons are only Brave's to move between the top toolbar and
@@ -1180,8 +1174,8 @@ public abstract class BraveToolbarLayoutImpl extends ToolbarLayout
 
     /**
      * Anchors the Brave button row at the trailing end of the tablet location bar, so that the
-     * focus ring upstream draws around the text box encloses the shields and rewards buttons as
-     * well. The row is inflated as a child of the location bar (see toolbar_tablet.xml), which is a
+     * focus ring upstream draws around the text box encloses the shields button as well. The row is
+     * inflated as a child of the location bar (see toolbar_tablet.xml), which is a
      * ConstraintLayout, so it has no usable constraints until they are set here.
      */
     private void maybeAnchorBraveButtonsInLocationBar() {

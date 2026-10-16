@@ -8,7 +8,6 @@ package org.chromium.chrome.browser.settings.developer;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -210,10 +209,6 @@ public class BraveQAPreferences extends BravePreferenceFragment
         return ChromeSharedPreferences.getInstance().readString(preferenceName, "");
     }
 
-    public static boolean shouldVlogRewards() {
-        return getPreferenceValue(PREF_QA_VLOG_REWARDS);
-    }
-
     private void checkQACode() {
         LayoutInflater inflater =
                 (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -273,49 +268,6 @@ public class BraveQAPreferences extends BravePreferenceFragment
 
     @Override
     public void onCreatePreferences(Bundle bundle, String s) {}
-
-    @Override
-    public void onRequestPermissionsResult(
-            int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            if (STORAGE_PERMISSION_EXPORT_REQUEST_CODE == requestCode) {
-                requestRestart(false);
-            } else if (STORAGE_PERMISSION_IMPORT_REQUEST_CODE == requestCode) {
-                requestRestart(true);
-            }
-        }
-    }
-
-    private void requestRestart(boolean isImport) {
-        DialogInterface.OnClickListener onClickListener =
-                new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int button) {
-                        if (button == AlertDialog.BUTTON_POSITIVE) {
-                            if (isImport) {
-                                mDbUtil.setPerformDbImportOnStart(true);
-                                mDbUtil.setDbImportFile(mFileToImport);
-                            } else {
-                                mDbUtil.setPerformDbExportOnStart(true);
-                            }
-                            BraveRelaunchUtils.restart();
-                        } else {
-                            mDbUtil.cleanUpDbOperationRequest();
-                        }
-                    }
-                };
-        AlertDialog.Builder alertDialog =
-                new AlertDialog.Builder(getActivity(), R.style.ThemeOverlay_BrowserUI_AlertDialog)
-                        .setMessage(
-                                "This operation requires restart. Would you like to restart"
-                                        + " application and start operation?")
-                        .setPositiveButton(R.string.ok, onClickListener)
-                        .setNegativeButton(R.string.cancel, onClickListener);
-        Dialog dialog = alertDialog.create();
-        dialog.setCanceledOnTouchOutside(false);
-        dialog.show();
-    }
 
     // QA-only screen protected by a password; exclude entirely from settings search.
     public static final BaseSearchIndexProvider SEARCH_INDEX_DATA_PROVIDER =

@@ -1,10 +1,8 @@
 /**
- * Copyright (c) 2020 The Brave Authors. All rights reserved.
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ * Copyright (c) 2020 The Brave Authors. All rights reserved. This Source Code Form is subject to
+ * the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with
+ * this file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package org.chromium.chrome.browser.util;
 
 import static androidx.browser.customtabs.CustomTabsIntent.COLOR_SCHEME_DARK;
@@ -20,7 +18,6 @@ import android.provider.Browser;
 import android.view.ContextThemeWrapper;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.PopupMenu;
 
 import androidx.appcompat.view.menu.MenuPopupHelper;
@@ -171,10 +168,12 @@ public class TabUtils {
     public static void showTabPopupMenu(Context context, View view) {
         try {
             BraveActivity braveActivity = BraveActivity.getBraveActivity();
-            Context wrapper = new ContextThemeWrapper(context,
-                    GlobalNightModeStateProviderHolder.getInstance().isInNightMode()
-                            ? R.style.NewTabPopupMenuDark
-                            : R.style.NewTabPopupMenuLight);
+            Context wrapper =
+                    new ContextThemeWrapper(
+                            context,
+                            GlobalNightModeStateProviderHolder.getInstance().isInNightMode()
+                                    ? R.style.NewTabPopupMenuDark
+                                    : R.style.NewTabPopupMenuLight);
             // Creating the instance of PopupMenu
             PopupMenu popup = new PopupMenu(wrapper, view);
             // Inflating the Popup using xml file
@@ -184,18 +183,19 @@ public class TabUtils {
                 popup.getMenu().findItem(R.id.new_tab_menu_id).setVisible(false);
             }
             // registering popup with OnMenuItemClickListener
-            popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    int id = item.getItemId();
-                    if (id == R.id.new_tab_menu_id) {
-                        openNewTab(braveActivity, false);
-                    } else if (id == R.id.new_incognito_tab_menu_id) {
-                        openNewTab(braveActivity, true);
-                    }
-                    return true;
-                }
-            });
+            popup.setOnMenuItemClickListener(
+                    new PopupMenu.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem item) {
+                            int id = item.getItemId();
+                            if (id == R.id.new_tab_menu_id) {
+                                openNewTab(braveActivity, false);
+                            } else if (id == R.id.new_incognito_tab_menu_id) {
+                                openNewTab(braveActivity, true);
+                            }
+                            return true;
+                        }
+                    });
             popup.show(); // showing popup menu
         } catch (BraveActivity.BraveActivityNotFoundException e) {
             Log.e(TAG, "showTabPopupMenu " + e);
@@ -280,26 +280,6 @@ public class TabUtils {
         }
     }
 
-    public static void enableRewardsButton() {
-        try {
-            BraveActivity braveActivity = BraveActivity.getBraveActivity();
-            if (braveActivity.getToolbarManager() == null) {
-                return;
-            }
-            View toolbarView = braveActivity.findViewById(R.id.toolbar);
-            if (toolbarView == null) {
-                return;
-            }
-            FrameLayout rewardsLayout = toolbarView.findViewById(R.id.brave_rewards_button_layout);
-            if (rewardsLayout == null) {
-                return;
-            }
-            rewardsLayout.setVisibility(View.VISIBLE);
-        } catch (BraveActivity.BraveActivityNotFoundException e) {
-            Log.e(TAG, "enableRewardsButton " + e);
-        }
-    }
-
     /**
      * Brings the ChromeTabbedActivity to the foreground of the screen. Creates an intent that
      * clears the activity stack and brings ChromeTabbedActivity to the top with ACTION_VIEW.
@@ -315,6 +295,7 @@ public class TabUtils {
 
     /**
      * Open link in a (normal/non-incognito) tab
+     *
      * @param activity packageContext/source of the intent
      * @param link to be opened
      */
@@ -351,13 +332,16 @@ public class TabUtils {
         CustomTabsIntent customTabIntent =
                 new CustomTabsIntent.Builder()
                         .setShowTitle(true)
-                        .setColorScheme(ColorUtils.inNightMode(context) ? COLOR_SCHEME_DARK
-                                                                        : COLOR_SCHEME_LIGHT)
+                        .setColorScheme(
+                                ColorUtils.inNightMode(context)
+                                        ? COLOR_SCHEME_DARK
+                                        : COLOR_SCHEME_LIGHT)
                         .build();
         customTabIntent.intent.setData(Uri.parse(url));
 
-        Intent intent = LaunchIntentDispatcher.createCustomTabActivityIntent(
-                context, customTabIntent.intent);
+        Intent intent =
+                LaunchIntentDispatcher.createCustomTabActivityIntent(
+                        context, customTabIntent.intent);
         intent.setPackage(context.getPackageName());
         intent.putExtra(Browser.EXTRA_APPLICATION_ID, context.getPackageName());
         if (!(context instanceof Activity)) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

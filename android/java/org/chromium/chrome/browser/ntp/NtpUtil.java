@@ -6,7 +6,6 @@
 package org.chromium.chrome.browser.ntp;
 
 import org.chromium.chrome.browser.preferences.ChromeSharedPreferences;
-import org.chromium.chrome.browser.settings.AppearancePreferences;
 import org.chromium.chrome.browser.settings.BackgroundImagesPreferences;
 
 public class NtpUtil {
@@ -30,10 +29,5 @@ public class NtpUtil {
         ChromeSharedPreferences.getInstance()
                 .writeBoolean(
                         BackgroundImagesPreferences.PREF_SHOW_BRAVE_STATS, shouldDisplayBraveStats);
-    }
-
-    public static boolean shouldShowRewardsIcon() {
-        return ChromeSharedPreferences.getInstance()
-                .readBoolean(AppearancePreferences.PREF_SHOW_BRAVE_REWARDS_ICON, true);
     }
 }
