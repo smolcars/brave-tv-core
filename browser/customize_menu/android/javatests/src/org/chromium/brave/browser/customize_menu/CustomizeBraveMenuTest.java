@@ -329,7 +329,6 @@ public class CustomizeBraveMenuTest {
         assertTrue(CustomizeBraveMenu.isVisible(mResources, R.id.downloads_menu_id));
         assertTrue(CustomizeBraveMenu.isVisible(mResources, R.id.all_bookmarks_menu_id));
         assertTrue(CustomizeBraveMenu.isVisible(mResources, R.id.open_history_menu_id));
-        assertTrue(CustomizeBraveMenu.isVisible(mResources, R.id.brave_wallet_id));
         assertTrue(CustomizeBraveMenu.isVisible(mResources, R.id.brave_leo_id));
     }
 
@@ -385,9 +384,6 @@ public class CustomizeBraveMenuTest {
         assertEquals(
                 R.drawable.ic_history,
                 CustomizeBraveMenu.getDrawableResFromMenuItemId(R.id.open_history_menu_id));
-        assertEquals(
-                R.drawable.ic_product_brave_wallet,
-                CustomizeBraveMenu.getDrawableResFromMenuItemId(R.id.brave_wallet_id));
         assertEquals(
                 R.drawable.ic_product_brave_leo,
                 CustomizeBraveMenu.getDrawableResFromMenuItemId(R.id.brave_leo_id));
