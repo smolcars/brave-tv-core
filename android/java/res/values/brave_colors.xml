@@ -65,7 +65,7 @@
 
     <color name="black_alpha_30">#4D000000</color>
     <color name="black_alpha_50">#80000000</color>
-    <color name="modern_blue_300">#FF7654</color>
+
     <color name="dialog_bg_color_dark_baseline">@color/toolbar_background_primary_dark</color>
     <color name="default_text_color_on_accent1_dark">@color/primitive_neutral_0</color>
     <color name="gm3_baseline_surface_tint_light">#948989</color>
@@ -79,29 +79,29 @@
     <color name="gm3_baseline_surface_container_highest_light">#F0EEEE</color>
 
     <!-- Day/Night brave wallet colors -->
-    <color name="brave_wallet_onboarding_item_background_color">#687485</color>
-    <color name="brave_wallet_day_night_toolbar_icon_color">#495057</color>
-    <color name="brave_wallet_day_night_icon_color">#212529</color>
-    <color name="brave_wallet_day_night_negative_ripple_color">#E1E3E4</color>
-    <color name="brave_wallet_dn_error_text_bg_color">#F0F2FF</color>
-    <color name="brave_wallet_dn_highlight_bg_color">#FFFFFF</color>
-    <color name="brave_wallet_onboarding_card_view_background">#FFFFFF</color>
+
+
+
+
+
+
+
     <color name="brave_wallet_dn_button_color">#3E37D4</color>
 
     <!-- Brave wallet 2.0 colors -->
-    <color name="brave_wallet_dn_panel_bg">#EDEEF1</color>
 
-    <color name="text_on_primary">#FFFFFF</color>
+
+
     <color name="icon_interactive">#434fcf</color>
     <color name="system_feedback_error">#B3002A</color>
 
     <!-- Text colors -->
-    <color name="brave_theme_subtitle_text">#868E96</color>
-    <color name="brave_theme_hint_text">#868E96</color>
-    <color name="brave_theme_error">#cc0000</color>
+
+
+
     <color name="brave_theme_success">#51cf66</color>
-    <color name="brave_theme_error_txt">#E32444</color>
-    <color name="brave_text_button_color">#4C54D2</color>
+
+
     <color name="text_color_20">#d5dcff</color>
     <color name="text_color_30">#b7c6ff</color>
 
@@ -111,7 +111,7 @@
     <color name="onboarding_black">#1e2029</color>
 
     <color name="onboarding_text_color">@color/onboarding_black</color>
-    <color name="onboarding_bg_color">@android:color/white</color>
+
 
     <color name="onboarding_indicator_selected_color">#FF7654</color>
     <color name="onboarding_indicator_default_color">#C2C4CF</color>
@@ -140,13 +140,13 @@
     <color name="brave_set_default_dialog_text_color">@color/primitive_neutral_30</color>
 
     <!-- Theme colors -->
-    <color name="brave_theme_color">#fb542b</color>
+
     <color name="brave_button_pressed">#7278C5</color>
 
     <!--  Wallet gradient colors  -->
-    <color name="wallet_gradient_center_color">#BF14A2</color>
-    <color name="wallet_gradient_end_color">#F73A1C</color>
-    <color name="wallet_gradient_start_color">#4C54D2</color>
+
+
+
 
     <!-- Brave news colors -->
     <!-- <color name="card_background">#DC353535</color> -->
@@ -230,29 +230,29 @@
 
     <color name="shields_tooltip_arrow_color_1">#DD295B</color>
 
-    <color name="wallet_text_color">#0D0F14</color>
-    <color name="wallet_secondary_text_color">#686978</color>
+
+
     <color name="wallet_secondary_layout_text_color">#495057</color>
-    <color name="wallet_tertiary_layout_text_color">#62757E</color>
-    <color name="wallet_toolbar_bg_color">#F6F7F8</color>
-    <color name="tab_color">#FF4081</color>
-    <color name="wallet_bg">#FFFFFF</color>
-    <color name="wallet_edittext_outline_color">#AEB1C2</color>
+
+
+
+
+
     <color name="brave_action_color">#4C54D2</color>
-    <color name="wallet_top_banner_color">#33E32444</color>
+
     <color name="wallet_error_text_color">#FF4B6A</color>
 
-    <color name="wallet_sign_msg_err_bg_color">#FFF1F1</color>
 
-    <color name="wallet_onboarding_gradient_start">#C9CCF0</color>
-    <color name="wallet_onboarding_gradient_center">#D8DCF2</color>
-    <color name="wallet_onboarding_gradient_end">#F2F3F4</color>
+
+
+
+
 
     <color name="vpn_callout_bg_color">#381E85</color>
     <color name="brave_plan_bg">#27155E</color>
 
     <!--  Brave Wallet DApp  -->
-    <color name="brave_wallet_dapp_text_color">#171919</color>
+
 
     <!-- Quick Action Search and Bookmark Widget -->
     <color name="quick_action_search_and_bookmark_widget_bookmark_bg_color">#EEEFF1</color>
