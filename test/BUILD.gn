@@ -1835,6 +1835,7 @@ if (is_android) {
       "//third_party/mockito:mockito_java",
       "//ui/android:ui_java_test_support",
       "//ui/android:ui_no_recycler_view_java",
+      "//ui/android:ui_utils_java",
       "//ui/edge_to_edge:java",
       "//url:gurl_java",
       "//url/mojom:url_mojom_gurl_java",
