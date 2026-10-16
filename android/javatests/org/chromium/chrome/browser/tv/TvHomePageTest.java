@@ -1863,6 +1863,13 @@ public class TvHomePageTest {
             verify(observed, never()).showSoftInput(any(), anyInt(), any());
             injectDpad(KeyEvent.KEYCODE_DPAD_CENTER);
             verify(observedKeyboard).showKeyboard(tab.getContentView());
+            CriteriaHelper.pollUiThread(
+                    () -> {
+                        var insets =
+                                ViewCompat.getRootWindowInsets(
+                                        mActivity.getWindow().getDecorView());
+                        return insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
+                    });
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
                         var connection =
