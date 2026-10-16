@@ -71,6 +71,7 @@ import org.chromium.base.test.util.CriteriaHelper;
 import org.chromium.base.test.util.DoNotBatch;
 import org.chromium.base.test.util.Features.DisableFeatures;
 import org.chromium.base.test.util.MinAndroidSdkLevel;
+import org.chromium.brave_shields.mojom.FilterListAndroidHandler;
 import org.chromium.cc.input.BrowserControlsState;
 import org.chromium.chrome.R;
 import org.chromium.chrome.browser.app.BraveActivity;
@@ -85,6 +86,7 @@ import org.chromium.chrome.browser.layouts.LayoutType;
 import org.chromium.chrome.browser.preferences.Pref;
 import org.chromium.chrome.browser.preferences.website.BraveShieldsContentSettings;
 import org.chromium.chrome.browser.profiles.Profile;
+import org.chromium.chrome.browser.shields.FilterListServiceFactory;
 import org.chromium.chrome.browser.tab.SadTab;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.chrome.browser.tab.TabBrowserControlsConstraintsHelper;
@@ -119,6 +121,7 @@ import org.chromium.url.GURL;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Native saved-page activation, model-driven focus recovery and private Home isolation. */
 @RunWith(ChromeJUnit4ClassRunner.class)
@@ -1367,6 +1370,133 @@ public class TvHomePageTest {
                         page.stopLoading();
                     });
         }
+    }
+
+    @Test
+    @MediumTest
+    public void shieldsRemainEffectiveWithoutAdvertisingProducts() throws Exception {
+        // Fixed loopback fixture and emulator reverse: tests/device/shields-fixture-server.mjs.
+        String fixture = "http://127.0.0.1:18081/shields.html";
+        Profile profile =
+                ThreadUtils.runOnUiThreadBlocking(() -> mActivity.getActivityTab().getProfile());
+        FilterListAndroidHandler filters =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () ->
+                                FilterListServiceFactory.getInstance()
+                                        .getFilterListAndroidHandler(profile, null));
+        assertNotNull(filters);
+        AtomicReference<String> original = new AtomicReference<>();
+        CallbackHelper read = new CallbackHelper();
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        filters.getCustomFilters(
+                                value -> {
+                                    original.set(value);
+                                    read.notifyCalled();
+                                }));
+        read.waitForCallback(0);
+        boolean protection =
+                ThreadUtils.runOnUiThreadBlocking(
+                        () ->
+                                BraveShieldsContentSettings.getShields(
+                                        profile,
+                                        fixture,
+                                        BraveShieldsContentSettings
+                                                .RESOURCE_IDENTIFIER_BRAVE_SHIELDS));
+        try {
+            setFixtureCustomFilters(
+                    filters,
+                    original.get()
+                            + "\n"
+                            + "127.0.0.1###cosmetic-probe\n"
+                            + "127.0.0.1##+js(set, tvShieldsProbe, true)\n");
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            BraveShieldsContentSettings.setShields(
+                                    profile,
+                                    fixture,
+                                    BraveShieldsContentSettings.RESOURCE_IDENTIFIER_BRAVE_SHIELDS,
+                                    true,
+                                    false));
+            // Engine rebuild is asynchronous; reload the owned document until rules are active.
+            CriteriaHelper.pollInstrumentationThread(
+                    () -> {
+                        mActivityTestRule.loadUrl(fixture);
+                        WebContents contents =
+                                ThreadUtils.runOnUiThreadBlocking(
+                                        () -> mActivity.getActivityTab().getWebContents());
+                        return "true"
+                                .equals(
+                                        JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                                                contents, "window.tvShieldsProbe === true"));
+                    });
+            WebContents contents =
+                    ThreadUtils.runOnUiThreadBlocking(
+                            () -> mActivity.getActivityTab().getWebContents());
+            CriteriaHelper.pollInstrumentationThread(
+                    () ->
+                            "true"
+                                    .equals(
+                                            JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                                                    contents,
+                                                    "document.querySelector('#control').textContent"
+                                                        + " === 'Control script: loaded' &&"
+                                                        + " document.querySelector('#network').textContent"
+                                                        + " === 'Ad request: failed' &&"
+                                                        + " window.tvAdFixtureLoaded !== true &&"
+                                                        + " getComputedStyle(document.querySelector('#cosmetic-probe')).display"
+                                                        + " === 'none'")));
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            BraveShieldsContentSettings.setShields(
+                                    profile,
+                                    fixture,
+                                    BraveShieldsContentSettings.RESOURCE_IDENTIFIER_BRAVE_SHIELDS,
+                                    false,
+                                    false));
+            mActivityTestRule.loadUrl(fixture);
+            CriteriaHelper.pollInstrumentationThread(
+                    () ->
+                            "true"
+                                    .equals(
+                                            JavaScriptUtils.executeJavaScriptAndWaitForResult(
+                                                    contents,
+                                                    "document.querySelector('#control').textContent"
+                                                        + " === 'Control script: loaded' &&"
+                                                        + " window.tvAdFixtureLoaded === true &&"
+                                                        + " window.tvShieldsProbe !== true &&"
+                                                        + " getComputedStyle(document.querySelector('#cosmetic-probe')).display"
+                                                        + " === 'block'")));
+        } finally {
+            try {
+                setFixtureCustomFilters(filters, original.get());
+            } finally {
+                ThreadUtils.runOnUiThreadBlocking(
+                        () -> {
+                            BraveShieldsContentSettings.setShields(
+                                    profile,
+                                    fixture,
+                                    BraveShieldsContentSettings.RESOURCE_IDENTIFIER_BRAVE_SHIELDS,
+                                    protection,
+                                    false);
+                            filters.close();
+                        });
+            }
+        }
+    }
+
+    private void setFixtureCustomFilters(FilterListAndroidHandler filters, String value)
+            throws Exception {
+        CallbackHelper updated = new CallbackHelper();
+        ThreadUtils.runOnUiThreadBlocking(
+                () ->
+                        filters.updateCustomFilters(
+                                value,
+                                success -> {
+                                    assertTrue(success);
+                                    updated.notifyCalled();
+                                }));
+        updated.waitForCallback(0);
     }
 
     private void openControlsWithAddressFocus() {
