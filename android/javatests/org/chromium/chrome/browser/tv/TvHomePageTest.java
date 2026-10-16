@@ -1896,6 +1896,21 @@ public class TvHomePageTest {
                                                 KeyEvent.KEYCODE_DPAD_RIGHT)));
                     });
             waitForScript(tab, "document.activeElement===field&&field.selectionStart===1");
+            ThreadUtils.runOnUiThreadBlocking(
+                    () ->
+                            KeyboardVisibilityDelegate.getInstance()
+                                    .hideKeyboard(tab.getContentView()));
+            CriteriaHelper.pollUiThread(
+                    () -> {
+                        var insets =
+                                ViewCompat.getRootWindowInsets(
+                                        mActivity.getWindow().getDecorView());
+                        return mActivity.hasWindowFocus()
+                                && insets != null
+                                && !insets.isVisible(WindowInsetsCompat.Type.ime());
+                    });
+            injectDpad(KeyEvent.KEYCODE_DPAD_RIGHT);
+            waitForElement(tab, "b");
         } finally {
             ThreadUtils.runOnUiThreadBlocking(
                     () -> {
