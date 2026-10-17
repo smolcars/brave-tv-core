@@ -1,3 +1,8 @@
+{% if definitions_in_split %}
+<!-- Preserve Chromium's Emoji2 startup removal in the chrome feature module. -->
+<provider android:name="androidx.startup.InitializationProvider" tools:node="remove" />
+{% endif %}
+
 <activity-alias
     android:name="org.chromium.chrome.browser.tv.TvLauncher"
     android:targetActivity="org.chromium.chrome.browser.document.ChromeLauncherActivity"
