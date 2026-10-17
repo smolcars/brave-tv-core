@@ -1,4 +1,4 @@
-{% if definitions_in_split %}
+{% if base_manifest is defined %}
 <!-- Preserve Chromium's Emoji2 startup removal in the chrome feature module. -->
 <provider android:name="androidx.startup.InitializationProvider" tools:node="remove" />
 {% endif %}
